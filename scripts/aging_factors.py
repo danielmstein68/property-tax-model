@@ -19,6 +19,10 @@ Measures:
     quarter of the target year with the same quarter of the survey year.
   - Social Security, SSI: actual cost-of-living adjustments (SSA)
   - retirement, interest/dividends/rent, public assistance, other: CPI-U, US city average (BLS)
+  - contract rent: CPI rent of primary residence by area (Miami and Tampa metro series; South
+    region for the rest of Florida). CPI rent tracks what existing tenants pay, which suits PUMS
+    renters (they're incumbents), not new-lease market rents.
+  - utilities part of gross rent: CPI-U
 """
 
 import argparse
@@ -31,10 +35,16 @@ ROOT = Path(__file__).resolve().parents[1]
 BLS = "https://api.bls.gov/publicAPI/v1/timeseries/data/{sid}?startyear={a}&endyear={b}"
 FL_QCEW_PRIVATE_WEEKLY_WAGE = "ENU1200040510"
 CPI_U = "CUUR0000SA0"
+CPI_RENT = {"miami": "CUURS35BSEHA", "tampa": "CUURS35DSEHA", "other_fl": "CUUR0300SEHA"}
 
 # COLA paid in each year (announced the previous October). Source: SSA,
 # https://www.ssa.gov/cola/ and https://blog.ssa.gov/social-security-announces-benefit-increase-for-2026
 SS_COLA = {2025: 0.025, 2026: 0.028}
+
+# Florida Save Our Homes cap: lesser of 3% or CPI change, by assessment year.
+# Source: Florida DOR CPI table, https://www.floridarevenue.com/property/Documents/cpi_homestead_exemption.pdf
+# (2026 CPI change 2.7%); county appraiser tables agree (2025: 2.9%, 2026: 2.7%).
+FL_SOH_CAP = {2025: 0.029, 2026: 0.027}
 
 
 def bls_monthly(series_id: str, a: int, b: int) -> dict[tuple[int, int], float]:
@@ -72,25 +82,35 @@ def main() -> None:
     cpi_src = f"BLS {CPI_U} CPI-U US city avg; {cpi_note}"
     cola_src = "SSA COLAs " + ", ".join(f"{y}: {SS_COLA[y]:.1%}" for y in range(y0 + 1, y1 + 1))
     rows = [
-        ("WAGP", "wages and salaries", wage, wage_src),
-        ("SEMP", "self-employment income", wage, wage_src),
-        ("SSP", "Social Security", cola, cola_src),
-        ("SSIP", "Supplemental Security Income", cola, cola_src),
-        ("RETP", "retirement and pension income", cpi, cpi_src),
-        ("INTP", "interest, dividends, net rental income", cpi, cpi_src),
-        ("PAP", "public assistance", cpi, cpi_src),
-        ("OIP", "other income", cpi, cpi_src),
+        ("WAGP", "", "wages and salaries", wage, wage_src),
+        ("SEMP", "", "self-employment income", wage, wage_src),
+        ("SSP", "", "Social Security", cola, cola_src),
+        ("SSIP", "", "Supplemental Security Income", cola, cola_src),
+        ("RETP", "", "retirement and pension income", cpi, cpi_src),
+        ("INTP", "", "interest, dividends, net rental income", cpi, cpi_src),
+        ("PAP", "", "public assistance", cpi, cpi_src),
+        ("OIP", "", "other income", cpi, cpi_src),
+        ("UTIL", "", "utilities part of gross rent", cpi, cpi_src),
     ]
+    soh = 1.0
+    for y in range(y0 + 1, y1 + 1):
+        soh *= 1 + FL_SOH_CAP[y]
+    rows.append(("TAXAMT", "", "property tax, PROVISIONAL (Save Our Homes caps, rates held fixed)", soh,
+                 "FL Save Our Homes caps " + ", ".join(f"{y}: {FL_SOH_CAP[y]:.1%}" for y in range(y0 + 1, y1 + 1))
+                 + "; FL DOR cpi_homestead_exemption.pdf"))
+    for area, sid in CPI_RENT.items():
+        f, note = same_period_ratio(bls_monthly(sid, y0, y1), y0, y1)
+        rows.append(("RNTP", area, "contract rent", f, f"BLS {sid} CPI rent of primary residence; {note}"))
 
     out = ROOT / "inputs" / f"aging_factors_{y1}.csv"
     out.parent.mkdir(exist_ok=True)
     with open(out, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["variable", "description", "from_year", "to_year", "factor", "source"])
-        for var, desc, f, src in rows:
-            w.writerow([var, desc, y0, y1, round(f, 5), src])
-    for var, desc, f, _ in rows:
-        print(f"{var:5s} {desc:40s} x{f:.4f}  ({f - 1:+.1%})")
+        w.writerow(["variable", "area", "description", "from_year", "to_year", "factor", "source"])
+        for var, area, desc, f, src in rows:
+            w.writerow([var, area, desc, y0, y1, round(f, 5), src])
+    for var, area, desc, f, _ in rows:
+        print(f"{var:5s} {area:9s} {desc:40s} x{f:.4f}  ({f - 1:+.1%})")
     print(f"saved {out}")
 
 

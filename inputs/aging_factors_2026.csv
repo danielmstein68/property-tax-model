@@ -1,9 +1,14 @@
-variable,description,from_year,to_year,factor,source
-WAGP,wages and salaries,2024,2026,1.09821,"BLS QCEW ENU1200040510 Florida avg weekly wage, private; quarters 1-1 of 2026 vs same quarters of 2024"
-SEMP,self-employment income,2024,2026,1.09821,"BLS QCEW ENU1200040510 Florida avg weekly wage, private; quarters 1-1 of 2026 vs same quarters of 2024"
-SSP,Social Security,2024,2026,1.0537,"SSA COLAs 2025: 2.5%, 2026: 2.8%"
-SSIP,Supplemental Security Income,2024,2026,1.0537,"SSA COLAs 2025: 2.5%, 2026: 2.8%"
-RETP,retirement and pension income,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
-INTP,"interest, dividends, net rental income",2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
-PAP,public assistance,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
-OIP,other income,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+variable,area,description,from_year,to_year,factor,source
+WAGP,,wages and salaries,2024,2026,1.09821,"BLS QCEW ENU1200040510 Florida avg weekly wage, private; quarters 1-1 of 2026 vs same quarters of 2024"
+SEMP,,self-employment income,2024,2026,1.09821,"BLS QCEW ENU1200040510 Florida avg weekly wage, private; quarters 1-1 of 2026 vs same quarters of 2024"
+SSP,,Social Security,2024,2026,1.0537,"SSA COLAs 2025: 2.5%, 2026: 2.8%"
+SSIP,,Supplemental Security Income,2024,2026,1.0537,"SSA COLAs 2025: 2.5%, 2026: 2.8%"
+RETP,,retirement and pension income,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+INTP,,"interest, dividends, net rental income",2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+PAP,,public assistance,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+OIP,,other income,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+UTIL,,utilities part of gross rent,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+TAXAMT,,"property tax, PROVISIONAL (Save Our Homes caps, rates held fixed)",2024,2026,1.05678,"FL Save Our Homes caps 2025: 2.9%, 2026: 2.7%; FL DOR cpi_homestead_exemption.pdf"
+RNTP,miami,contract rent,2024,2026,1.06609,BLS CUURS35BSEHA CPI rent of primary residence; months 1-8 of 2026 vs same months of 2024
+RNTP,tampa,contract rent,2024,2026,1.06331,BLS CUURS35DSEHA CPI rent of primary residence; months 1-8 of 2026 vs same months of 2024
+RNTP,other_fl,contract rent,2024,2026,1.04958,BLS CUUR0300SEHA CPI rent of primary residence; months 1-8 of 2026 vs same months of 2024

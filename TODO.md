@@ -25,8 +25,9 @@ Steps we're working through one at a time. Each gets discussed before it's built
   - **Home values, uneven by area × type × price tier.** Best: 2024 vs 2026 roll values for the same parcels (request the 2024 final roll from DOR). Until then: FHFA metro index for single-family; condo and mobile-home factors from sales in the 2026 roll.
   - **New development:** count homes built 2024–25 by PUMA from the roll (`ACT_YR_BLT`); raise weights of PUMS households in recently built homes (`YRBLT` 2020–24) in the same PUMA to match. Check how far weights move. Repeat each projection year.
   - [x] **Incomes by type** — `ptm/aging.py`, factors from `scripts/aging_factors.py` → `inputs/aging_factors_2026.csv`. Wages/self-employment +9.8% (QCEW FL private avg weekly wage, Q1 2026 vs Q1 2024), Social Security/SSI +5.4% (COLAs), other +6.0% (CPI-U). Rerun the script when later 2026 QCEW quarters are published.
-  - **Rents:** CPI rent for Florida metros (revisit with pass-through).
-  - **`TAXAMT`:** grow by the statewide change in homestead taxes levied 2024→2026 (DOR); keep as an observed anchor.
+  - [x] **Rents** — `add_aged_rent` in `ptm/aging.py`: contract rent by CPI rent area (Miami +6.6%, Tampa +6.3%, rest of FL via South region +5.0%); utilities part of gross rent by CPI-U. PUMA → main county → area in `ptm/geo.py`. Revisit with pass-through.
+  - [x] **`TAXAMT`, provisional** — `add_aged_taxamt`: × Save Our Homes caps (2025 2.9%, 2026 2.7%) = +5.7%, rates held fixed; original `TAXAMT` kept as anchor. (Statewide levy growth was rejected: it includes new homesteads at full value, so it overstates incumbents' growth.)
+  - [ ] **`TAXAMT`, rule-based** (after value aging): assessed = min(prior × cap, market value); indexed second homestead exemption (2026: $26,411 per DOR); actual 2026 rates at calibration.
   - **Household count:** handled by calibration to the roll's 2026 homestead count.
 - [ ] **Request 2024 final NAL roll** from DOR (PTOTechnology@floridarevenue.com) — draft ready on request; you send it.
 - [ ] **Florida current-law rules** — Save Our Homes, homestead exemption, 10% non-homestead cap
