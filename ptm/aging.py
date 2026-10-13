@@ -8,6 +8,7 @@ COLAs, other income by inflation. Factors come from inputs/aging_factors_<year>.
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +88,68 @@ def add_aged_taxamt(households: pd.DataFrame, to_year: int) -> pd.DataFrame:
     """
     h = households.copy()
     h["taxamt_aged"] = h["TAXAMT"] * load_factors(to_year)["TAXAMT"]
+    return h
+
+
+# Years since moving in, midpoint of each PUMS MV category (MV 7 = 30+ years).
+MV_YEARS_AGO = {1: 0.5, 2: 1.5, 3: 3.0, 4: 7.0, 5: 14.5, 6: 24.5, 7: 35.0}
+# Rough share of a homestead's tax that is school tax; replace with county millage at calibration.
+SCHOOL_SHARE = 0.37
+
+
+def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year: int) -> pd.DataFrame:
+    """Age owners' reported property tax with Florida's Save Our Homes and homestead rules.
+
+    Requires add_aged_values first. For each owner (all treated as homesteads):
+      1. purchase year from MV (category midpoint);
+      2. assessed/just ratio in the survey year from Save Our Homes history since purchase
+         (ptm.florida.soh_ratio_from_purchase);
+      3. just value: survey year = VALP x just/market ratio; base year = valp_jv_aged;
+         years between interpolated geometrically;
+      4. assessed value rolled forward each year: min(prior x cap, just value);
+      5. school and non-school taxable value after the homestead exemption, both years;
+      6. taxamt_aged = TAXAMT x (taxable base year / taxable survey year), rates held fixed,
+         school share SCHOOL_SHARE.
+    Owners the rules say pay nothing in the survey year but who report tax fall back to the
+    caps-only growth. $0 stays $0. TAXAMT itself is untouched.
+    Adds: purchase_year, soh_ratio_<survey>, soh_ratio_<base>, av_<survey>, av_<base>,
+    taxamt_growth, taxamt_aged.
+    """
+    from ptm import florida
+
+    hist = pd.read_csv(ROOT / "inputs" / "fl_soh_history.csv")
+    caps = hist.set_index("year")["soh_cap"]
+    h = households.copy()
+    own = h["VALP"].notna()
+    o = h.loc[own]
+
+    years_ago = o["MV"].map(MV_YEARS_AGO)
+    purchase = (survey_year - years_ago).round().clip(lower=1994).astype(int)
+    ratio0 = florida.soh_ratio_from_purchase(purchase, survey_year, hist)
+
+    jv0 = o["VALP"].to_numpy() * o["jv_to_market"].to_numpy()
+    jv1 = o["valp_jv_aged"].to_numpy()
+    av = ratio0 * jv0
+    n = base_year - survey_year
+    for k, y in enumerate(range(survey_year + 1, base_year + 1), start=1):
+        jv_y = jv0 * (jv1 / jv0) ** (k / n)
+        av = florida.soh_assessed(av, jv_y, caps.loc[y])
+
+    def taxable(assessed, year):
+        s, ns = florida.homestead_taxable(assessed, year)
+        return SCHOOL_SHARE * s + (1 - SCHOOL_SHARE) * ns
+
+    t0, t1 = taxable(ratio0 * jv0, survey_year), taxable(av, base_year)
+    caps_only = float(np.prod([1 + caps.loc[y] for y in range(survey_year + 1, base_year + 1)]))
+    growth = np.where(t0 > 0, t1 / np.where(t0 > 0, t0, 1), caps_only)
+
+    h.loc[own, "purchase_year"] = purchase.to_numpy()
+    h.loc[own, f"soh_ratio_{survey_year}"] = ratio0
+    h.loc[own, f"av_{survey_year}"] = ratio0 * jv0
+    h.loc[own, f"av_{base_year}"] = av
+    h.loc[own, f"soh_ratio_{base_year}"] = av / jv1
+    h.loc[own, "taxamt_growth"] = growth
+    h["taxamt_aged"] = h["TAXAMT"] * h["taxamt_growth"]
     return h
 
 

@@ -24,16 +24,19 @@ Steps we're working through one at a time. Each gets discussed before it's built
   - **values → Jan 1, 2026** (Florida assessment date; matches the 2026 roll);
   - **incomes and rents → calendar-year 2026 average** (income during the year the 2026 bill is paid; PUMS income is effectively calendar-2024 income).
   - [x] **Home values, by county × type × tier** — `add_aged_values` in `ptm/aging.py`; inputs from `scripts/value_factors.py`:
-    - Step A, market growth 2024 avg → Dec 2025 (Zillow ZHVI by county; single-family/condo × bottom/mid/top tier; mobile homes = bottom tier) → `inputs/value_growth_fl_2026.csv`. Median owner market value $388k → $361k (single-family −3%, condo −17.5%, mobile −8.7%).
+    - Step A, market growth 2024 avg → Dec 2025 (Zillow ZHVI by county; single-family/condo × bottom/mid/top tier; mobile homes = bottom tier), **level-corrected with the roll's own sales** (sale ÷ appraisal ratio, Jan–Jun 2025 vs 2026) → `inputs/value_growth_fl_2026.csv`. Median owner market value $388k → $373k (single-family +0.8%, condo −12.3%).
     - Step B, market → just value: median just value / H2-2025 qualified sale price ≈ 0.83, by county × type × tier (fallbacks if < 30 sales) → `inputs/just_value_ratio_fl_2026.csv`.
-    - Check vs roll: PUMS aged just value is ~8% below roll homestead medians for single-family and condos; ~20% below in South Florida, slightly above in Duval. Resolve in linking/calibration (see CHALLENGES).
-    - [ ] Cross-check Zillow against FHFA metro index.
+    - Check vs roll: PUMS aged just value is ~4% below roll homestead medians statewide; still 10–24% below in South Florida. Resolve in linking/calibration (see CHALLENGES).
+    - [x] Cross-check Zillow against FHFA metro index → Zillow overstated the decline; corrected with sales.
     - [ ] Upgrade Step A with 2024 sales from the 2025 roll (by request) or 2024 vs 2026 roll values.
   - **New development:** count homes built 2024–25 by PUMA from the roll (`ACT_YR_BLT`); raise weights of PUMS households in recently built homes (`YRBLT` 2020–24) in the same PUMA to match. Check how far weights move. Repeat each projection year.
   - [x] **Incomes by type** — `ptm/aging.py`, factors from `scripts/aging_factors.py` → `inputs/aging_factors_2026.csv`. Wages/self-employment +9.8% (QCEW FL private avg weekly wage, Q1 2026 vs Q1 2024), Social Security/SSI +5.4% (COLAs), other +6.0% (CPI-U). Rerun the script when later 2026 QCEW quarters are published.
   - [x] **Rents** — `add_aged_rent` in `ptm/aging.py`: contract rent by CPI rent area (Miami +6.6%, Tampa +6.3%, rest of FL via South region +5.0%); utilities part of gross rent by CPI-U. PUMA → main county → area in `ptm/geo.py`. Revisit with pass-through.
   - [x] **`TAXAMT`, provisional** — `add_aged_taxamt`: × Save Our Homes caps (2025 2.9%, 2026 2.7%) = +5.7%, rates held fixed; original `TAXAMT` kept as anchor. (Statewide levy growth was rejected: it includes new homesteads at full value, so it overstates incumbents' growth.)
-  - [ ] **`TAXAMT`, rule-based** (after value aging): assessed = min(prior × cap, market value); indexed second homestead exemption (2026: $26,411 per DOR); actual 2026 rates at calibration.
+  - [x] **`TAXAMT`, rule-based** — `add_aged_taxamt_rules` in `ptm/aging.py`, rules in `ptm/florida.py`, history from `scripts/fl_soh_history.py` → `inputs/fl_soh_history.csv`. Purchase year from `MV`; 2024 assessed/just ratio from Save Our Homes caps vs Florida price index since purchase; roll assessed value forward (min(prior × cap, just value)); school/non-school taxable after homestead exemption (indexed second exemption); rates fixed, school share 0.37. Result: median owner tax +6.4%, total +5.4%, 8.9% of owners see a decrease (recent buyers, where values fell). Supersedes the provisional caps-only version.
+    - Check: modelled 2026 assessed/just median 0.63 vs roll homesteads 0.66; but county correlation only 0.40 (statewide price index; ignores portability). Refine with county indexes / parcel imputation at linking.
+    - [ ] Replace `SCHOOL_SHARE` (0.37, rough) with county millage at calibration.
+    - [ ] Unit tests for `ptm/florida.py` (add pytest).
   - **Household count:** handled by calibration to the roll's 2026 homestead count.
 - [ ] **Request 2024 final NAL roll** from DOR (PTOTechnology@floridarevenue.com) — draft ready on request; you send it.
 - [ ] **Florida current-law rules** — Save Our Homes, homestead exemption, 10% non-homestead cap

@@ -117,14 +117,28 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **Finding (Zillow ZHVI, 2024 avg → Dec 2025):** median county −4%; condos −12% (to −25% in Charlotte); bottom tier −6% vs top −3%; Southwest Florida worst (Charlotte −17%, Lee −13%). Under Save Our Homes, assessed values keep rising by the cap while below market, so long-time owners' bills rose ~5.7% while values fell — but recent buyers' assessments fall with the market. The provisional `TAXAMT` aging is only right for the first group.
 - **Solution (Solved):** age values by county × type × tier (`scripts/value_factors.py`, `add_aged_values`). Zillow gives type and tier as separate series, so factor = type growth × tier growth ÷ middle-tier growth.
 
+### Zillow vs FHFA vs actual sales
+- **Finding (2024 avg → Q4 2025, single-family, 25 FL metro areas):** Zillow and FHFA rank areas the same (correlation 0.84), but Zillow shows ~4.7 points more decline (weighted: Zillow −5.6%, FHFA −0.8%). Gap is larger where FHFA only has its all-transactions index (−6.1 pts) than purchase-only (−4.2 pts).
+- **Tiebreaker (roll's own sales):** median qualified single-family price per sq ft, Jan–Jun 2026 vs Jan–Jun 2025, 38 counties: actual −1.0%, Zillow −3.7%; in the 19 big-metro counties with all three: actual −1.9%, Zillow −4.2%, FHFA 0.0%. Truth lies between — Zillow overstates the decline by ~2–3 points a year; FHFA understates it by ~2.
+- **Why they differ:** FHFA is repeat sales on Fannie/Freddie mortgages, so it misses cash buyers (large in Florida) and jumbo loans, and its all-transactions index includes refinance appraisals. Zillow is a model of all homes and can lag or overshoot. Price per sq ft from sales has its own mix effects.
+- **Solution (Solved):** keep Zillow for the pattern (county, type, tier) and correct its level with Florida's own sales (`zillow_bias` in `scripts/value_factors.py`): for Jan–Jun 2025 vs Jan–Jun 2026, compare the change in median **sale price ÷ the same parcel's Jan 2026 just value** with Zillow's change; shrink each county toward the statewide figure (weight n/(n+300)); apply over the 1.46-year aging span. Median single-family factor −3.8% → −1.2%; condo −9.7% → −7.2%. Corrected figures fall between Zillow and FHFA in almost every county.
+- **Lesson:** median price per sq ft was tried first and failed badly (Hillsborough flipped from −5% to +8%, Charlotte −16% to +1%), because 2026 sales were full of new homes and 2025 sales included hurricane-damaged homes. A sale-to-appraisal ratio holds the property fixed. Exclude new construction too.
+- **Assumption:** the bias measured for 2025→2026 also held for 2024→2025. Check with the 2025 roll (by request).
+
 ### Just value is ~83% of market value
 - **Finding:** January 2026 just value ÷ qualified 2025 sale price has a median of 0.83 (single-family 0.83, condo 0.82, mobile 0.82; 377k sales). Fits the ~15% cost-of-sale adjustment plus lag. PUMS reports market value, so it must be converted before comparing with the roll or applying tax rules.
 - **Note:** the NAL only records sales in the roll year and the year before (here 2025 and Jan–Sep 2026). 2024 sales need the 2025 roll (by request).
 
 ### PUMS values vs the roll after aging
-- **Finding:** aged PUMS just value is ~8% below roll homestead medians for single-family and condo statewide; ~20% below in Miami-Dade, Broward, Palm Beach, Collier; slightly above in Duval. Possible causes: owners' reports, non-homestead owners in PUMS (~1M more owners than homesteads), Zillow's decline vs assessors', or the condo mapping (`BLD` 4–9).
+- **Finding:** with uncorrected Zillow, aged PUMS just value was ~8% below roll homestead medians for single-family and condo. After the sales-based correction it's ~4% below statewide (both types), but still well below in South Florida (single-family: Miami-Dade 0.76, Broward 0.86, Collier 0.85, Palm Beach 0.90) and on target in Hillsborough (0.96) and Duval (0.99). Possible causes: owners' reports, non-homestead owners in PUMS (~1M more owners than homesteads), Zillow's decline vs assessors', or the condo mapping (`BLD` 4–9).
 - **Mobile homes:** PUMS has ~518k mobile-home owners; the roll has ~232k homestead mobile-home parcels. Most PUMS mobile homes are on rented lots and aren't real-property parcels, so they can't be compared with (or calibrated to) the roll.
 - **Solution (Open):** don't patch values here; the linking/calibration step aligns PUMS values to the roll by PUMA × type × tier. Mobile homes on rented lots need separate treatment.
+
+### Aging reported tax needs each owner's assessment gap
+- **Problem:** whether an owner's tax rose by the cap or fell with the market depends on their assessed/just ratio, which PUMS doesn't have. Exemptions are fixed dollar amounts, so taxable value moves faster than assessed value (a +5.7% assessment rise gives +6–7% taxable).
+- **Solution (Solved, first version):** estimate the 2024 ratio from move-in year (`MV` midpoint) using Save Our Homes caps vs the Florida price index since purchase (`inputs/fl_soh_history.csv`), roll forward year by year, and apply the homestead exemption separately for school and non-school levies. Statewide median assessed/just 0.63 vs roll 0.66; county pattern weak (correlation 0.40) because it uses a statewide index and ignores portability — refine at linking.
+- **BLS API limit:** 25 keyless requests a day; `scripts/fl_soh_history.py` uses FRED for CPI instead. A free BLS key would lift the limit.
+- **Computed vs official caps:** computed 2026 cap 2.6% vs official 2.7% (October 2025 CPI missing); official caps override where known.
 
 ### Getting the parcel tax roll (NAL files)
 - **Source:** Florida DOR Data Portal → Tax Roll Data Files → NAL. One zip per county (67 counties).
