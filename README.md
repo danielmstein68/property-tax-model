@@ -23,12 +23,27 @@ Requires Python 3.12 and git.
    ```bash
    python scripts/download_pums.py --state fl --year 2024 --person
    ```
-3. Load households:
-   ```python
-   from ptm.load import load_households
-   df = load_households("data/raw/pums_2024_1yr/psam_h12.csv")
+3. Download and process Florida's parcel tax rolls (all 67 counties; ~1 GB download, can take an hour):
+   ```bash
+   python scripts/fl_parcels.py
    ```
-   `psam_h12.csv` is Florida's housing file (`12` is Florida's state FIPS code; Ohio is `39`, Texas `48`).
+4. Build the input tables (growth factors, value aging, Save Our Homes history):
+   ```bash
+   python scripts/aging_factors.py
+   python scripts/fl_soh_history.py
+   python scripts/value_factors.py
+   ```
+   These are committed in `inputs/`, so this step is only needed to refresh them.
+5. Build the 2026 baseline household file:
+   ```bash
+   python scripts/build_baseline.py
+   ```
+   Then in Python:
+   ```python
+   from ptm.baseline import load_baseline
+   df = load_baseline()
+   ```
+   `psam_h12.csv` is Florida's PUMS housing file (`12` is Florida's state FIPS code; Ohio is `39`, Texas `48`).
 
 ## Repository layout
 

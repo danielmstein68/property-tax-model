@@ -9,6 +9,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 - [x] **Florida parcel rolls, all 67 counties** (2026-10-13; 29 final, 38 preliminary) — `scripts/fl_parcels.py`; checks in `data/processed/fl_nal_2026/_checks.csv`. 9.86M residential parcels, 5.21M homesteads, 717 MB processed. Rerun later for final rolls.
   - [ ] Look into Escambia: 41 parcels with missing just value.
 
+- [x] **2026 baseline file** — `ptm/baseline.py`, `scripts/build_baseline.py` → `data/processed/baseline_fl_2026.parquet` (+ `.json` with build metadata, + new-development report). 87,327 records, 9,386,218 weighted households. Aged and reweighted; not yet linked or calibrated.
+
 ## Next
 - [ ] **Link PUMS and parcel data** (after aging PUMS to 2026). No record-level join is possible, so link by groups:
   1. Map parcels to PUMAs (`CENSUS_BK` → tract → PUMA).
