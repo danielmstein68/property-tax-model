@@ -1,0 +1,604 @@
+county_fips,type,tier,jv_to_market,sales,level
+001,sfr,bottom,0.887,289,county x type x tier
+001,sfr,mid,0.8479,471,county x type x tier
+001,sfr,top,0.8458,495,county x type x tier
+001,condo,bottom,0.8571,178,county x type x tier
+001,condo,mid,0.855,211,county x type
+001,condo,top,0.855,211,county x type
+001,mobile,bottom,0.8534,39,county x type x tier
+001,mobile,mid,0.8336,50,county x type
+001,mobile,top,0.8336,50,county x type
+003,sfr,bottom,0.8103,104,county x type
+003,sfr,mid,0.8102,37,county x type x tier
+003,sfr,top,0.8097,40,county x type x tier
+003,condo,bottom,0.8318,29469,statewide type
+003,condo,mid,0.8318,29469,statewide type
+003,condo,top,0.8318,29469,statewide type
+003,mobile,bottom,0.8276,7111,statewide type
+003,mobile,mid,0.8276,7111,statewide type
+003,mobile,top,0.8276,7111,statewide type
+005,sfr,bottom,0.8393,649,county x type x tier
+005,sfr,mid,0.8327,787,county x type x tier
+005,sfr,top,0.8344,767,county x type x tier
+005,condo,bottom,0.853,177,county x type x tier
+005,condo,mid,0.85,181,county x type x tier
+005,condo,top,0.85,208,county x type x tier
+005,mobile,bottom,0.8381,150,county x type x tier
+005,mobile,mid,0.8371,157,county x type
+005,mobile,top,0.8371,157,county x type
+007,sfr,bottom,0.807,90,county x type
+007,sfr,mid,0.807,90,county x type
+007,sfr,top,0.7973,42,county x type x tier
+007,condo,bottom,0.8318,29469,statewide type
+007,condo,mid,0.8318,29469,statewide type
+007,condo,top,0.8318,29469,statewide type
+007,mobile,bottom,0.8037,46,county x type
+007,mobile,mid,0.8037,46,county x type
+007,mobile,top,0.8037,46,county x type
+009,sfr,bottom,0.838,1489,county x type x tier
+009,sfr,mid,0.8168,2122,county x type x tier
+009,sfr,top,0.7921,2078,county x type x tier
+009,condo,bottom,0.8197,482,county x type x tier
+009,condo,mid,0.8117,117,county x type x tier
+009,condo,top,0.8012,161,county x type x tier
+009,mobile,bottom,0.7717,270,county x type x tier
+009,mobile,mid,0.7728,272,county x type
+009,mobile,top,0.7728,272,county x type
+011,sfr,bottom,0.9427,487,county x type x tier
+011,sfr,mid,0.9029,3541,county x type x tier
+011,sfr,top,0.8999,3639,county x type x tier
+011,condo,bottom,0.9393,3788,county x type x tier
+011,condo,mid,0.9,818,county x type x tier
+011,condo,top,0.9,728,county x type x tier
+011,mobile,bottom,0.9,92,county x type x tier
+011,mobile,mid,0.8905,99,county x type
+011,mobile,top,0.8905,99,county x type
+013,sfr,bottom,0.8371,131048,statewide type
+013,sfr,mid,0.8371,131048,statewide type
+013,sfr,top,0.8371,131048,statewide type
+013,condo,bottom,0.8318,29469,statewide type
+013,condo,mid,0.8318,29469,statewide type
+013,condo,top,0.8318,29469,statewide type
+013,mobile,bottom,0.8276,7111,statewide type
+013,mobile,mid,0.8276,7111,statewide type
+013,mobile,top,0.8276,7111,statewide type
+015,sfr,bottom,0.8544,181,county x type x tier
+015,sfr,mid,0.8354,497,county x type x tier
+015,sfr,top,0.8135,555,county x type x tier
+015,condo,bottom,0.851,398,county x type x tier
+015,condo,mid,0.8793,133,county x type x tier
+015,condo,top,0.8311,79,county x type x tier
+015,mobile,bottom,0.8491,56,county x type x tier
+015,mobile,mid,0.8491,62,county x type
+015,mobile,top,0.8491,62,county x type
+017,sfr,bottom,0.8337,493,county x type x tier
+017,sfr,mid,0.826,677,county x type x tier
+017,sfr,top,0.7849,702,county x type x tier
+017,condo,bottom,0.8526,34,county x type x tier
+017,condo,mid,0.8186,46,county x type
+017,condo,top,0.8186,46,county x type
+017,mobile,bottom,0.8345,198,county x type x tier
+017,mobile,mid,0.7937,46,county x type x tier
+017,mobile,top,0.8222,257,county x type
+019,sfr,bottom,0.8753,477,county x type x tier
+019,sfr,mid,0.8622,626,county x type x tier
+019,sfr,top,0.8519,654,county x type x tier
+019,condo,bottom,0.9081,42,county x type x tier
+019,condo,mid,0.9049,45,county x type
+019,condo,top,0.9049,45,county x type
+019,mobile,bottom,0.8631,138,county x type x tier
+019,mobile,mid,0.8627,167,county x type
+019,mobile,top,0.8627,167,county x type
+021,sfr,bottom,0.863,431,county x type x tier
+021,sfr,mid,0.8415,1134,county x type x tier
+021,sfr,top,0.7892,1149,county x type x tier
+021,condo,bottom,0.8324,1069,county x type x tier
+021,condo,mid,0.8198,395,county x type x tier
+021,condo,top,0.8145,381,county x type x tier
+021,mobile,bottom,0.9474,30,county x type x tier
+021,mobile,mid,0.9474,30,county x type
+021,mobile,top,0.9474,30,county x type
+023,sfr,bottom,0.8389,53,county x type x tier
+023,sfr,mid,0.7923,80,county x type x tier
+023,sfr,top,0.8177,106,county x type x tier
+023,condo,bottom,0.8318,29469,statewide type
+023,condo,mid,0.8318,29469,statewide type
+023,condo,top,0.8318,29469,statewide type
+023,mobile,bottom,0.8331,59,county x type x tier
+023,mobile,mid,0.7746,32,county x type x tier
+023,mobile,top,0.793,98,county x type
+027,sfr,bottom,0.8622,99,county x type
+027,sfr,mid,0.848,36,county x type x tier
+027,sfr,top,0.8591,40,county x type x tier
+027,condo,bottom,0.8318,29469,statewide type
+027,condo,mid,0.8318,29469,statewide type
+027,condo,top,0.8318,29469,statewide type
+027,mobile,bottom,0.8276,7111,statewide type
+027,mobile,mid,0.8276,7111,statewide type
+027,mobile,top,0.8276,7111,statewide type
+029,sfr,bottom,0.7661,45,county x type
+029,sfr,mid,0.7661,45,county x type
+029,sfr,top,0.7661,45,county x type
+029,condo,bottom,0.8318,29469,statewide type
+029,condo,mid,0.8318,29469,statewide type
+029,condo,top,0.8318,29469,statewide type
+029,mobile,bottom,0.7877,50,county x type
+029,mobile,mid,0.7877,50,county x type
+029,mobile,top,0.7877,50,county x type
+031,sfr,bottom,0.8622,1994,county x type x tier
+031,sfr,mid,0.8517,2418,county x type x tier
+031,sfr,top,0.8449,2416,county x type x tier
+031,condo,bottom,0.8571,413,county x type x tier
+031,condo,mid,0.8448,82,county x type x tier
+031,condo,top,0.8496,92,county x type x tier
+031,mobile,bottom,0.8271,108,county x type x tier
+031,mobile,mid,0.8291,130,county x type
+031,mobile,top,0.8291,130,county x type
+033,sfr,bottom,0.8044,594,county x type x tier
+033,sfr,mid,0.8358,647,county x type x tier
+033,sfr,top,0.7898,578,county x type x tier
+033,condo,bottom,0.8736,45,county x type x tier
+033,condo,mid,0.8558,156,county x type
+033,condo,top,0.854,91,county x type x tier
+033,mobile,bottom,0.7356,30,county x type x tier
+033,mobile,mid,0.7473,31,county x type
+033,mobile,top,0.7473,31,county x type
+035,sfr,bottom,0.8354,610,county x type x tier
+035,sfr,mid,0.8081,677,county x type x tier
+035,sfr,top,0.7872,642,county x type x tier
+035,condo,bottom,0.8194,59,county x type x tier
+035,condo,mid,0.8173,130,county x type
+035,condo,top,0.8164,55,county x type x tier
+035,mobile,bottom,0.7286,32,county x type
+035,mobile,mid,0.7286,32,county x type
+035,mobile,top,0.7286,32,county x type
+037,sfr,bottom,0.8877,34,county x type x tier
+037,sfr,mid,0.8702,54,county x type x tier
+037,sfr,top,0.8242,55,county x type x tier
+037,condo,bottom,0.8318,29469,statewide type
+037,condo,mid,0.8318,29469,statewide type
+037,condo,top,0.8318,29469,statewide type
+037,mobile,bottom,0.8276,7111,statewide type
+037,mobile,mid,0.8276,7111,statewide type
+037,mobile,top,0.8276,7111,statewide type
+039,sfr,bottom,0.9713,36,county x type x tier
+039,sfr,mid,0.8662,34,county x type x tier
+039,sfr,top,0.7833,50,county x type x tier
+039,condo,bottom,0.8318,29469,statewide type
+039,condo,mid,0.8318,29469,statewide type
+039,condo,top,0.8318,29469,statewide type
+039,mobile,bottom,0.8781,33,county x type
+039,mobile,mid,0.8781,33,county x type
+039,mobile,top,0.8781,33,county x type
+041,sfr,bottom,0.8074,81,county x type
+041,sfr,mid,0.7955,31,county x type x tier
+041,sfr,top,0.7921,33,county x type x tier
+041,condo,bottom,0.8318,29469,statewide type
+041,condo,mid,0.8318,29469,statewide type
+041,condo,top,0.8318,29469,statewide type
+041,mobile,bottom,0.8433,44,county x type
+041,mobile,mid,0.8433,44,county x type
+041,mobile,top,0.8433,44,county x type
+043,sfr,bottom,0.8371,131048,statewide type
+043,sfr,mid,0.8371,131048,statewide type
+043,sfr,top,0.8371,131048,statewide type
+043,condo,bottom,0.8318,29469,statewide type
+043,condo,mid,0.8318,29469,statewide type
+043,condo,top,0.8318,29469,statewide type
+043,mobile,bottom,0.8264,37,county x type
+043,mobile,mid,0.8264,37,county x type
+043,mobile,top,0.8264,37,county x type
+045,sfr,bottom,0.87,63,county x type x tier
+045,sfr,mid,0.8706,73,county x type x tier
+045,sfr,top,0.8356,73,county x type x tier
+045,condo,bottom,0.8318,29469,statewide type
+045,condo,mid,0.8318,29469,statewide type
+045,condo,top,0.8318,29469,statewide type
+045,mobile,bottom,0.8276,7111,statewide type
+045,mobile,mid,0.8276,7111,statewide type
+045,mobile,top,0.8276,7111,statewide type
+047,sfr,bottom,0.8161,31,county x type
+047,sfr,mid,0.8161,31,county x type
+047,sfr,top,0.8161,31,county x type
+047,condo,bottom,0.8318,29469,statewide type
+047,condo,mid,0.8318,29469,statewide type
+047,condo,top,0.8318,29469,statewide type
+047,mobile,bottom,0.8276,7111,statewide type
+047,mobile,mid,0.8276,7111,statewide type
+047,mobile,top,0.8276,7111,statewide type
+049,sfr,bottom,0.8606,75,county x type
+049,sfr,mid,0.8606,75,county x type
+049,sfr,top,0.8606,75,county x type
+049,condo,bottom,0.8318,29469,statewide type
+049,condo,mid,0.8318,29469,statewide type
+049,condo,top,0.8318,29469,statewide type
+049,mobile,bottom,0.8276,7111,statewide type
+049,mobile,mid,0.8276,7111,statewide type
+049,mobile,top,0.8276,7111,statewide type
+051,sfr,bottom,0.8309,56,county x type x tier
+051,sfr,mid,0.8266,74,county x type x tier
+051,sfr,top,0.816,77,county x type x tier
+051,condo,bottom,0.8318,29469,statewide type
+051,condo,mid,0.8318,29469,statewide type
+051,condo,top,0.8318,29469,statewide type
+051,mobile,bottom,0.8154,39,county x type
+051,mobile,mid,0.8154,39,county x type
+051,mobile,top,0.8154,39,county x type
+053,sfr,bottom,0.8468,555,county x type x tier
+053,sfr,mid,0.8337,805,county x type x tier
+053,sfr,top,0.8499,816,county x type x tier
+053,condo,bottom,0.8492,30,county x type
+053,condo,mid,0.8492,30,county x type
+053,condo,top,0.8492,30,county x type
+053,mobile,bottom,0.8637,243,county x type x tier
+053,mobile,mid,0.8371,273,county x type
+053,mobile,top,0.8371,273,county x type
+055,sfr,bottom,0.7964,178,county x type x tier
+055,sfr,mid,0.7982,275,county x type x tier
+055,sfr,top,0.7949,281,county x type x tier
+055,condo,bottom,0.8032,33,county x type
+055,condo,mid,0.8032,33,county x type
+055,condo,top,0.8032,33,county x type
+055,mobile,bottom,0.7907,83,county x type x tier
+055,mobile,mid,0.7578,90,county x type
+055,mobile,top,0.7578,90,county x type
+057,sfr,bottom,0.8619,318,county x type x tier
+057,sfr,mid,0.7949,440,county x type x tier
+057,sfr,top,0.7885,445,county x type x tier
+057,condo,bottom,0.7819,95,county x type x tier
+057,condo,mid,0.7793,109,county x type
+057,condo,top,0.7793,109,county x type
+057,mobile,bottom,0.8673,39,county x type x tier
+057,mobile,mid,0.8204,44,county x type
+057,mobile,top,0.8204,44,county x type
+061,sfr,bottom,0.9701,138,county x type x tier
+061,sfr,mid,0.8928,163,county x type x tier
+061,sfr,top,0.8592,151,county x type x tier
+061,condo,bottom,0.8459,57,county x type
+061,condo,mid,0.8459,57,county x type
+061,condo,top,0.8459,57,county x type
+061,mobile,bottom,0.8276,7111,statewide type
+061,mobile,mid,0.8276,7111,statewide type
+061,mobile,top,0.8276,7111,statewide type
+063,sfr,bottom,0.8302,45,county x type x tier
+063,sfr,mid,0.7404,45,county x type x tier
+063,sfr,top,0.823,60,county x type x tier
+063,condo,bottom,0.8318,29469,statewide type
+063,condo,mid,0.8318,29469,statewide type
+063,condo,top,0.8318,29469,statewide type
+063,mobile,bottom,0.7611,42,county x type
+063,mobile,mid,0.7611,42,county x type
+063,mobile,top,0.7611,42,county x type
+065,sfr,bottom,0.8371,131048,statewide type
+065,sfr,mid,0.8371,131048,statewide type
+065,sfr,top,0.8371,131048,statewide type
+065,condo,bottom,0.8318,29469,statewide type
+065,condo,mid,0.8318,29469,statewide type
+065,condo,top,0.8318,29469,statewide type
+065,mobile,bottom,0.8276,7111,statewide type
+065,mobile,mid,0.8276,7111,statewide type
+065,mobile,top,0.8276,7111,statewide type
+067,sfr,bottom,0.8371,131048,statewide type
+067,sfr,mid,0.8371,131048,statewide type
+067,sfr,top,0.8371,131048,statewide type
+067,condo,bottom,0.8318,29469,statewide type
+067,condo,mid,0.8318,29469,statewide type
+067,condo,top,0.8318,29469,statewide type
+067,mobile,bottom,0.8276,7111,statewide type
+067,mobile,mid,0.8276,7111,statewide type
+067,mobile,top,0.8276,7111,statewide type
+069,sfr,bottom,0.8946,631,county x type x tier
+069,sfr,mid,0.8673,1025,county x type x tier
+069,sfr,top,0.8344,1050,county x type x tier
+069,condo,bottom,0.8319,135,county x type x tier
+069,condo,mid,0.8353,150,county x type
+069,condo,top,0.8353,150,county x type
+069,mobile,bottom,0.8752,300,county x type x tier
+069,mobile,mid,0.7726,32,county x type x tier
+069,mobile,top,0.852,340,county x type
+071,sfr,bottom,0.8759,2184,county x type x tier
+071,sfr,mid,0.8342,3194,county x type x tier
+071,sfr,top,0.8145,3221,county x type x tier
+071,condo,bottom,0.8545,1131,county x type x tier
+071,condo,mid,0.7901,344,county x type x tier
+071,condo,top,0.7885,327,county x type x tier
+071,mobile,bottom,0.8502,241,county x type x tier
+071,mobile,mid,0.8522,265,county x type
+071,mobile,top,0.8522,265,county x type
+073,sfr,bottom,0.8517,402,county x type x tier
+073,sfr,mid,0.8523,540,county x type x tier
+073,sfr,top,0.8424,548,county x type x tier
+073,condo,bottom,0.8033,99,county x type x tier
+073,condo,mid,0.8067,137,county x type
+073,condo,top,0.8067,137,county x type
+073,mobile,bottom,0.6154,64,county x type x tier
+073,mobile,mid,0.598,68,county x type
+073,mobile,top,0.598,68,county x type
+075,sfr,bottom,1.0232,36,county x type x tier
+075,sfr,mid,0.8235,48,county x type x tier
+075,sfr,top,0.8067,103,county x type x tier
+075,condo,bottom,0.8318,29469,statewide type
+075,condo,mid,0.8318,29469,statewide type
+075,condo,top,0.8318,29469,statewide type
+075,mobile,bottom,1.0301,85,county x type x tier
+075,mobile,mid,0.7722,76,county x type x tier
+075,mobile,top,0.8229,180,county x type
+077,sfr,bottom,0.8371,131048,statewide type
+077,sfr,mid,0.8371,131048,statewide type
+077,sfr,top,0.8371,131048,statewide type
+077,condo,bottom,0.8318,29469,statewide type
+077,condo,mid,0.8318,29469,statewide type
+077,condo,top,0.8318,29469,statewide type
+077,mobile,bottom,0.8276,7111,statewide type
+077,mobile,mid,0.8276,7111,statewide type
+077,mobile,top,0.8276,7111,statewide type
+079,sfr,bottom,0.7712,34,county x type
+079,sfr,mid,0.7712,34,county x type
+079,sfr,top,0.7712,34,county x type
+079,condo,bottom,0.8318,29469,statewide type
+079,condo,mid,0.8318,29469,statewide type
+079,condo,top,0.8318,29469,statewide type
+079,mobile,bottom,0.8276,7111,statewide type
+079,mobile,mid,0.8276,7111,statewide type
+079,mobile,top,0.8276,7111,statewide type
+081,sfr,bottom,0.8744,1266,county x type x tier
+081,sfr,mid,0.8829,1911,county x type x tier
+081,sfr,top,0.8167,1961,county x type x tier
+081,condo,bottom,0.8559,746,county x type x tier
+081,condo,mid,0.7994,165,county x type x tier
+081,condo,top,0.7727,121,county x type x tier
+081,mobile,bottom,0.8609,71,county x type x tier
+081,mobile,mid,0.8551,78,county x type
+081,mobile,top,0.8551,78,county x type
+083,sfr,bottom,0.8612,1150,county x type x tier
+083,sfr,mid,0.8846,1497,county x type x tier
+083,sfr,top,0.8588,1524,county x type x tier
+083,condo,bottom,0.8816,47,county x type x tier
+083,condo,mid,0.8677,52,county x type
+083,condo,top,0.8677,52,county x type
+083,mobile,bottom,0.8651,349,county x type x tier
+083,mobile,mid,0.7807,43,county x type x tier
+083,mobile,top,0.8361,413,county x type
+085,sfr,bottom,0.849,264,county x type x tier
+085,sfr,mid,0.8425,563,county x type x tier
+085,sfr,top,0.8299,593,county x type x tier
+085,condo,bottom,0.8489,296,county x type x tier
+085,condo,mid,0.8309,47,county x type x tier
+085,condo,top,0.8447,359,county x type
+085,mobile,bottom,0.81,51,county x type x tier
+085,mobile,mid,0.8088,52,county x type
+085,mobile,top,0.8088,52,county x type
+086,sfr,bottom,0.8562,486,county x type x tier
+086,sfr,mid,0.7829,2556,county x type x tier
+086,sfr,top,0.7828,2671,county x type x tier
+086,condo,bottom,0.7945,4042,county x type x tier
+086,condo,mid,0.7814,1972,county x type x tier
+086,condo,top,0.7801,1857,county x type x tier
+086,mobile,bottom,0.8276,7111,statewide type
+086,mobile,mid,0.8276,7111,statewide type
+086,mobile,top,0.8276,7111,statewide type
+087,sfr,bottom,0.8301,132,county x type x tier
+087,sfr,mid,0.8227,202,county x type x tier
+087,sfr,top,0.8147,216,county x type x tier
+087,condo,bottom,0.8275,63,county x type x tier
+087,condo,mid,0.8227,35,county x type x tier
+087,condo,top,0.826,125,county x type
+087,mobile,bottom,0.827,50,county x type x tier
+087,mobile,mid,0.827,58,county x type
+087,mobile,top,0.827,58,county x type
+089,sfr,bottom,0.8666,189,county x type x tier
+089,sfr,mid,0.8711,269,county x type x tier
+089,sfr,top,0.8491,244,county x type x tier
+089,condo,bottom,0.81,107,county x type
+089,condo,mid,0.81,107,county x type
+089,condo,top,0.8043,52,county x type x tier
+089,mobile,bottom,0.8549,78,county x type x tier
+089,mobile,mid,0.8549,78,county x type
+089,mobile,top,0.8549,78,county x type
+091,sfr,bottom,0.7992,581,county x type x tier
+091,sfr,mid,0.795,640,county x type x tier
+091,sfr,top,0.7942,538,county x type x tier
+091,condo,bottom,0.8192,84,county x type x tier
+091,condo,mid,0.8198,58,county x type x tier
+091,condo,top,0.8027,161,county x type x tier
+091,mobile,bottom,0.7728,34,county x type x tier
+091,mobile,mid,0.7701,35,county x type
+091,mobile,top,0.7701,35,county x type
+093,sfr,bottom,0.8384,180,county x type
+093,sfr,mid,0.8341,67,county x type x tier
+093,sfr,top,0.8235,93,county x type x tier
+093,condo,bottom,0.8318,29469,statewide type
+093,condo,mid,0.8318,29469,statewide type
+093,condo,top,0.8318,29469,statewide type
+093,mobile,bottom,0.8233,79,county x type x tier
+093,mobile,mid,0.7239,32,county x type x tier
+093,mobile,top,0.7708,117,county x type
+095,sfr,bottom,0.8682,1948,county x type x tier
+095,sfr,mid,0.8695,3007,county x type x tier
+095,sfr,top,0.8504,3032,county x type x tier
+095,condo,bottom,0.8607,1069,county x type x tier
+095,condo,mid,0.838,83,county x type x tier
+095,condo,top,0.8489,62,county x type x tier
+095,mobile,bottom,0.8547,80,county x type x tier
+095,mobile,mid,0.8495,89,county x type
+095,mobile,top,0.8495,89,county x type
+097,sfr,bottom,0.8386,638,county x type x tier
+097,sfr,mid,0.8309,705,county x type x tier
+097,sfr,top,0.8116,703,county x type x tier
+097,condo,bottom,0.8744,41,county x type x tier
+097,condo,mid,0.8654,44,county x type
+097,condo,top,0.8654,44,county x type
+097,mobile,bottom,0.8276,7111,statewide type
+097,mobile,mid,0.8276,7111,statewide type
+097,mobile,top,0.8276,7111,statewide type
+099,sfr,bottom,0.8633,426,county x type x tier
+099,sfr,mid,0.8376,448,county x type x tier
+099,sfr,top,0.8069,448,county x type x tier
+099,condo,bottom,0.8318,29469,statewide type
+099,condo,mid,0.8318,29469,statewide type
+099,condo,top,0.8318,29469,statewide type
+099,mobile,bottom,0.8276,7111,statewide type
+099,mobile,mid,0.8276,7111,statewide type
+099,mobile,top,0.8276,7111,statewide type
+101,sfr,bottom,0.8798,1732,county x type x tier
+101,sfr,mid,0.8494,2551,county x type x tier
+101,sfr,top,0.8444,2607,county x type x tier
+101,condo,bottom,0.9007,317,county x type x tier
+101,condo,mid,0.8904,331,county x type
+101,condo,top,0.8904,331,county x type
+101,mobile,bottom,0.7884,563,county x type x tier
+101,mobile,mid,0.5501,47,county x type x tier
+101,mobile,top,0.7672,614,county x type
+103,sfr,bottom,0.8843,917,county x type x tier
+103,sfr,mid,0.8528,2258,county x type x tier
+103,sfr,top,0.834,2220,county x type x tier
+103,condo,bottom,0.8352,1371,county x type x tier
+103,condo,mid,0.827,325,county x type x tier
+103,condo,top,0.8252,374,county x type x tier
+103,mobile,bottom,0.8713,306,county x type x tier
+103,mobile,mid,0.8669,317,county x type
+103,mobile,top,0.8669,317,county x type
+105,sfr,bottom,0.8324,2049,county x type x tier
+105,sfr,mid,0.8027,2786,county x type x tier
+105,sfr,top,0.7848,2817,county x type x tier
+105,condo,bottom,0.8236,194,county x type x tier
+105,condo,mid,0.8164,214,county x type
+105,condo,top,0.8164,214,county x type
+105,mobile,bottom,0.8232,602,county x type x tier
+105,mobile,mid,0.7725,46,county x type x tier
+105,mobile,top,0.8154,669,county x type
+107,sfr,bottom,0.9018,59,county x type x tier
+107,sfr,mid,0.7071,91,county x type x tier
+107,sfr,top,0.7966,168,county x type x tier
+107,condo,bottom,0.8318,29469,statewide type
+107,condo,mid,0.8318,29469,statewide type
+107,condo,top,0.8318,29469,statewide type
+107,mobile,bottom,0.9773,150,county x type x tier
+107,mobile,mid,0.785,115,county x type x tier
+107,mobile,top,0.7621,38,county x type x tier
+109,sfr,bottom,0.8454,1205,county x type x tier
+109,sfr,mid,0.8422,1476,county x type x tier
+109,sfr,top,0.832,1507,county x type x tier
+109,condo,bottom,0.8213,268,county x type x tier
+109,condo,mid,0.8098,91,county x type x tier
+109,condo,top,0.8123,63,county x type x tier
+109,mobile,bottom,0.8417,100,county x type x tier
+109,mobile,mid,0.8377,107,county x type
+109,mobile,top,0.8377,107,county x type
+111,sfr,bottom,0.8596,1229,county x type x tier
+111,sfr,mid,0.8427,1442,county x type x tier
+111,sfr,top,0.8152,1463,county x type x tier
+111,condo,bottom,0.8194,210,county x type x tier
+111,condo,mid,0.8178,74,county x type x tier
+111,condo,top,0.7963,59,county x type x tier
+111,mobile,bottom,0.8745,85,county x type x tier
+111,mobile,mid,0.874,93,county x type
+111,mobile,top,0.874,93,county x type
+113,sfr,bottom,0.8007,489,county x type x tier
+113,sfr,mid,0.7932,556,county x type x tier
+113,sfr,top,0.7732,540,county x type x tier
+113,condo,bottom,0.807,37,county x type
+113,condo,mid,0.807,37,county x type
+113,condo,top,0.807,37,county x type
+113,mobile,bottom,0.7325,61,county x type x tier
+113,mobile,mid,0.7325,67,county x type
+113,mobile,top,0.7325,67,county x type
+115,sfr,bottom,0.791,1086,county x type x tier
+115,sfr,mid,0.7863,1827,county x type x tier
+115,sfr,top,0.773,1798,county x type x tier
+115,condo,bottom,0.8139,714,county x type x tier
+115,condo,mid,0.8,220,county x type x tier
+115,condo,top,0.8016,252,county x type x tier
+115,mobile,bottom,0.7917,251,county x type x tier
+115,mobile,mid,0.7919,254,county x type
+115,mobile,top,0.7919,254,county x type
+117,sfr,bottom,0.9346,67,county x type x tier
+117,sfr,mid,0.8991,103,county x type x tier
+117,sfr,top,0.8529,107,county x type x tier
+117,condo,bottom,0.9131,31,county x type x tier
+117,condo,mid,0.8752,36,county x type
+117,condo,top,0.8752,36,county x type
+117,mobile,bottom,0.8276,7111,statewide type
+117,mobile,mid,0.8276,7111,statewide type
+117,mobile,top,0.8276,7111,statewide type
+119,sfr,bottom,0.8104,1254,county x type x tier
+119,sfr,mid,0.8076,1370,county x type x tier
+119,sfr,top,0.7835,1371,county x type x tier
+119,condo,bottom,0.8318,29469,statewide type
+119,condo,mid,0.8318,29469,statewide type
+119,condo,top,0.8318,29469,statewide type
+119,mobile,bottom,0.4835,108,county x type x tier
+119,mobile,mid,0.4857,111,county x type
+119,mobile,top,0.4857,111,county x type
+121,sfr,bottom,0.8003,101,county x type
+121,sfr,mid,0.7867,30,county x type x tier
+121,sfr,top,0.773,51,county x type x tier
+121,condo,bottom,0.8318,29469,statewide type
+121,condo,mid,0.8318,29469,statewide type
+121,condo,top,0.8318,29469,statewide type
+121,mobile,bottom,0.8744,54,county x type x tier
+121,mobile,mid,0.7566,43,county x type x tier
+121,mobile,top,0.8005,119,county x type
+125,sfr,bottom,0.8371,131048,statewide type
+125,sfr,mid,0.8371,131048,statewide type
+125,sfr,top,0.8371,131048,statewide type
+125,condo,bottom,0.8318,29469,statewide type
+125,condo,mid,0.8318,29469,statewide type
+125,condo,top,0.8318,29469,statewide type
+125,mobile,bottom,0.8276,7111,statewide type
+125,mobile,mid,0.8276,7111,statewide type
+125,mobile,top,0.8276,7111,statewide type
+127,sfr,bottom,0.8527,1275,county x type x tier
+127,sfr,mid,0.8567,1597,county x type x tier
+127,sfr,top,0.845,1512,county x type x tier
+127,condo,bottom,0.8189,343,county x type x tier
+127,condo,mid,0.8235,109,county x type x tier
+127,condo,top,0.8107,202,county x type x tier
+127,mobile,bottom,0.8512,100,county x type x tier
+127,mobile,mid,0.8492,114,county x type
+127,mobile,top,0.8492,114,county x type
+129,sfr,bottom,0.8427,93,county x type x tier
+129,sfr,mid,0.8234,121,county x type x tier
+129,sfr,top,0.8178,132,county x type x tier
+129,condo,bottom,0.8318,29469,statewide type
+129,condo,mid,0.8318,29469,statewide type
+129,condo,top,0.8318,29469,statewide type
+129,mobile,bottom,0.7436,38,county x type x tier
+129,mobile,mid,0.6734,44,county x type
+129,mobile,top,0.6734,44,county x type
+131,sfr,bottom,0.7957,503,county x type x tier
+131,sfr,mid,0.803,471,county x type x tier
+131,sfr,top,0.7842,591,county x type x tier
+131,condo,bottom,0.801,88,county x type x tier
+131,condo,mid,0.7852,207,county x type x tier
+131,condo,top,0.7995,87,county x type x tier
+131,mobile,bottom,0.6286,88,county x type x tier
+131,mobile,mid,0.6286,88,county x type
+131,mobile,top,0.6286,88,county x type
+133,sfr,bottom,0.804,39,county x type x tier
+133,sfr,mid,0.8001,50,county x type x tier
+133,sfr,top,0.7734,50,county x type x tier
+133,condo,bottom,0.8318,29469,statewide type
+133,condo,mid,0.8318,29469,statewide type
+133,condo,top,0.8318,29469,statewide type
+133,mobile,bottom,0.8276,7111,statewide type
+133,mobile,mid,0.8276,7111,statewide type
+133,mobile,top,0.8276,7111,statewide type
+206,sfr,bottom,0.849,40,county x type
+206,sfr,mid,0.849,40,county x type
+206,sfr,top,0.849,40,county x type
+206,condo,bottom,0.8318,29469,statewide type
+206,condo,mid,0.8318,29469,statewide type
+206,condo,top,0.8318,29469,statewide type
+206,mobile,bottom,0.8276,7111,statewide type
+206,mobile,mid,0.8276,7111,statewide type
+206,mobile,top,0.8276,7111,statewide type
+212,sfr,bottom,0.8064,90,county x type
+212,sfr,mid,0.8064,90,county x type
+212,sfr,top,0.7544,39,county x type x tier
+212,condo,bottom,0.8318,29469,statewide type
+212,condo,mid,0.8318,29469,statewide type
+212,condo,top,0.8318,29469,statewide type
+212,mobile,bottom,0.8204,53,county x type
+212,mobile,mid,0.8204,53,county x type
+212,mobile,top,0.8204,53,county x type

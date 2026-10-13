@@ -113,6 +113,19 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
   - **$200k+ (~150k households, 43%) — hard to explain** with standard exemptions. Possible: veterans' total-disability exemption, the local-option long-term low-income senior exemption, or misreporting.
 - **Plan (Planned):** once the parcel roll is in, compare the PUMS $0 share by value band with the share of homestead parcels with $0 taxable value. Treat the excess as misreporting and impute tax for it; keep the rest as real. Mobile homes on rented lots need their own treatment (relevant to renter/landlord incidence too).
 
+### Home values fell 2024 → 2026, very unevenly
+- **Finding (Zillow ZHVI, 2024 avg → Dec 2025):** median county −4%; condos −12% (to −25% in Charlotte); bottom tier −6% vs top −3%; Southwest Florida worst (Charlotte −17%, Lee −13%). Under Save Our Homes, assessed values keep rising by the cap while below market, so long-time owners' bills rose ~5.7% while values fell — but recent buyers' assessments fall with the market. The provisional `TAXAMT` aging is only right for the first group.
+- **Solution (Solved):** age values by county × type × tier (`scripts/value_factors.py`, `add_aged_values`). Zillow gives type and tier as separate series, so factor = type growth × tier growth ÷ middle-tier growth.
+
+### Just value is ~83% of market value
+- **Finding:** January 2026 just value ÷ qualified 2025 sale price has a median of 0.83 (single-family 0.83, condo 0.82, mobile 0.82; 377k sales). Fits the ~15% cost-of-sale adjustment plus lag. PUMS reports market value, so it must be converted before comparing with the roll or applying tax rules.
+- **Note:** the NAL only records sales in the roll year and the year before (here 2025 and Jan–Sep 2026). 2024 sales need the 2025 roll (by request).
+
+### PUMS values vs the roll after aging
+- **Finding:** aged PUMS just value is ~8% below roll homestead medians for single-family and condo statewide; ~20% below in Miami-Dade, Broward, Palm Beach, Collier; slightly above in Duval. Possible causes: owners' reports, non-homestead owners in PUMS (~1M more owners than homesteads), Zillow's decline vs assessors', or the condo mapping (`BLD` 4–9).
+- **Mobile homes:** PUMS has ~518k mobile-home owners; the roll has ~232k homestead mobile-home parcels. Most PUMS mobile homes are on rented lots and aren't real-property parcels, so they can't be compared with (or calibrated to) the roll.
+- **Solution (Open):** don't patch values here; the linking/calibration step aligns PUMS values to the roll by PUMA × type × tier. Mobile homes on rented lots need separate treatment.
+
 ### Getting the parcel tax roll (NAL files)
 - **Source:** Florida DOR Data Portal → Tax Roll Data Files → NAL. One zip per county (67 counties).
 - **Roll stages:** preliminary (`2026P`, ~July) and final (`2026F`, certified county by county from October). Each county appears in only one folder — when its final roll is certified, it moves from `2026P` to `2026F`. On 2026-10-13: 29 final, 38 preliminary.

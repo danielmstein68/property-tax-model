@@ -25,6 +25,58 @@ def load_factors(to_year: int) -> dict[str, float]:
     return dict(zip(f["variable"], f["factor"]))
 
 
+def home_type(bld: pd.Series) -> pd.Series:
+    """PUMS building type (BLD) -> sfr / condo / mobile for owner-occupied homes.
+
+    BLD 1 mobile home, 10 boat/RV/van -> mobile; 2-3 one-family detached/attached -> sfr;
+    4-9 buildings with 2+ units -> condo (owners there are condo or co-op owners).
+    """
+    t = pd.Series("condo", index=bld.index)
+    t[bld.isin([2, 3])] = "sfr"
+    t[bld.isin([1, 10])] = "mobile"
+    return t
+
+
+def _weighted_tercile(values: pd.Series, weights: pd.Series) -> pd.Series:
+    order = values.sort_values().index
+    cum = weights.loc[order].cumsum() / weights.sum()
+    tier = pd.cut(cum, [0, 1 / 3, 2 / 3, 1.0001], labels=["bottom", "mid", "top"])
+    return tier.reindex(values.index).astype(str)
+
+
+def add_aged_values(households: pd.DataFrame, base_year: int) -> pd.DataFrame:
+    """Age owners' home values to Jan 1 of the base year, by county x type x tier.
+
+    Adds:
+      county_fips, home_type, value_tier  (tier = weighted third of VALP within county)
+      valp_market_aged  market value at Jan 1 (VALP x Zillow-based growth)
+      valp_jv_aged      Florida just value at Jan 1 (market x just/market ratio from 2025 sales)
+    Inputs: inputs/value_growth_fl_<base>.csv and inputs/just_value_ratio_fl_<base>.csv
+    (built by scripts/value_factors.py). Florida only for now.
+    """
+    from ptm.geo import puma_main_county
+
+    growth = pd.read_csv(ROOT / "inputs" / f"value_growth_fl_{base_year}.csv", dtype={"county_fips": str})
+    jvr = pd.read_csv(ROOT / "inputs" / f"just_value_ratio_fl_{base_year}.csv", dtype={"county_fips": str})
+
+    h = households.copy()
+    puma = h["PUMA"].astype(str).str.zfill(5)
+    h["county_fips"] = puma.map(puma_main_county("12").set_index("PUMA")["county_fips"])
+    owner = h["VALP"].notna()
+    h.loc[owner, "home_type"] = home_type(h.loc[owner, "BLD"])
+    for _, idx in h[owner].groupby("county_fips").groups.items():
+        h.loc[idx, "value_tier"] = _weighted_tercile(h.loc[idx, "VALP"], h.loc[idx, "WGTP"])
+
+    keys = ["county_fips", "home_type", "value_tier"]
+    g = growth.rename(columns={"type": "home_type", "tier": "value_tier", "factor": "value_growth"})
+    r = jvr.rename(columns={"type": "home_type", "tier": "value_tier"})
+    h = h.merge(g[keys + ["value_growth"]], on=keys, how="left")
+    h = h.merge(r[keys + ["jv_to_market"]], on=keys, how="left")
+    h["valp_market_aged"] = h["VALP"] * h["value_growth"]
+    h["valp_jv_aged"] = h["valp_market_aged"] * h["jv_to_market"]
+    return h
+
+
 def add_aged_taxamt(households: pd.DataFrame, to_year: int) -> pd.DataFrame:
     """PROVISIONAL: grow owners' reported property tax by the Save Our Homes caps.
 

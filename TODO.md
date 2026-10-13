@@ -5,8 +5,9 @@ Steps we're working through one at a time. Each gets discussed before it's built
 ## In progress
 - [ ] **Load Florida PUMS** (2024 1-year housing file) — `ptm/load.py`
 
-## In progress (running)
-- [ ] **Florida parcel rolls, all 67 counties** — `scripts/fl_parcels.py`; checks in `data/processed/fl_nal_2026/_checks.csv`
+## Done
+- [x] **Florida parcel rolls, all 67 counties** (2026-10-13; 29 final, 38 preliminary) — `scripts/fl_parcels.py`; checks in `data/processed/fl_nal_2026/_checks.csv`. 9.86M residential parcels, 5.21M homesteads, 717 MB processed. Rerun later for final rolls.
+  - [ ] Look into Escambia: 41 parcels with missing just value.
 
 ## Next
 - [ ] **Link PUMS and parcel data** (after aging PUMS to 2026). No record-level join is possible, so link by groups:
@@ -22,7 +23,12 @@ Steps we're working through one at a time. Each gets discussed before it's built
 - [ ] **Age to 2026.** Two target dates:
   - **values → Jan 1, 2026** (Florida assessment date; matches the 2026 roll);
   - **incomes and rents → calendar-year 2026 average** (income during the year the 2026 bill is paid; PUMS income is effectively calendar-2024 income).
-  - **Home values, uneven by area × type × price tier.** Best: 2024 vs 2026 roll values for the same parcels (request the 2024 final roll from DOR). Until then: FHFA metro index for single-family; condo and mobile-home factors from sales in the 2026 roll.
+  - [x] **Home values, by county × type × tier** — `add_aged_values` in `ptm/aging.py`; inputs from `scripts/value_factors.py`:
+    - Step A, market growth 2024 avg → Dec 2025 (Zillow ZHVI by county; single-family/condo × bottom/mid/top tier; mobile homes = bottom tier) → `inputs/value_growth_fl_2026.csv`. Median owner market value $388k → $361k (single-family −3%, condo −17.5%, mobile −8.7%).
+    - Step B, market → just value: median just value / H2-2025 qualified sale price ≈ 0.83, by county × type × tier (fallbacks if < 30 sales) → `inputs/just_value_ratio_fl_2026.csv`.
+    - Check vs roll: PUMS aged just value is ~8% below roll homestead medians for single-family and condos; ~20% below in South Florida, slightly above in Duval. Resolve in linking/calibration (see CHALLENGES).
+    - [ ] Cross-check Zillow against FHFA metro index.
+    - [ ] Upgrade Step A with 2024 sales from the 2025 roll (by request) or 2024 vs 2026 roll values.
   - **New development:** count homes built 2024–25 by PUMA from the roll (`ACT_YR_BLT`); raise weights of PUMS households in recently built homes (`YRBLT` 2020–24) in the same PUMA to match. Check how far weights move. Repeat each projection year.
   - [x] **Incomes by type** — `ptm/aging.py`, factors from `scripts/aging_factors.py` → `inputs/aging_factors_2026.csv`. Wages/self-employment +9.8% (QCEW FL private avg weekly wage, Q1 2026 vs Q1 2024), Social Security/SSI +5.4% (COLAs), other +6.0% (CPI-U). Rerun the script when later 2026 QCEW quarters are published.
   - [x] **Rents** — `add_aged_rent` in `ptm/aging.py`: contract rent by CPI rent area (Miami +6.6%, Tampa +6.3%, rest of FL via South region +5.0%); utilities part of gross rent by CPI-U. PUMA → main county → area in `ptm/geo.py`. Revisit with pass-through.

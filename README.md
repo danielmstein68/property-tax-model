@@ -46,7 +46,9 @@ Requires Python 3.12 and git.
 - **ACS PUMS**, U.S. Census Bureau: https://www.census.gov/programs-surveys/acs/microdata.html
 - PUMS data dictionary: https://www2.census.gov/programs-surveys/acs/tech_docs/pums/data_dict/
 
-Further sources (house price indexes, state parcel tax rolls, published levies) will be listed here as they're added.
+- **Florida parcel tax rolls (NAL)**, Florida Department of Revenue: https://floridarevenue.com/property/Pages/DataPortal_RequestAssessmentRollGISData.aspx — `scripts/fl_parcels.py`
+- **Zillow Home Value Index (ZHVI)**, county series: Zillow Research, https://www.zillow.com/research/data/ — `scripts/value_factors.py`. Home value aging uses Zillow data; attribution required.
+- **BLS** (QCEW wages, CPI) and **SSA** (COLAs) — `scripts/aging_factors.py`
 
 ## Key assumptions so far
 
