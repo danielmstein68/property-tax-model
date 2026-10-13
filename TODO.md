@@ -11,6 +11,16 @@ Steps we're working through one at a time. Each gets discussed before it's built
 
 - [x] **2026 baseline file** — `ptm/baseline.py`, `scripts/build_baseline.py` → `data/processed/baseline_fl_2026.parquet` (+ `.json` with build metadata, + new-development report). 87,327 records, 9,386,218 weighted households. Aged and reweighted; not yet linked or calibrated.
 
+## Where we left off (2026-10-13)
+Finishing the baseline = linking to parcels + calibration. Agreed order; decisions pending marked **?**:
+1. **Homestead status** — 6.35M PUMS owners vs 5.21M roll homesteads. **?** Assign non-claimers randomly within PUMA × value band, or tilted toward recent movers / higher values. Either way match roll counts by PUMA.
+2. **Mobile homes on rented lots** — ~518k PUMS vs ~232k homestead parcels. **?** Treat the rest as no real-estate tax (tax is in lot rent) and exclude from parcel comparisons.
+3. **Assessment gap by donor draw** from similar nearby homesteads (replaces move-in-year estimate; county correlation only 0.40 now).
+4. **Top-coded values** — Pareto tail fitted to roll homesteads (Method B).
+5. **$0-tax owners** — compare with roll $0-taxable share by value band; impute only the excess.
+6. **Calibrate values** to the roll by PUMA × type. **?** Quantile mapping vs reweighting.
+7. **Tax rates** — 2026 county millage (DOR); replace school share 0.37; calibrate tax to `TAXAMT` and levies.
+
 ## Next
 - [ ] **Link PUMS and parcel data** (after aging PUMS to 2026). No record-level join is possible, so link by groups:
   1. Map parcels to PUMAs (`CENSUS_BK` → tract → PUMA).
