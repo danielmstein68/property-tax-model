@@ -38,6 +38,7 @@ Requires Python 3.12 and git.
 | `scripts/` | Data download scripts. |
 | `data/` | Downloaded and processed data (git-ignored). |
 | `TODO.md` | Steps done, in progress and planned; deferred decisions. |
+| `LIMITATIONS.md` | What the model can't do or does only approximately. **Read before citing results.** |
 | `CHALLENGES.md` | Every data/modelling problem met so far, by state, and how it was solved. **Read before adding a state.** |
 
 ## Data sources

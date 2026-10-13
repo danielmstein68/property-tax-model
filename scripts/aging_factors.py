@@ -1,0 +1,98 @@
+"""Compute income aging factors (survey year -> base year) and save them as a CSV.
+
+Usage:
+    python scripts/aging_factors.py --from-year 2024 --to-year 2026
+
+Writes inputs/aging_factors_<to-year>.csv with one row per income type:
+factor, measure, source.
+
+Method: compare the same calendar months in both years (the months published
+so far in the target year), which avoids seasonal bias and handles a target
+year that isn't over yet. Months missing in either year are skipped
+(e.g. October 2025 CPI was never published because of the government shutdown).
+
+Measures:
+  - wages, self-employment: Florida average weekly wage, private (BLS QCEW). QCEW counts every
+    job covered by unemployment insurance, so it's more reliable for a state than the CES
+    survey's average hourly earnings, which gave a higher +12.1% for 2024->2026 (sample noise
+    and job-mix effects). Quarterly and ~6 months behind: compares the latest published
+    quarter of the target year with the same quarter of the survey year.
+  - Social Security, SSI: actual cost-of-living adjustments (SSA)
+  - retirement, interest/dividends/rent, public assistance, other: CPI-U, US city average (BLS)
+"""
+
+import argparse
+import csv
+import json
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+BLS = "https://api.bls.gov/publicAPI/v1/timeseries/data/{sid}?startyear={a}&endyear={b}"
+FL_QCEW_PRIVATE_WEEKLY_WAGE = "ENU1200040510"
+CPI_U = "CUUR0000SA0"
+
+# COLA paid in each year (announced the previous October). Source: SSA,
+# https://www.ssa.gov/cola/ and https://blog.ssa.gov/social-security-announces-benefit-increase-for-2026
+SS_COLA = {2025: 0.025, 2026: 0.028}
+
+
+def bls_monthly(series_id: str, a: int, b: int) -> dict[tuple[int, int], float]:
+    with urllib.request.urlopen(BLS.format(sid=series_id, a=a, b=b)) as r:
+        j = json.load(r)
+    out = {}
+    for x in j["Results"]["series"][0]["data"]:
+        p = x["period"]
+        if p[0] in "MQ" and p not in ("M13", "Q05") and x["value"] not in ("-", ""):
+            out[(int(x["year"]), int(p[1:]))] = float(x["value"])  # month or quarter number
+    return out
+
+
+def same_period_ratio(series: dict, y0: int, y1: int, unit: str = "months") -> tuple[float, str]:
+    periods = sorted(m for (y, m) in series if y == y1 and (y0, m) in series)
+    v0 = sum(series[(y0, m)] for m in periods) / len(periods)
+    v1 = sum(series[(y1, m)] for m in periods) / len(periods)
+    return v1 / v0, f"{unit} {periods[0]}-{periods[-1]} of {y1} vs same {unit} of {y0}"
+
+
+def main() -> None:
+    p = argparse.ArgumentParser()
+    p.add_argument("--from-year", type=int, default=2024)
+    p.add_argument("--to-year", type=int, default=2026)
+    args = p.parse_args()
+    y0, y1 = args.from_year, args.to_year
+
+    wage, wage_note = same_period_ratio(bls_monthly(FL_QCEW_PRIVATE_WEEKLY_WAGE, y0, y1), y0, y1, "quarters")
+    cpi, cpi_note = same_period_ratio(bls_monthly(CPI_U, y0, y1), y0, y1)
+    cola = 1.0
+    for y in range(y0 + 1, y1 + 1):
+        cola *= 1 + SS_COLA[y]
+
+    wage_src = f"BLS QCEW {FL_QCEW_PRIVATE_WEEKLY_WAGE} Florida avg weekly wage, private; {wage_note}"
+    cpi_src = f"BLS {CPI_U} CPI-U US city avg; {cpi_note}"
+    cola_src = "SSA COLAs " + ", ".join(f"{y}: {SS_COLA[y]:.1%}" for y in range(y0 + 1, y1 + 1))
+    rows = [
+        ("WAGP", "wages and salaries", wage, wage_src),
+        ("SEMP", "self-employment income", wage, wage_src),
+        ("SSP", "Social Security", cola, cola_src),
+        ("SSIP", "Supplemental Security Income", cola, cola_src),
+        ("RETP", "retirement and pension income", cpi, cpi_src),
+        ("INTP", "interest, dividends, net rental income", cpi, cpi_src),
+        ("PAP", "public assistance", cpi, cpi_src),
+        ("OIP", "other income", cpi, cpi_src),
+    ]
+
+    out = ROOT / "inputs" / f"aging_factors_{y1}.csv"
+    out.parent.mkdir(exist_ok=True)
+    with open(out, "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["variable", "description", "from_year", "to_year", "factor", "source"])
+        for var, desc, f, src in rows:
+            w.writerow([var, desc, y0, y1, round(f, 5), src])
+    for var, desc, f, _ in rows:
+        print(f"{var:5s} {desc:40s} x{f:.4f}  ({f - 1:+.1%})")
+    print(f"saved {out}")
+
+
+if __name__ == "__main__":
+    main()

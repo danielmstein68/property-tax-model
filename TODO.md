@@ -19,7 +19,16 @@ Steps we're working through one at a time. Each gets discussed before it's built
   - Result is a 2026 baseline *dataset*; still needs millage calibration, tax rules as code, renters, projection, metrics.
 - [ ] **Two-part structure:** households (PUMS + roll) for distribution; all parcels (roll directly) for revenue, since second homes, investor-owned rentals and vacant land aren't PUMS households (and Amendment 3's 5% cap mainly hits them). Same tax-rule code for both.
 - [ ] **Top-coded home values** — Pareto tail, Method B: fit to the Florida DOR parcel tax roll. Method A (fit from PUMS just below the cut-off) is the fallback for states without usable parcel data. Details in `CHALLENGES.md`.
-- [ ] **Age to 2026** — bring 2024 values, incomes and rents forward to the 2026 base year
+- [ ] **Age to 2026.** Two target dates:
+  - **values → Jan 1, 2026** (Florida assessment date; matches the 2026 roll);
+  - **incomes and rents → calendar-year 2026 average** (income during the year the 2026 bill is paid; PUMS income is effectively calendar-2024 income).
+  - **Home values, uneven by area × type × price tier.** Best: 2024 vs 2026 roll values for the same parcels (request the 2024 final roll from DOR). Until then: FHFA metro index for single-family; condo and mobile-home factors from sales in the 2026 roll.
+  - **New development:** count homes built 2024–25 by PUMA from the roll (`ACT_YR_BLT`); raise weights of PUMS households in recently built homes (`YRBLT` 2020–24) in the same PUMA to match. Check how far weights move. Repeat each projection year.
+  - [x] **Incomes by type** — `ptm/aging.py`, factors from `scripts/aging_factors.py` → `inputs/aging_factors_2026.csv`. Wages/self-employment +9.8% (QCEW FL private avg weekly wage, Q1 2026 vs Q1 2024), Social Security/SSI +5.4% (COLAs), other +6.0% (CPI-U). Rerun the script when later 2026 QCEW quarters are published.
+  - **Rents:** CPI rent for Florida metros (revisit with pass-through).
+  - **`TAXAMT`:** grow by the statewide change in homestead taxes levied 2024→2026 (DOR); keep as an observed anchor.
+  - **Household count:** handled by calibration to the roll's 2026 homestead count.
+- [ ] **Request 2024 final NAL roll** from DOR (PTOTechnology@floridarevenue.com) — draft ready on request; you send it.
 - [ ] **Florida current-law rules** — Save Our Homes, homestead exemption, 10% non-homestead cap
 - [ ] **Calibration** — match modelled tax to reported `TAXAMT` and published levy totals
 - [ ] **Metrics** — distribution tables by income decile etc., Suits index, replicate-weight SEs

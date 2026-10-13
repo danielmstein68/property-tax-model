@@ -1,0 +1,9 @@
+variable,description,from_year,to_year,factor,source
+WAGP,wages and salaries,2024,2026,1.09821,"BLS QCEW ENU1200040510 Florida avg weekly wage, private; quarters 1-1 of 2026 vs same quarters of 2024"
+SEMP,self-employment income,2024,2026,1.09821,"BLS QCEW ENU1200040510 Florida avg weekly wage, private; quarters 1-1 of 2026 vs same quarters of 2024"
+SSP,Social Security,2024,2026,1.0537,"SSA COLAs 2025: 2.5%, 2026: 2.8%"
+SSIP,Supplemental Security Income,2024,2026,1.0537,"SSA COLAs 2025: 2.5%, 2026: 2.8%"
+RETP,retirement and pension income,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+INTP,"interest, dividends, net rental income",2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+PAP,public assistance,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024
+OIP,other income,2024,2026,1.06036,BLS CUUR0000SA0 CPI-U US city avg; months 1-8 of 2026 vs same months of 2024

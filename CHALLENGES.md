@@ -40,6 +40,10 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **Problem:** `ADJINC` and `ADJHSG` apply to different variables, and it's easy to apply them to the wrong ones.
 - **Solution (Solved):** per the 2024 data dictionary, `ADJINC` applies to income (`HINCP`, `FINCP`, person income), `ADJHSG` applies to housing costs (`RNTP`, `GRNTP`, `SMOCP`, ...). **Neither applies to `VALP` or `TAXAMT`.** Both factors have 6 implied decimals. Implemented in `ptm/load.py`.
 
+### New development and uneven change since the survey year
+- **Problem:** PUMS misses homes built after the survey, and values changed unevenly by area, type, price tier and storm damage. Florida 2026 roll: homes built 2024–25 range from 0.4% of homes (Broward) to 8.0% (Charlotte). New homes have no assessment-cap gap, so their owners face very different tax.
+- **Solution (Planned):** reweight PUMS households in recently built homes (`YRBLT`) by PUMA to match the roll's count of new homes (`ACT_YR_BLT`); age values by area × type × tier, ideally from the same parcels' values in two rolls (request older rolls). Never use one statewide factor.
+
 ### Top-coded home values and taxes
 - **Problem:** the most expensive homes are replaced by one state-specific amount, which only says the real value is "at least" that. These homes pay a large share of tax.
 - **Solution (Planned):** fit a Pareto tail and give each top-coded home its own value (random draws, fixed seed).
@@ -66,6 +70,14 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 ### Residential only
 - **Problem:** PUMS has no commercial, industrial or farm property, so revenue estimates cover only part of the tax base.
 - **Solution (Planned):** calibrate to published residential levies; report the share of the total base covered.
+
+### Aging incomes: by type, and missing months
+- **Problem:** income types grow at different rates (2024→2026 Florida: wages +9.8%, Social Security +5.4%, CPI +6.0%), so one factor misstates older households' income. Also, October 2025 CPI was never published (government shutdown), and 2026 isn't over.
+- **Solution (Solved):** age each person's income components separately and re-sum to households (`ptm/aging.py`); factors compare the same calendar months (or quarters) in both years and skip unpublished ones (`scripts/aging_factors.py`). Checks: components sum to `PINCP` and persons sum to `HINCP` for 100% of records. Result: median income +9.8% for householders under 45 but +6.1% for 75+.
+
+### Which wage growth measure
+- **Problem:** measures disagree for Florida 2024→2026: CES average hourly earnings +12.1% (5.9%/yr), CES average weekly earnings +12.7%, QCEW average weekly wage +9.8% (4.8%/yr), US average hourly earnings +7.5%. Florida jobs grew only 0.9%, so job-mix changes may inflate survey averages.
+- **Solution (Solved):** use QCEW (every UI-covered job, not a survey sample), comparing the same quarter in both years. It lags ~6 months; rerun as quarters are published.
 
 ### Census data API needs a key
 - **Problem:** `api.census.gov` now redirects keyless requests to a "Missing Key" page, so published figures can't be pulled automatically without one.
