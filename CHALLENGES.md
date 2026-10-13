@@ -44,6 +44,10 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **Problem:** PUMS misses homes built after the survey, and values changed unevenly by area, type, price tier and storm damage. Florida 2026 roll: homes built 2024–25 range from 0.4% of homes (Broward) to 8.0% (Charlotte). New homes have no assessment-cap gap, so their owners face very different tax.
 - **Solution (Planned):** reweight PUMS households in recently built homes (`YRBLT`) by PUMA to match the roll's count of new homes (`ACT_YR_BLT`); age values by area × type × tier, ideally from the same parcels' values in two rolls (request older rolls). Never use one statewide factor.
 
+### Linking parcels to PUMAs: `CENSUS_BK` formats vary by county
+- **Problem:** 8.8% of parcels don't match a 2020 tract. Some counties store `CENSUS_BK` in scientific notation (Taylor), with an extra digit (Martin), or with 2010-era tract codes (Collier, Highlands, Okeechobee).
+- **Solution (Solved):** unmatched parcels fall back to their county (DOR county number → FIPS: 2 × (DOR − 11) + 1, except Miami-Dade = 086) and are spread over the county's PUMAs in proportion to matched parcels (`fl_dor_to_fips`, `fl_parcel_puma` in `ptm/geo.py`). Could later repair formats county by county.
+
 ### Top-coded home values and taxes
 - **Problem:** the most expensive homes are replaced by one state-specific amount, which only says the real value is "at least" that. These homes pay a large share of tax.
 - **Solution (Planned):** fit a Pareto tail and give each top-coded home its own value (random draws, fixed seed).
