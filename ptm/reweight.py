@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ptm.geo import fl_dor_to_fips, fl_parcel_puma, puma_main_county
+from ptm.geo import fl_parcel_counts_by_puma, puma_main_county
 
 ROOT = Path(__file__).resolve().parents[1]
 REPLICATES = [f"WGTP{i}" for i in range(1, 81)]
@@ -32,29 +32,7 @@ def new_home_targets(base_year: int, survey_year: int, occupancy: float = 0.9) -
     p = p[p["ACT_YR_BLT"].between(survey_year, base_year - 1)]
     p["owner"] = p["homestead"].astype(float)
     p["renter"] = np.where(p["DOR_UC"].isin(["003", "008"]), p["NO_RES_UNTS"].fillna(0) * occupancy, 0.0)
-    p["PUMA"] = fl_parcel_puma(p)
-    p["county_fips"] = fl_dor_to_fips(p["CO_NO"])
-
-    matched = p[p["PUMA"].notna()].groupby(["county_fips", "PUMA"])[["owner", "renter"]].sum()
-    unmatched = p[p["PUMA"].isna()].groupby("county_fips")[["owner", "renter"]].sum()
-
-    # Spread unmatched parcels over the county's PUMAs, in proportion to matched new homes
-    # (or equally if the county has none matched).
-    pm = puma_main_county("12")
-    out = matched.reset_index()
-    extra = []
-    for fips, row in unmatched.iterrows():
-        pumas = pm.loc[pm["county_fips"] == fips, "PUMA"].tolist()
-        m = matched.loc[fips] if fips in matched.index.get_level_values(0) else None
-        for col in ["owner", "renter"]:
-            if m is not None and m[col].sum() > 0:
-                share = m[col] / m[col].sum()
-            else:
-                share = pd.Series(1 / len(pumas), index=pumas) if pumas else pd.Series(dtype=float)
-            for puma, s in share.items():
-                extra.append({"county_fips": fips, "PUMA": puma, col: row[col] * s})
-    out = pd.concat([out, pd.DataFrame(extra)]).fillna(0)
-    return out.groupby("PUMA")[["owner", "renter"]].sum().reset_index()
+    return fl_parcel_counts_by_puma(p, ["owner", "renter"])
 
 
 def reweight_new_development(households: pd.DataFrame, targets: pd.DataFrame, survey_year: int,

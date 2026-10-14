@@ -13,8 +13,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 
 ## Where we left off (2026-10-13)
 Finishing the baseline = linking to parcels + calibration. Agreed order; decisions pending marked **?**:
-1. **Homestead status** — 6.35M PUMS owners vs 5.21M roll homesteads. **?** Assign non-claimers randomly within PUMA × value band, or tilted toward recent movers / higher values. Either way match roll counts by PUMA.
-2. **Mobile homes on rented lots** — ~518k PUMS vs ~232k homestead parcels. **?** Treat the rest as no real-estate tax (tax is in lot rent) and exclude from parcel comparisons.
+1. **Homestead status** — 6.35M PUMS owners vs 5.21M roll homesteads. Decided: after mobile homes (piece 2), match roll counts of non-homestead owner-like homes by PUMA × type × value band; within cells tilt toward recent movers (`MV`), non-citizens (`CIT`), condo owners 65+ in snowbird areas; tilt strength is a setting, report the random case too. Reasons for non-claiming (roll evidence) in CHALLENGES.
+2. [x] **Mobile homes on rented lots** — `assign_mobile_home_lots` in `ptm/link.py`, in the baseline build. Per PUMA: PUMS mobile-home owners − roll homestead mobile-home parcels (230k) = rented lot (294,747 assigned); priority lot < 1 acre, $0 tax, high `MHP` (includes site rent), low value. Flag `mh_rented_lot`: no real-estate tax, no homestead; their burden comes via lot rent (pass-through).
 3. **Assessment gap by donor draw** from similar nearby homesteads (replaces move-in-year estimate; county correlation only 0.40 now).
 4. **Top-coded values** — Pareto tail fitted to roll homesteads (Method B).
 5. **$0-tax owners** — compare with roll $0-taxable share by value band; impute only the excess.

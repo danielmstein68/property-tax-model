@@ -64,8 +64,9 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **Solution (Open):** examine by home value, building type and state exemptions before calibration. Flagged as `flag_zero_taxamt`.
 
 ### No homestead / primary residence flag
-- **Problem:** PUMS doesn't say whether an owner claims a homestead exemption.
-- **Solution (Planned):** treat all owner-occupied homes as homesteads; state the assumption. Check take-up against parcel data where possible.
+- **Problem:** PUMS doesn't say whether an owner claims a homestead exemption. Florida: 6.35M PUMS owner households (2026 weights) vs 5.21M homestead parcels — ~1.1M owners don't claim.
+- **Why (roll evidence):** of 3.05M non-homestead single-family/condo/co-op/mobile parcels, 1.39M have out-of-state owners, 348k Florida businesses (LLCs can't claim), 434k Florida individuals mailing to a different ZIP, **719k Florida individuals mailing to the same ZIP** (likely owner-occupied non-claimers), 152k unknown ZIP. Reasons: mobile homes on rented lots (~290k; not real property); snowbirds counted as Florida households by the ACS 2-month residence rule but homesteaded elsewhere; non-permanent residents (ineligible); LLC/corporate title; recent buyers not yet filed; never applied.
+- **Solution (in progress):** mobile homes first (Solved: `assign_mobile_home_lots`); then assign the remaining non-claimers to match roll counts by PUMA × type × value band, tilted by PUMS signals (Planned).
 
 ### Renters' share of property tax (pass-through)
 - **Problem:** renters pay landlords' property tax indirectly; how much is an assumption.

@@ -54,6 +54,34 @@ def fl_parcel_puma(parcels: pd.DataFrame) -> pd.Series:
     return parcels["CENSUS_BK"].str[:11].map(lookup)
 
 
+def fl_parcel_counts_by_puma(parcels: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """Sum `cols` over Florida parcels by PUMA.
+
+    Parcels whose CENSUS_BK doesn't match a 2020 tract are spread over their county's PUMAs in
+    proportion to the matched parcels (equally if the county has none matched).
+    Needs CO_NO and CENSUS_BK. Returns one row per PUMA.
+    """
+    p = parcels.copy()
+    p["PUMA"] = fl_parcel_puma(p)
+    p["county_fips"] = fl_dor_to_fips(p["CO_NO"])
+    matched = p[p["PUMA"].notna()].groupby(["county_fips", "PUMA"])[cols].sum()
+    unmatched = p[p["PUMA"].isna()].groupby("county_fips")[cols].sum()
+    pm = puma_main_county("12")
+    extra = []
+    for fips, row in unmatched.iterrows():
+        pumas = pm.loc[pm["county_fips"] == fips, "PUMA"].tolist()
+        m = matched.loc[fips] if fips in matched.index.get_level_values(0) else None
+        for col in cols:
+            if m is not None and m[col].sum() > 0:
+                share = m[col] / m[col].sum()
+            else:
+                share = pd.Series(1 / len(pumas), index=pumas) if pumas else pd.Series(dtype=float)
+            for puma, s in share.items():
+                extra.append({"PUMA": puma, col: row[col] * s})
+    out = pd.concat([matched.reset_index(), pd.DataFrame(extra)]).fillna(0)
+    return out.groupby("PUMA")[cols].sum().reset_index()
+
+
 def fl_cpi_area(county_fips: pd.Series) -> pd.Series:
     """Map Florida county FIPS to a CPI area: miami, tampa, or other_fl (South region)."""
     out = pd.Series("other_fl", index=county_fips.index)
