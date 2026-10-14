@@ -219,20 +219,21 @@ def assign_city_senior_exemptions(h: pd.DataFrame, base_year: int, rng) -> pd.Da
     (code 04) for the county group, statewide median where none.
     """
     from ptm.exemptions import roll_exemption_counts  # noqa: F401  (kept for the county version)
-    from ptm.geo import county_groups
+    from ptm.geo import parcel_area
     from ptm.link import _fill_by_priority
 
-    area = county_groups().drop_duplicates("county_fips").set_index("county_fips")["area"]
     rows, amounts = [], []
     for f in glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet")):
-        d = pd.read_parquet(f)
-        d = d[d["homestead"]]
-        a = area.get(fl_dor_to_fips(d["CO_NO"].iloc[:1]).iloc[0]) if len(d) else None
-        n04 = int((d["EXMPT_04"].fillna(0) > 0).sum()) if "EXMPT_04" in d else 0
-        n40 = int((d["EXMPT_40"].fillna(0) > 0).sum()) if "EXMPT_40" in d else 0
-        rows.append({"area": a, "lowinc_city": n04, "longterm_city": n40})
-        if "EXMPT_04" in d:
-            amounts.append(pd.DataFrame({"area": a, "amount": d.loc[d["EXMPT_04"] > 0, "EXMPT_04"]}))
+        d0 = pd.read_parquet(f)
+        d0 = d0[d0["homestead"]]
+        if d0.empty:
+            continue
+        for a, d in d0.groupby(parcel_area(d0)):  # one area per county, except split counties
+            n04 = int((d["EXMPT_04"].fillna(0) > 0).sum()) if "EXMPT_04" in d else 0
+            n40 = int((d["EXMPT_40"].fillna(0) > 0).sum()) if "EXMPT_40" in d else 0
+            rows.append({"area": a, "lowinc_city": n04, "longterm_city": n40})
+            if "EXMPT_04" in d:
+                amounts.append(pd.DataFrame({"area": a, "amount": d.loc[d["EXMPT_04"] > 0, "EXMPT_04"]}))
     counts = pd.DataFrame(rows).groupby("area").sum()
     am = pd.concat(amounts) if amounts else pd.DataFrame(columns=["area", "amount"])
     amount_by_area = am.groupby("area")["amount"].median()

@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ptm.geo import county_groups, fl_dor_to_fips
+from ptm.geo import county_groups, fl_dor_to_fips, parcel_area
 from ptm.link import _fill_by_priority
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,30 +70,31 @@ def roll_exemption_counts(base_year: int) -> tuple[pd.DataFrame, dict]:
 
     Returns (counts by area, amounts) where amounts has 'senior_lowinc_by_area' (median county
     low-income senior exemption per area) and 'vet_discount_share' (statewide median)."""
-    area = county_groups().drop_duplicates("county_fips").set_index("county_fips")["area"]
     rows, senior, disc = [], [], []
     for f in glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet")):
-        d = pd.read_parquet(f)
-        d = d[d["homestead"] & d["DOR_UC"].isin(["001", "002", "004", "005"])]
-        a = area.get(fl_dor_to_fips(d["CO_NO"].iloc[:1]).iloc[0]) if len(d) else None
-        total08, five08 = _code08_split(d)
-        row = {"area": a}
-        for g, cols in GROUPS.items():
-            has = np.zeros(len(d), bool)
-            for c in cols:
-                if c in d:
-                    has |= d[c].fillna(0).to_numpy() > 0
-            if g == "disabled_total":
-                has = total08
-            if g == "widow_blind_disabled":
-                has = has | five08
-            row[g] = int(has.sum())
-        rows.append(row)
-        if "EXMPT_03" in d:
-            senior.append(pd.DataFrame({"area": a, "amount": d.loc[d["EXMPT_03"] > 0, "EXMPT_03"]}))
-        if "EXMPT_80" in d:
-            x = d[d["EXMPT_80"] > 0]
-            disc.append(x["EXMPT_80"] / x["AV_SD"].where(x["AV_SD"] > 0))
+        d0 = pd.read_parquet(f)
+        d0 = d0[d0["homestead"] & d0["DOR_UC"].isin(["001", "002", "004", "005"])]
+        if d0.empty:
+            continue
+        for a, d in d0.groupby(parcel_area(d0)):  # one area per county, except split counties
+            total08, five08 = _code08_split(d)
+            row = {"area": a}
+            for g, cols in GROUPS.items():
+                has = np.zeros(len(d), bool)
+                for c in cols:
+                    if c in d:
+                        has |= d[c].fillna(0).to_numpy() > 0
+                if g == "disabled_total":
+                    has = total08
+                if g == "widow_blind_disabled":
+                    has = has | five08
+                row[g] = int(has.sum())
+            rows.append(row)
+            if "EXMPT_03" in d:
+                senior.append(pd.DataFrame({"area": a, "amount": d.loc[d["EXMPT_03"] > 0, "EXMPT_03"]}))
+            if "EXMPT_80" in d:
+                x = d[d["EXMPT_80"] > 0]
+                disc.append(x["EXMPT_80"] / x["AV_SD"].where(x["AV_SD"] > 0))
     counts = pd.DataFrame(rows).groupby("area").sum()
     s = pd.concat(senior) if senior else pd.DataFrame(columns=["area", "amount"])
     amounts = {"senior_lowinc_by_area": s.groupby("area")["amount"].median(),

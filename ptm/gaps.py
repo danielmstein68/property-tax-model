@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ptm.geo import county_groups, fl_dor_to_fips
+from ptm.geo import county_groups, fl_dor_to_fips, parcel_area
 from ptm.link import ROLL_HOME_TYPE
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,14 +48,13 @@ def _bands(values: pd.Series, weights: pd.Series | None = None) -> pd.Series:
 
 def roll_ratios(base_year: int) -> pd.DataFrame:
     files = glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet"))
-    cols = ["CO_NO", "DOR_UC", "JV", "AV_SD", "AV_NSD", "homestead"]
+    cols = ["CO_NO", "CENSUS_BK", "DOR_UC", "JV", "AV_SD", "AV_NSD", "homestead"]
     r = pd.concat([pd.read_parquet(f, columns=cols) for f in files], ignore_index=True)
     r["type"] = r["DOR_UC"].map(ROLL_HOME_TYPE)
     r = r[r["type"].notna() & (r["JV"] > 0) & r["AV_SD"].notna() & r["AV_NSD"].notna()]
     r["r_sd"] = (r["AV_SD"] / r["JV"]).clip(upper=1)
     r["r_nsd"] = (r["AV_NSD"] / r["JV"]).clip(upper=1)
-    area = county_groups().drop_duplicates("county_fips").set_index("county_fips")["area"]
-    r["area"] = fl_dor_to_fips(r["CO_NO"]).map(area)
+    r["area"] = parcel_area(r)
     pct = r.groupby(["area", "type", "homestead"])["JV"].rank(pct=True, method="first")
     r["band"] = pd.cut(pct, [0, 1 / 3, 2 / 3, 1.0001], labels=BANDS).astype(str)
     return r[["area", "type", "homestead", "band", "JV", "r_sd", "r_nsd"]]

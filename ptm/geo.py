@@ -85,12 +85,22 @@ def fl_parcel_counts_by_puma(parcels: pd.DataFrame, cols: list[str]) -> pd.DataF
 def county_groups(state_fips: str = "12") -> pd.DataFrame:
     """Group counties that share PUMAs, so PUMS (by PUMA) and the roll (by county) cover the
     same areas. Large counties with their own PUMAs are their own group; small counties that
-    share a PUMA are grouped. Returns county_fips, PUMA, area (group id = smallest county FIPS).
+    share a PUMA are grouped. Returns county_fips, PUMA, area (group id = smallest county FIPS)
+    and county_area (the county's own group).
+
+    A county that also has a PUMA entirely its own (Miami-Dade, St. Johns) is not merged through a
+    PUMA it shares with a small county (Monroe, Putnam): the shared PUMA goes to the small
+    county's area, and the big county's parcels in those tracts are assigned by tract
+    (parcel_area). Otherwise Monroe was calibrated with Miami-Dade's values and assessment gaps
+    (model homestead tax 31% below the roll; fixed 2026-10-14).
     """
     if not TRACT_TO_PUMA.exists():
         puma_main_county(state_fips)
     t = pd.read_csv(TRACT_TO_PUMA, dtype=str, encoding="utf-8-sig")
     t = t[t["STATEFP"] == state_fips][["COUNTYFP", "PUMA5CE"]].drop_duplicates()
+    # counties with at least one PUMA entirely their own
+    single = t.groupby("PUMA5CE")["COUNTYFP"].nunique().loc[lambda n: n == 1].index
+    has_own = set(t.loc[t["PUMA5CE"].isin(single), "COUNTYFP"])
     parent = {c: c for c in t["COUNTYFP"]}
 
     def find(c):
@@ -99,14 +109,34 @@ def county_groups(state_fips: str = "12") -> pd.DataFrame:
             c = parent[c]
         return c
 
-    for _, cs in t.groupby("PUMA5CE")["COUNTYFP"]:
+    linked = {}
+    for puma, cs in t.groupby("PUMA5CE")["COUNTYFP"]:
         cs = sorted(cs)
-        for c in cs[1:]:
-            a, b = find(cs[0]), find(c)
+        small = [c for c in cs if c not in has_own]
+        link = small if small else cs
+        linked[puma] = link
+        for c in link[1:]:
+            a, b = find(link[0]), find(c)
             if a != b:
                 parent[max(a, b)] = min(a, b)
-    t["area"] = t["COUNTYFP"].map(find)
+    t["area"] = t["PUMA5CE"].map(lambda pu: find(linked[pu][0]))
+    t["county_area"] = t["COUNTYFP"].map(find)
     return t.rename(columns={"COUNTYFP": "county_fips", "PUMA5CE": "PUMA"})
+
+
+def parcel_area(parcels: pd.DataFrame) -> pd.Series:
+    """county_groups area for each Florida parcel (needs CO_NO and CENSUS_BK): the county's own
+    area, except parcels of a split county lying in a PUMA assigned to another area."""
+    g = county_groups()
+    fips = fl_dor_to_fips(parcels["CO_NO"])
+    area = fips.map(g.drop_duplicates("county_fips").set_index("county_fips")["county_area"])
+    split = set(g.loc[g["area"] != g["county_area"], "county_fips"])
+    in_split = fips.isin(split)
+    if in_split.any():
+        puma_area = g.drop_duplicates("PUMA").set_index("PUMA")["area"]
+        by_tract = fl_parcel_puma(parcels.loc[in_split]).map(puma_area)
+        area.loc[in_split] = by_tract.fillna(area.loc[in_split])
+    return area
 
 
 def fl_cpi_area(county_fips: pd.Series) -> pd.Series:

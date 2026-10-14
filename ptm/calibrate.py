@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ptm.geo import county_groups, fl_dor_to_fips
+from ptm.geo import county_groups, fl_dor_to_fips, parcel_area
 from ptm.link import ROLL_HOME_TYPE
 from ptm.topcode import quantile_map
 
@@ -41,14 +41,13 @@ def calibrate_values(h: pd.DataFrame, base_year: int, min_pums: int = 30,
     out = h.copy()
     groups = county_groups()
     out["value_area"] = out["PUMA"].astype(str).str.zfill(5).map(groups.drop_duplicates("PUMA").set_index("PUMA")["area"])
-    county_area = groups.drop_duplicates("county_fips").set_index("county_fips")["area"]
 
     files = glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet"))
-    roll = pd.concat([pd.read_parquet(f, columns=["CO_NO", "DOR_UC", "JV", "homestead"]) for f in files])
+    roll = pd.concat([pd.read_parquet(f, columns=["CO_NO", "CENSUS_BK", "DOR_UC", "JV", "homestead"]) for f in files])
     roll = roll[roll["homestead"] & (roll["JV"] > 0)]
     roll["type"] = roll["DOR_UC"].map(ROLL_HOME_TYPE)
     roll = roll[roll["type"].notna()]
-    roll["area"] = fl_dor_to_fips(roll["CO_NO"]).map(county_area)
+    roll["area"] = parcel_area(roll)
 
     owner = (out["tenure"] == "owner") & ~out["mh_rented_lot"].fillna(False).astype(bool)
     hs = owner & (out["homestead"] == True)  # noqa: E712 (nullable boolean)
