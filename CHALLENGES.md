@@ -159,6 +159,11 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **BLS API limit:** 25 keyless requests a day; `scripts/fl_soh_history.py` uses FRED for CPI instead. A free BLS key would lift the limit.
 - **Computed vs official caps:** computed 2026 cap 2.6% vs official 2.7% (October 2025 CPI missing); official caps override where known.
 
+### Tax rates: what's published
+- **Tax district rate tables (TACD):** one PDF per county mapping each tax district code (`TAX_AUTH_CD`, on every parcel) to its millage by component. Latest is **2025**; 2026 isn't posted until after rates are adopted (September) — expect early the following year. **Nine counties have no TACD for 2025 or 2024: Baker, Brevard, Broward, Gadsden, Hernando, Lee, Liberty, Palm Beach, Sarasota** (including three large ones). Layouts differ by county, so parsing needs care.
+- **Comparison of levies (Table 1):** every county plus statewide: each authority's millage, rolled-back rate, taxes levied. One file name has a DOR typo ("Heranando").
+- `scripts/fl_rates.py` downloads both from `manifests/fl_rates_2025.csv` (URL paths contain spaces — encode the whole URL).
+
 ### Getting the parcel tax roll (NAL files)
 - **Source:** Florida DOR Data Portal → Tax Roll Data Files → NAL. One zip per county (67 counties).
 - **Roll stages:** preliminary (`2026P`, ~July) and final (`2026F`, certified county by county from October). Each county appears in only one folder — when its final roll is certified, it moves from `2026P` to `2026F`. On 2026-10-13: 29 final, 38 preliminary.
