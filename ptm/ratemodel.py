@@ -22,6 +22,9 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+# Manatee: the Table 1 PDF reads 0.4833 for the county line; the property appraiser's 2026 final
+# millage sheet gives 2025 countywide operating 4.5942. Levy and rolled-back not recoverable -> NaN.
+TABLE1_FIXES = {"manatee": {"mill": 4.5942, "levy": np.nan, "rbr_official": np.nan}}
 
 
 def norm(name: str) -> str:
@@ -86,6 +89,10 @@ def county_general_levies(year: int = 2025) -> pd.DataFrame:
                      "mill": r["millage_2025"], "levy": r["levy_2025"]})
     d = pd.DataFrame(rows)
     d["key"] = d["county"].map(norm)
+    # Corrections where the Table 1 PDF reading is wrong (checked against official sources)
+    for key, fix in TABLE1_FIXES.items():
+        for col, val in fix.items():
+            d.loc[d["key"] == key, col] = val
     return d
 
 
