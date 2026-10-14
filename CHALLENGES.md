@@ -227,6 +227,12 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **Problem:** after ordering gaps by reported tax, $2M+ homesteads came out 11% below the roll (assessed/just 0.54 vs roll 0.64). High-value owners whose tax isn't top-coded report low tax relative to their calibrated value ($13,250 reported vs $18,290 modelled), so ranking the tax-implied gap across a whole donor cell (top third of an area's values also holds $600k homes) partly sorted by value and gave them the deepest gaps.
 - **Solution (Solved):** rank the tax-implied gap only within value tenths of each donor cell (`assign_assessment_gaps(tax_rank_value_groups=10)`). Tested none / fifths / tenths. With tenths: $2M+ 0.94 of roll (was 0.89), $1–2M 1.02, assessed/just 0.61; homestead average $4,069 vs roll $4,056; years-in-home vs reported 1.22 / 0.96 / 0.93 / 0.90 / 0.90; Monroe 1.01, Putnam 1.12 (was 1.21). Trade-offs: homes under $100k now 0.91 of roll (avg bill ~$300; < 0.3% of tax); owners within 25% of their reported tax 53% (was 55%).
 
+### 2026 city rates; Palm Beach had no city levies (2026-10-14)
+- **Collected:** `scripts/fl_city_rates_2026.py` → `inputs/fl_city_millage_2026.csv` (91 cities). County property appraiser sheets list every city's 2025 and 2026 rate (Miami-Dade, Palm Beach proposed; Manatee final; Lee preliminary book), plus hand-collected city votes with URLs. Applied in `ratemodel.apply_2026_rates` as (2026 − 2025) on `millage_municipal`. Net effect +$21M (Jupiter +$10.5M, Palmetto Bay +$2.4M, Delray Beach +$2.2M; Davie −$2.0M).
+- **Problem found:** Palm Beach's DOR Table 1 lists cities by bare name ("Boca Raton"), and `district_classes` only recognised "City/Town/Village of", so no Palm Beach district had a city: city levies were counted as county (totals right, split wrong).
+- **Solution (Solved):** accept bare-name Table 1 authorities that aren't county/school/special-district levies (`NOT_A_CITY`), and let a district note that is just a city's name select that city. Palm Beach: 78 of 127 districts now have a city (55% of owners); 13 districts elsewhere gained their city (e.g. LaCrosse, Callaway, Fort Walton Beach). Statewide municipal tax $2.85B → $3.32B (moved from "county"; total unchanged apart from 2026 city rates).
+- **Open:** mailing-city matches put unincorporated owners in Bradenton and Naples (see LIMITATIONS); Intercession City (Osceola) likely a special district.
+
 ---
 
 ## Ohio

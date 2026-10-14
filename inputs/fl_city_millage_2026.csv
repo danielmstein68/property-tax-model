@@ -1,0 +1,92 @@
+county,city,mill_2025,mill_2026,status,source_url,note
+Brevard,Palm Bay,6.7,6.6015,final,https://citizenportal.ai/articles/9921099/florida/brevard-county/palm-bay/palm-bay-council-sets-tentative-operating-millage-at-66015-and-debt-millage-at-09385,tentative Sept 10 at rolled-back rate; final Sept 23 adopted the rolled-back rate (news.thepalmbayer.com)
+Broward,Coral Springs,6.0232,6.0232,proposed,https://citizenportal.ai/articles/8374008/florida/broward-county/coral-springs/coral-springs-sets-trim-keeps-millage-flat-and-schedules-sept-hearings-as-fy2027-trim-is-adopted,flat
+Broward,Davie,5.625,5.3392,final,https://citizenportal.ai/articles/10036928/Florida/Broward-County/Davie/Davie-council-adopts-FY2027-millage-at-rollback-officials-say-no-tax-increase,rolled-back rate
+Broward,Fort Lauderdale,4.1193,4.1193,final,https://citizenportal.ai/articles/9944281/florida/broward-county/fort-lauderdale/fort-lauderdale-adopts-128-billion-fy2027-budget-commission-keeps-millage-above-rollback-herbst-votes-no,
+Broward,Hollywood,7.4293,7.4293,proposed,https://citizenportal.ai/articles/9992921/Florida/Broward-County/Hollywood-City/City-of-Hollywood-unveils-1-billion-FY2027-budget-with-flat-operating-millage,flat
+Flagler,Palm Coast,4.0893,4.1387,final,https://www.observerlocalnews.com/news/2026/sep/24/palm-coast-adopts-5339-million-budget-with-41387-millage-rate/,rolled-back rate
+Lee,Bonita Springs,0.847,0.847,proposed,https://www.leepa.org/TaxRoll/Millage%20Books/2026%20Taxing%20District%20Millage%20Book%20Prelim.pdf,PA preliminary millage book (TRIM maximum)
+Lee,Cape Coral,5.1471,5.1988,proposed,https://www.leepa.org/TaxRoll/Millage%20Books/2026%20Taxing%20District%20Millage%20Book%20Prelim.pdf,PA preliminary millage book (TRIM maximum)
+Lee,Estero,0.73,0.73,proposed,https://www.leepa.org/TaxRoll/Millage%20Books/2026%20Taxing%20District%20Millage%20Book%20Prelim.pdf,PA preliminary millage book (TRIM maximum)
+Lee,Fort Myers,6.5,6.9,final,https://www.gulfshorebusiness.com/lee/fort-myers-city-council-approves-property-tax-hike-for-2027/article_c7389720-7ea0-4167-9ef7-67dc6f3bcb17.html,"5-2 vote, Sept 2026; TRIM cap was 7.3112"
+Lee,Fort Myers Beach,1.0294,1.0655,final,https://beachtalkradionews.com/26336-2/,"adopted Sept 23, 2026"
+Lee,Sanibel,2.5,2.5,proposed,https://www.leepa.org/TaxRoll/Millage%20Books/2026%20Taxing%20District%20Millage%20Book%20Prelim.pdf,PA preliminary millage book (TRIM maximum)
+Manatee,Anna Maria,1.65,1.65,final,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,PA final adopted sheet
+Manatee,Bradenton,5.7101,5.7101,final,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,PA final adopted sheet
+Manatee,Bradenton Beach,2.3329,2.3329,final,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,PA final adopted sheet
+Manatee,Holmes Beach,1.99,1.874,final,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,PA final adopted sheet
+Manatee,Longboat Key,1.96,1.9999,final,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,PA final adopted sheet
+Manatee,Palmetto,5.9671,5.8445,final,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,PA final adopted sheet
+Miami-Dade,Aventura,1.7261,1.7261,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Bal Harbour,2.1439,2.5132,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Bay Harbor Islands,3.4583,3.9,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Biscayne Park,9.3,9.3,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Coral Gables,5.559,5.559,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Cutler Bay,2.8332,2.9143,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Doral,1.6912,1.5994,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,El Portal,8.2,8.1,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Florida City,6.4304,6.8417,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Golden Beach,7.8,7.511,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Hialeah,6.3018,6.3018,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Hialeah Gardens,4.6782,4.6782,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Homestead,5.9604,6.3945,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Indian Creek,5.5,5.5,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Key Biscayne,2.8846,3.0066,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Medley,3.85,3.85,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Miami,7.108,7.108,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Miami Beach,5.856,5.806,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Miami Gardens,6.9363,6.9363,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Miami Lakes,2.1577,2.1577,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Miami Shores,7.8,7.8,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Miami Springs,6.81,6.81,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,North Bay Village,5.7062,7.0,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,North Miami,7.4,7.4,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,North Miami Beach,6.1,6.1,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Opa-Locka,8.9797,8.9797,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Palmetto Bay,2.3018,2.69,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Pinecrest,2.503,2.6041,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,South Miami,3.95,3.95,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Sunny Isles Beach,1.7,1.6514,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Surfside,3.883,3.8743,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Sweetwater,3.5634,3.5634,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,Virginia Gardens,4.85,5.1,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Miami-Dade,West Miami,5.77,5.77,proposed,https://www.miamidadepa.gov/resources-pa/library/reports/certification/2026-proposed-millage-rate-comparison.pdf,"PA comparison sheet, Aug 24, 2026"
+Orange,Apopka,4.4376,4.6761,proposed,https://theapopkachief.com/apopka-adopts-tentative-fy27-budget-4-6761-mill-tax-rate-restores-disputed-spending/,"tentative Sept 3, 2026"
+Palm Beach,Atlantis,6.15,6.15,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Belle Glade,6.5419,6.5419,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Boca Raton,3.6476,3.6476,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Boynton Beach,7.75,7.75,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Briny Breezes,3.75,6.75,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Delray Beach,6.1611,6.4371,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Greenacres,6.3,6.3,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Gulf Stream,3.6724,3.6724,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Haverhill,3.9,3.9,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Highland Beach,3.4159,3.4227,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Hypoluxo,3.2,3.2,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Juno Beach,1.8195,1.8195,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Jupiter,2.3894,3.5886,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Jupiter Inlet Colony,5.56,5.56,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Lake Clarke Shores,5.9,5.8,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Lake Park,5.1,5.1,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Lake Worth Beach,5.4945,5.4945,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Lantana,3.75,3.75,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Loxahatchee Groves,3.2564,3.2564,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Manalapan,3.0,3.0,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Mangonia Park,9.9,9.9,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,North Palm Beach,7.4,7.4,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Ocean Ridge,5.4,5.4,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Pahokee,6.5419,6.5419,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Palm Beach,2.611,2.611,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Palm Beach Gardens,5.0537,5.0537,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Palm Beach Shores,6.35,6.8,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Palm Springs,3.5,3.5,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Riviera Beach,8.35,8.35,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Royal Palm Beach,1.92,2.15,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,South Bay,6.3089,6.3089,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,South Palm Beach,3.4,3.3,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Tequesta,6.4595,6.4595,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Village of Golf,6.5452,6.5452,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Wellington,2.47,2.47,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,West Palm Beach,8.1308,8.1308,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Palm Beach,Westlake,4.6,4.6,proposed,https://pbcpao.gov/pdf/taxroll/2026_Proposed_Rollback_025_Final_Millage_Rates.pdf,PA sheet
+Pinellas,St Petersburg,6.4525,6.4525,proposed,https://stpetecatalyst.com/st-pete-holds-property-tax-rate-steady/,"tentative, unanimous; flat"

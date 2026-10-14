@@ -151,7 +151,10 @@ def apply_2026_rates(h: pd.DataFrame, base_year: int = 2026, behaviour: str = "k
       school:   + (2026 - 2025) district school millage (official 2026 RLE; school_rates_2026)
       county:   + (2026 - 2025) county general millage (collected adopted rate, else predicted;
                 county_general_2026)
-      municipal, special: held at 2025 (no 2026 source yet; "keep rate" is the tested default)
+      municipal: + (2026 - 2025) city operating millage where collected (inputs/fl_city_millage_2026.csv:
+                county property appraiser sheets and city records; final or proposed); other cities
+                held at 2025 ("keep rate", the tested default)
+      special:  held at 2025 (no 2026 source yet)
     Keeps the 2025-rate values as millage_<class>_2025rates and tax_model_<base>_2025rates.
     Returns (households, county rate report).
     """
@@ -171,6 +174,10 @@ def apply_2026_rates(h: pd.DataFrame, base_year: int = 2026, behaviour: str = "k
     has_rate = out["millage_school"].notna()
     out.loc[has_rate, "millage_school"] = out.loc[has_rate, "millage_school"] + d_school[has_rate]
     out.loc[has_rate, "millage_county"] = out.loc[has_rate, "millage_county"] + d_county[has_rate]
+    d_city = city_rate_changes_2026(out)
+    city = has_rate & d_city.notna() & (out["millage_municipal"].fillna(0) > 0)
+    out.loc[city, "millage_municipal"] = out.loc[city, "millage_municipal"] + d_city[city]
+    out["city_rate_source_2026"] = np.where(city, "collected", np.where(out["millage_municipal"].fillna(0) > 0, "held at 2025", ""))
     out["county_rate_source_2026"] = ckey.map(cty["source_2026"])
 
     owner = out[f"tax_model_{base_year}"].notna()
@@ -183,6 +190,22 @@ def apply_2026_rates(h: pd.DataFrame, base_year: int = 2026, behaviour: str = "k
     out["rate_year"] = 2026
     report = cty.reset_index().merge(sch[["school_2025", "school_2026"]].reset_index(), on="key", how="left")
     return out, report
+
+
+def city_rate_changes_2026(h: pd.DataFrame) -> pd.Series:
+    """2026 minus 2025 city operating millage for each household's city (NaN where not collected).
+    Matches inputs/fl_city_millage_2026.csv to `municipality` by county and normalised name."""
+    from ptm.millage import county_fips_by_name
+
+    c = pd.read_csv(ROOT / "inputs" / "fl_city_millage_2026.csv")
+    fips = county_fips_by_name()
+
+    def city_key(name) -> str:
+        return norm(re.sub(r"(?i)^(city|town|village) of\s+", "", str(name)))
+
+    delta = dict(zip(c["county"].map(fips) + "|" + c["city"].map(city_key), c["mill_2026"] - c["mill_2025"]))
+    key = h["county_fips_tax"].astype(str) + "|" + h["municipality"].fillna("").map(city_key)
+    return key.map(delta)
 
 
 def county_rate_table() -> pd.DataFrame:

@@ -54,6 +54,11 @@ def load_rates(year: int = 2025) -> pd.DataFrame:
     return r[["county", "county_fips", "code", "total_millage", "school_millage", "nonschool_millage", "confidence"]]
 
 
+NOT_A_CITY = (r"\b(county|fire|rescue|library|district|dda|mstu|msbu|school|hospital|health|water|children|"
+              r"debt|port of|port authority|navigation|inlet|mosquito|drainage|erosion|lighting|road|parks|"
+              r"improvement|authority|trust|unit|basin|transit|police|sheriff|fund|services|redevelopment|cra)\b")
+
+
 def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
     """Split each district's millage into the law spec's levy classes.
 
@@ -93,6 +98,13 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
         cities = t1[t1["authority"].str.match(r"(?i)^(city|town|village) of ")]
         for _, r in cities.iterrows():
             city_mills[(fips, norm(r["authority"]))] = r["millage_2025"]
+        # Some counties' Table 1 lists cities by bare name (Palm Beach: "Boca Raton"). Accept bare
+        # names that aren't county, school or special-district levies; they only apply where a
+        # district's note or parcels' city names that city (and the county-levy check passes).
+        bare = t1[~t1["authority"].str.match(r"(?i)^(city|town|village) of ")
+                  & ~t1["authority"].str.contains(NOT_A_CITY, case=False, regex=True)]
+        for _, r in bare.iloc[1:].iterrows():  # first row is the county government
+            city_mills.setdefault((fips, norm(r["authority"])), r["millage_2025"])
         if county in exact:
             g = t1[t1["authority"] == exact[county]]
         elif county == "Duval":  # consolidated: lowest general-government levy
@@ -113,6 +125,8 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
     note = pd.Series([notes.get((f, c), "") for f, c in zip(r["county_fips"], r["code"])], index=r.index)
     uninc = note.str.contains("uninc", case=False)
     named = note.str.extract(r"(?i)\b((?:city|town|village) of [A-Za-z .'-]+?)(?:\s*[\(;,|]|$)")[0]
+    # a district note that is just a city's name ("BOCA RATON") names that city too
+    named = named.where(named.notna(), note.where(~uninc & (note != "")))
     named_mills = [city_mills.get((f, norm(n))) if isinstance(n, str) else None for f, n in zip(r["county_fips"], named)]
     mail_mills = [city_mills.get((f, norm(c))) if isinstance(c, str) else None for f, c in zip(r["county_fips"], r["city"])]
     r["city_millage"] = [nm if nm is not None else mm for nm, mm in zip(named_mills, mail_mills)]
