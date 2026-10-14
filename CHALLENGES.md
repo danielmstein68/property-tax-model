@@ -62,7 +62,11 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 
 ### Owners reporting $0 property tax
 - **Problem:** some owners report $0 tax. It may be real (exemptions) or misreporting (escrow payers who don't know).
-- **Solution (Open):** examine by home value, building type and state exemptions before calibration. Flagged as `flag_zero_taxamt`.
+- **Finding:** in the roll, 3.9% of homesteads have $0 taxable value — 155,764 of 201,438 because of the **disabled veterans' total exemption**, then cheap homes (31k), veterans' discount (9k), totally disabled (5k). PUMS homesteads report $0 at 4.3%, nearly the same, so most zeros are real; the ~150k unexplained zeros on homes over $200k were mostly veterans. Excess PUMS zeros sit in $50–200k homes.
+- **Solution (Solved):** `assign_exemptions` gives homesteads the special exemptions, matching roll counts by county group, then classifies $0 owners as total exemption / cheap home / misreported (69k, modelled tax at calibration).
+- **Lesson:** PUMS's veterans' disability band (70–100%) is broader than the requirement (100% permanent and total) and misses surviving spouses; choosing by it alone gave the exemption to households that mostly pay tax (18% reported $0). Reported $0 as the main evidence, with veteran/widowed signals as tie-breakers, raised that to 92%.
+- **Exemption codes:** DOR's NAL user guide is a PDF; `pypdf` extracts the code table. Codes saved in `inputs/fl_exemption_codes.csv`.
+- **Double counting:** counting exemption codes separately double-counts homes with both county and city versions (e.g. senior 03 + 04). Count the union per parcel.
 
 ### No homestead / primary residence flag
 - **Problem:** PUMS doesn't say whether an owner claims a homestead exemption. Florida: 6.35M PUMS owner households (2026 weights) vs 5.21M homestead parcels — ~1.1M owners don't claim.

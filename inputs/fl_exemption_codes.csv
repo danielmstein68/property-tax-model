@@ -1,0 +1,19 @@
+code,group,amount,school,county,municipal,statute,description
+01,homestead,"up to $25,000",yes,yes,yes,196.031(1)(a),First homestead exemption
+02,homestead,"up to $25,722 (2025; indexed)",no,yes,yes,196.031(1)(b),Additional homestead exemption on assessed value between $50k and $75k (indexed)
+03,senior_lowinc,"up to $50,000 (county set)",no,yes,no,196.075,Low-income seniors 65+ (county option)
+04,senior_lowinc,"up to $50,000 (city set)",no,no,yes,196.075,Low-income seniors 65+ (municipal option)
+05,vet_total,total,yes,yes,yes,196.081,Permanently and totally disabled veterans and surviving spouses
+06,vet_total,total,yes,yes,yes,196.091,Disabled veterans confined to wheelchairs and surviving spouses
+08,disabled_total,total,yes,yes,yes,196.101,Totally and permanently disabled persons
+31,small,$500,yes,yes,yes,196.202,Blind persons
+32,small,$500,yes,yes,yes,196.202,Widowers
+33,small,$500,yes,yes,yes,196.202,Widows
+34,small,$500,yes,yes,yes,196.202,Totally and permanently disabled persons
+35,small,"$5,000",yes,yes,yes,196.24,Disabled ex-service members
+38,military,up to 100%,yes,yes,yes,196.173,Homestead of deployed military personnel
+39,senior_longterm,total,no,yes,no,196.075,Low-income seniors 65+ with 25+ years residence (county option)
+40,senior_longterm,total,no,no,yes,196.075,Low-income seniors 65+ with 25+ years residence (municipal option)
+41,first_responder,total,yes,yes,yes,196.102,First responders totally and permanently disabled in the line of duty
+80,vet_discount,% discount,yes,yes,yes,196.082,Disabled veterans 65+ (combat-related) homestead discount
+81,granny_flat,reduction,yes,yes,yes,193.703,Living quarters for parents or grandparents
