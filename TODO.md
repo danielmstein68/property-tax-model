@@ -86,6 +86,8 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 - [ ] **Texas**
 
 ## Deferred: pass-through to renters
+Decided 2026-10-14: model the status quo for **owners only** first; renters stay in the data labelled "not yet modelled"; income deciles defined over **all households**. The switch `Settings(include_rental_pass_through=True)` (`ptm/settings.py`) exists but raises an error until pass-through is built.
+
 For now the model looks at nominal property tax only. Later we need to decide how landlords' tax reaches renters. Options discussed:
 - one pass-through share for everything;
 - different shares for increases vs decreases;
