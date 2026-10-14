@@ -211,10 +211,12 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
 def assign_city_senior_exemptions(h: pd.DataFrame, base_year: int, rng) -> pd.DataFrame:
     """City versions of the senior exemptions (codes 04, 40), matched to roll counts by area.
 
-    Candidates: homesteads in a city district that already have the county version (the same
-    age/income test; cities adopt their own ordinance). Chosen at random within each county
-    group until the roll's count of parcels with the city exemption is reached. Amount: the roll's
-    median city exemption (code 04).
+    Candidates: homesteads in a city district that pass the same age/income (and, for the
+    long-term version, residence and value) test as the county version (elig_* from
+    ptm.exemptions) — not only those with the county version, since some cities adopt the
+    exemption where the county hasn't. Chosen at random within each county group until the roll's
+    count of parcels with the city exemption is reached. Amount: the roll's median city exemption
+    (code 04) for the county group, statewide median where none.
     """
     from ptm.exemptions import roll_exemption_counts  # noqa: F401  (kept for the county version)
     from ptm.geo import county_groups
@@ -230,18 +232,21 @@ def assign_city_senior_exemptions(h: pd.DataFrame, base_year: int, rng) -> pd.Da
         n40 = int((d["EXMPT_40"].fillna(0) > 0).sum()) if "EXMPT_40" in d else 0
         rows.append({"area": a, "lowinc_city": n04, "longterm_city": n40})
         if "EXMPT_04" in d:
-            amounts.append(d.loc[d["EXMPT_04"] > 0, "EXMPT_04"])
+            amounts.append(pd.DataFrame({"area": a, "amount": d.loc[d["EXMPT_04"] > 0, "EXMPT_04"]}))
     counts = pd.DataFrame(rows).groupby("area").sum()
-    amount = float(pd.concat(amounts).median()) if amounts else 0.0
+    am = pd.concat(amounts) if amounts else pd.DataFrame(columns=["area", "amount"])
+    amount_by_area = am.groupby("area")["amount"].median()
+    amount_state = float(am["amount"].median()) if len(am) else 0.0
 
     out = h.copy()
     out["_rand"] = rng.random(len(out))
     in_city = out["millage_municipal"].fillna(0) > 0
-    for flag, county_flag, target in [("ex_senior_lowinc_city", "ex_senior_lowinc", "lowinc_city"),
-                                      ("ex_senior_longterm_city", "ex_senior_longterm", "longterm_city")]:
-        elig = in_city & out[county_flag].fillna(False).astype(bool)
+    for flag, elig_col, target in [("ex_senior_lowinc_city", "elig_senior_lowinc", "lowinc_city"),
+                                   ("ex_senior_longterm_city", "elig_senior_longterm", "longterm_city")]:
+        elig = in_city & out[elig_col].fillna(False).astype(bool)
         out[flag] = _fill_by_priority(out, elig, counts[target], priority=["_rand"], ascending=[True], group="value_area")
-    out["ex_senior_city_amount"] = np.where(out["ex_senior_lowinc_city"], amount, 0.0)
+    city_amount = out["value_area"].map(amount_by_area).fillna(amount_state)
+    out["ex_senior_city_amount"] = np.where(out["ex_senior_lowinc_city"], city_amount, 0.0)
     return out.drop(columns="_rand")
 
 
