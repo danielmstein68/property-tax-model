@@ -15,6 +15,7 @@ _Generated from `inputs/fl_law.yaml` by `scripts/law_page.py`. **Do not edit thi
 - **senior_lowinc_county** (🟡 medium): Amount varies by county (roll median $45,389). Decided (2026-10-14): use each county's own amount from the roll instead of the statewide median. Not yet done.
 - **senior_lowinc_municipal** (🟡 medium): Decided (2026-10-14): assign separately from the county version, matching the roll's counts of EXMPT_04 by area, with each city's own amount. Not yet done.
 - **exemption_order** (🟡 medium): Not stated whether the $5,000 exemptions (196.202, 196.24) count as "other homestead exemptions" — they apply to any property. Decided (2026-10-14): treat them as other homestead exemptions (applied after the first two, lowest-taxable order); the roll test will confirm. With fixed-dollar exemptions the order only matters near a $0 floor.
+- **maximum_millage_vote** (🟡 medium): 2026 Florida Statutes text; ch. 2026-239 is described as "remedial and clarifying". Before 2026 the majority-vote maximum was the rolled-back rate adjusted for the change in per capita personal income (s. 200.185) — earlier years not encoded yet. Medium confidence only because the 2026 session laws themselves haven't been read; check effective date.
 
 ## Assessment
 
@@ -436,3 +437,53 @@ Constitutional caps on operating millage (excluding voted debt and short-term vo
 **Source:** [Fla. Const. Art. VII §9(b)](https://www.flsenate.gov/Laws/Constitution) · **Confidence:** ✅ high
 
 > "...shall not be levied in excess of the following millages upon the assessed value of real estate and tangible personal property: for all county purposes, ten mills; for all municipal purposes, ten mills; for all school purposes, ten mills; for water management purposes for the northwest portion of the state ... 0.05 mill; for water management purposes for the remaining portions of the state, 1.0 mill..."
+
+## Setting rates (TRIM)
+
+### rolled_back_rate
+
+The rolled-back rate is the millage that would raise the same ad valorem revenue as last year, from this year's taxable value excluding new construction, additions, deletions and certain other changes.
+
+| Parameter | Value |
+|---|---|
+| applies_to | county, municipal, special |
+
+**Source:** [s. 200.065(1), F.S.](http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0200-0299/0200/Sections/0200.065.html) · **Confidence:** ✅ high
+
+> "...the millage rate ... which will provide the same ad valorem tax revenue for each taxing authority as was levied during the prior year less the amount ... exclusive of new construction, additions to structures, deletions ... That millage rate shall be known as the "rolled-back rate.""
+
+_Note:_ Model (ptm/ratemodel.py): last year's levy / (this year's taxable value - new construction). 2025 test vs DOR's official rolled-back rates (66 counties): median error -0.10%, 92% within 3%. Additions, deletions and annexations are not separately available, hence small errors.
+
+### maximum_millage_vote
+
+From 2026, the most a county, city or dependent special district may adopt by majority vote is the rolled-back rate; up to 110% of the rolled-back rate needs a two-thirds vote; above 110% needs a unanimous vote (or three-fourths if the board has nine or more members) or a referendum. Constitutional caps (10 mills county / city / school) still apply.
+
+| Parameter | Value |
+|---|---|
+| applies_to | county, municipal, special |
+| majority_vote_max_of_rolled_back | 2026: 1.0 |
+| two_thirds_vote_max_of_rolled_back | 2026: 1.1 |
+
+**Source:** [s. 200.065(5)(a), F.S., as amended by ch. 2026-239 and ch. 2026-240](http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0200-0299/0200/Sections/0200.065.html) · **Confidence:** 🟡 medium
+
+> "The maximum millage rate that a county, municipality, special district dependent to a county or municipality ... is the rolled-back rate computed pursuant to subsection (1)." "A rate of not more than 110 percent of the rolled-back rate may be adopted if approved by a two-thirds vote" "A rate in excess of 110 percent may be adopted if approved by a unanimous vote of the membership of the governing body ... or by a three-fourths vote of the membership of the governing body if the governing body has nine or more members"
+
+_Note:_ 2026 Florida Statutes text; ch. 2026-239 is described as "remedial and clarifying". Before 2026 the majority-vote maximum was the rolled-back rate adjusted for the change in per capita personal income (s. 200.185) — earlier years not encoded yet. Medium confidence only because the 2026 session laws themselves haven't been read; check effective date.
+
+### school_required_local_effort
+
+School districts must levy the Required Local Effort millage certified by the Commissioner of Education: the district's share of the statewide RLE dollars divided by 96% of its school taxable value. Plus 0.748 mills discretionary operating and up to 1.5 mills local capital improvement; voted levies and prior-period adjustments vary by district.
+
+| Parameter | Value |
+|---|---|
+| applies_to | school |
+| collection_factor | 96.0% |
+| discretionary_operating | 2025: 74.8% |
+| capital_improvement_max | 2025: 1.5 |
+| rle_dollars_statewide | 2026: 11,129,013,705 |
+
+**Source:** [s. 1011.62(4), s. 1011.71, F.S.; FLDOE 2026-27 FEFP Second Calculation](https://www.fldoe.org/file/7507/2627FEFP2ndCalc.pdf) · **Confidence:** ✅ high
+
+> FLDOE Second Calculation 2026-27: Total Required Local Effort $11,129,013,705; RLE millage by district (statewide average 3.057); discretionary 0.748 mills. Check: Alachua 29,892,385,798 x 3.027 / 1000 x 0.96 = 86,864,882, the published RLE taxes.
+
+_Note:_ District RLE millage for 2026 in inputs/fl_school_rle_2026.csv.

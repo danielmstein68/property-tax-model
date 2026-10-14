@@ -48,8 +48,9 @@ def main(state: str = "fl") -> None:
             for r in sorted(review, key=lambda r: r.spec["confidence"] != "low")] or ["- Nothing flagged."]
     out.append("")
 
-    titles = {"assessment": "Assessment", "exemptions": "Exemptions (in the order applied)", "taxable": "Taxable value and tax"}
-    for section in ["assessment", "exemptions", "taxable"]:
+    titles = {"assessment": "Assessment", "exemptions": "Exemptions (in the order applied)", "taxable": "Taxable value and tax",
+              "rates": "Setting rates (TRIM)"}
+    for section in ["assessment", "exemptions", "taxable", "rates"]:
         rules = law.exemptions() if section == "exemptions" else [r for r in law.rules.values() if r.section == section]
         if not rules:
             continue

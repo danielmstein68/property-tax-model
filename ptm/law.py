@@ -74,7 +74,7 @@ def load_law(state: str = "fl", path: Path | None = None) -> Law:
     levies = meta.get("levy_classes", [])
     law = Law(state=meta.get("state", state.upper()), levy_classes=levies, meta=meta)
     problems = []
-    for section in ["assessment", "exemptions", "taxable"]:
+    for section in ["assessment", "exemptions", "taxable", "rates"]:
         for rid, spec in (raw.get(section) or {}).items():
             if rid in law.rules:
                 problems.append(f"{rid}: duplicate rule id")
