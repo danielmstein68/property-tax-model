@@ -127,8 +127,9 @@ assessment:
     notes: >
       Ch. 2026-239 changed "immediate prior homestead" to "prior homestead" from the 2027 roll;
       through 2026 the "immediate prior" wording governs (DOR bulletin PTO 26-07). Split
-      ownership rules (8)(c)-(d) not modelled. PUMS can't see a mover's old homestead, so in
-      the model portability mostly enters through the roll-based assessment gaps.
+      ownership rules (8)(c)-(d) not modelled. Decided (Daniel, 2026-10-14): not modelled
+      explicitly for the 2026 baseline — PUMS can't see a mover's old homestead, and the
+      roll-based assessment gaps already include ported savings. Revisit when projecting movers.
 
   nonhomestead_residential_cap:
     description: >
@@ -243,7 +244,7 @@ exemptions:
       taxation." (1); "...the gross income of all persons residing in or upon the homestead for
       the prior year shall not exceed $14,500." (4)(a)
     source_url: https://www.flsenate.gov/Laws/Statutes/2026/196.101
-    confidence: medium
+    confidence: high
     kind: total
     order: 4
     household_flag: ex_disabled_total
@@ -251,9 +252,14 @@ exemptions:
     applies_to: [school, county, municipal, special]
     income_limit_base: 14500
     income_limit_indexed: "CPI annual average change, from 1990"
+    income_limit: {2026: 37712}
+    income_measure: >
+      Gross income of everyone living in the household, prior calendar year, including Social
+      Security and VA benefits (no income test for quadriplegics).
     notes: >
-      Current indexed income limit not yet verified (no DOR table found). In the model this
-      exemption is matched to roll counts, so the limit isn't used for assignment yet.
+      2026 limit $37,712 (applies to 2025 income) provided by Daniel, 2026-10-14; consistent
+      with $14,500 indexed by CPI since 1990 (~$37,600). In the model this exemption is matched
+      to roll counts; the limit can be used to choose eligible households.
 
   first_responder_total:
     description: >
@@ -301,8 +307,9 @@ exemptions:
       Local option: availability depends on each county's ordinance. "Unless otherwise
       specified ... this exemption will apply to all tax levies of the county ... including
       dependent special districts and municipal service taxing units" (196.075(4)(b)).
-      The model's current assignment uses just value < $350k as a proxy — should switch to
-      the statute's $250k-at-first-qualification test.
+      Decided (2026-10-14): replace the model's "just value < $350k today" proxy with the
+      statute's test — just value under $250,000 in the first year the owner qualified (65+ and
+      25 years in the home), estimated by deflating today's value to that year.
 
   senior_longterm_municipal:
     description: City-option version of the long-term low-income senior exemption (city levies).
@@ -321,7 +328,9 @@ exemptions:
     just_value_limit: 250000
     residence_years: 25
     min_age: 65
-    notes: Not yet assigned separately from the county version.
+    notes: >
+      Decided (2026-10-14): assign separately from the county version, matching the roll's
+      counts of EXMPT_40 by area. Not yet done.
 
   senior_lowinc_county:
     description: >
@@ -345,8 +354,8 @@ exemptions:
     income_limit: {2025: 37694, 2026: 38686}
     min_age: 65
     notes: >
-      Amount varies by county (roll median $45,389). Model uses the roll median; should use
-      each county's own amount from the roll.
+      Amount varies by county (roll median $45,389). Decided (2026-10-14): use each county's
+      own amount from the roll instead of the statewide median. Not yet done.
 
   senior_lowinc_municipal:
     description: City-option version of the low-income senior exemption (city levies).
@@ -364,7 +373,9 @@ exemptions:
     max_amount: 50000
     income_limit: {2025: 37694, 2026: 38686}
     min_age: 65
-    notes: Not yet assigned separately from the county version.
+    notes: >
+      Decided (2026-10-14): assign separately from the county version, matching the roll's
+      counts of EXMPT_04 by area, with each city's own amount. Not yet done.
 
   widow_blind_disabled_5000:
     description: >
@@ -420,14 +431,18 @@ exemptions:
       assessed value resulting from construction or reconstruction of the property; or (b)
       Twenty percent of the total assessed value of the property as improved."
     source_url: https://www.flsenate.gov/Laws/Statutes/2026/193.703
-    confidence: medium
+    confidence: high
     kind: reduction
     order: 12
     household_flag: ex_granny_flat
     roll_code: EXMPT_81
     applies_to: [school, county, municipal, special]
     max_share_of_assessed: 0.20
-    notes: Rare; not assigned to households.
+    notes: >
+      Law is clear; the gap is data. Only 702 parcels statewide (2026 roll; median reduction
+      19% of assessed value), and PUMS doesn't record construction for parent quarters.
+      Decided (2026-10-14): not assigned to households. If needed, assign to owner households
+      with a parent/grandparent 62+ present, matching roll counts.
 
   deployed_military:
     description: >
@@ -488,8 +503,9 @@ taxable:
     confidence: medium
     notes: >
       Not stated whether the $5,000 exemptions (196.202, 196.24) count as "other homestead
-      exemptions" — they apply to any property. With fixed-dollar exemptions the order only
-      matters near a $0 floor, so this rarely changes results; the roll test will show it.
+      exemptions" — they apply to any property. Decided (2026-10-14): treat them as other
+      homestead exemptions (applied after the first two, lowest-taxable order); the roll test
+      will confirm. With fixed-dollar exemptions the order only matters near a $0 floor.
 
   taxable_value:
     description: >

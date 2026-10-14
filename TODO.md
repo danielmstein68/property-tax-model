@@ -63,7 +63,12 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
     - [ ] Unit tests for `ptm/florida.py` (add pytest).
   - **Household count:** handled by calibration to the roll's 2026 homestead count.
 - [ ] **Request 2024 final NAL roll** from DOR (PTOTechnology@floridarevenue.com) — draft ready on request; you send it.
-- [ ] **Florida current-law rules** — Save Our Homes, homestead exemption, 10% non-homestead cap
+- [ ] **Florida current-law rules** — spec done: `inputs/fl_law.yaml` (24 rules, verbatim sources, confidence flags), readable page `docs/FL_LAW.md` (`scripts/law_page.py`), loader `ptm/law.py`. Review decisions 2026-10-14 recorded in the spec. Still to do:
+  - [ ] Rules engine reading the spec (assessment, exemptions in statutory order, taxable value by levy class) + unit tests.
+  - [ ] Roll test: reproduce TV_SD / TV_NSD for all residential parcels (early check: 99.1% / 99.8% with simple subtraction; veterans' discount needs per-levy %; $5,000 ex-service 83% — investigate).
+  - [ ] Exemption assignment updates (decided): long-term senior test = just value < $250k in first qualifying year (deflated); county-specific low-income senior amounts from the roll; city versions of both senior exemptions (EXMPT_04, EXMPT_40) matched to roll counts; assign $5,000 widow/blind/disabled and disabled ex-service exemptions; disabled-total income limit $37,712 (2026, gross household income incl. SS/VA).
+  - [ ] Fix `inputs/fl_exemption_codes.csv`: codes 31–34 are $5,000 (not $500, per ch. 2022-97 and the roll).
+  - [ ] Portability: revisit when projecting movers (not modelled explicitly for 2026).
 - [ ] **Calibration** — match modelled tax to reported `TAXAMT` and published levy totals
 - [ ] **Metrics** — distribution tables by income decile etc., Suits index, replicate-weight SEs
 - [ ] **Current-law projection** — 2026 → 2036
