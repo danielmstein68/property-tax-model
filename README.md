@@ -45,6 +45,11 @@ Requires Python 3.12 and git.
    ```
    `psam_h12.csv` is Florida's PUMS housing file (`12` is Florida's state FIPS code; Ohio is `39`, Texas `48`).
 
+Run the tests with:
+```bash
+python -m pytest
+```
+
 ## Repository layout
 
 | Path | What it is |

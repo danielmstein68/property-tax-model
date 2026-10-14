@@ -50,9 +50,10 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 
 ### Top-coded home values and taxes
 - **Problem:** the most expensive homes are replaced by one state-specific amount, which only says the real value is "at least" that. These homes pay a large share of tax.
-- **Solution (Planned):** fit a Pareto tail and give each top-coded home its own value (random draws, fixed seed).
-  - **Method B (preferred, where parcel data exists):** fit the tail to the real distribution of values in the state's parcel tax roll.
-  - **Method A (fallback, when no usable parcel data):** fit the tail using only PUMS homes just below the cut-off, constrained so the draws average the top-coded amount (if the Census Bureau sets it to the mean above the cut-off — still to confirm). Validate against any published totals available.
+- **Solution:** give each top-coded home its own value.
+  - **Method B (Solved for Florida, `ptm/topcode.py`):** with a full parcel roll, skip curve-fitting and draw from the roll's actual top homesteads. Cut-off is statewide (PUMS top-codes above one state amount): the value of the N-th most valuable roll homestead, N = weighted top-coded households. Each region (county with ≥ 20 top-coded records and ≥ 30 roll homes above the cut-off; the rest pooled) uses its own roll homes above the cut-off. Households are matched by reported tax (higher tax → more expensive home, with noise) via weighted quantile mapping, so the region's value distribution is reproduced exactly.
+  - **Method A (fallback, when no usable parcel data):** fit a Pareto tail to PUMS homes just below the cut-off, constrained so the draws average the top-coded amount (the roll supports that amount being the mean above the cut-off). Validate against any published totals available.
+- **Don't take "the top N parcels" per region:** in counties with few expensive homes that reaches below the statewide cut-off (Brevard's top N started at $1.5M). Draw only from homes above the cut-off; count mismatches between PUMS and the roll (Brevard 2,088 top-coded vs 252 roll homes above $3.09M; Collier 3,723 vs 7,174) are sampling noise / over-reporting for value calibration, not for top-coding.
 - **Detection:** top-coded records are the ties at the column maximum (`flag_topcode_valp`, `flag_topcode_taxamt`).
 
 ### Top-coded income
@@ -104,7 +105,9 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - Home value: **$6,471,000** (706 records, 0.8% of owners).
 - Property tax: **$42,500** (735 records).
 - Either: 1.3% of owner households but **10.6% of reported owner tax** and 12.2% of value.
-- **Solution:** Method B using the Florida DOR parcel tax roll (see above).
+- **Solution (Solved):** Method B using the Florida DOR parcel tax roll (see above). Results (2024 market value): statewide cut-off **$3,088,769**; 12 regions (11 counties + rest of Florida); imputed weighted mean $5.94M (regional tail means $3.9M in Brevard to $8.2M in Palm Beach; maximum $263M); weighted total $314B vs PUMS $342B (−8%, because PUMS over-represents top-codes in cheaper regions); reported-tax/value rank correlation 0.59–0.83 by region.
+- **Finding (statewide):** the top 52,868 roll homesteads (= PUMS weighted top-codes) start at ~$3.0M and average $6.29M vs the $6.47M replacement amount — same as Miami-Dade.
+- **Top-coded tax ($42,500):** not imputed yet; needs county tax rates (piece 7). Top-coded owners' reported tax is 0.69% of imputed just value vs ~0.9–1.15% implied by the roll's taxable values — partly the $42,500 floor, partly low tax rates in wealthy areas.
 - **Finding (Miami-Dade):** $6,471,000 is the *replacement* amount, not the cut-off. PUMS has ~8,900 top-coded owner homes in Miami-Dade PUMAs; the 2026 roll's top ~8,500–8,900 homesteads start at about $2.9–3.0M and average $6.35–6.54M — almost exactly the replacement amount. This supports the replacement being the mean above a ~$3M cut-off, so PUMS totals at the top are roughly right; only the spread is lost. (Rough: different years, and PUMS is self-reported market value vs the roll's just value.)
 
 ### Owners' reported tax with $0

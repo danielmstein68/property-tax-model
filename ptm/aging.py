@@ -104,7 +104,7 @@ def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year:
       1. purchase year from MV (category midpoint);
       2. assessed/just ratio in the survey year from Save Our Homes history since purchase
          (ptm.florida.soh_ratio_from_purchase);
-      3. just value: survey year = VALP x just/market ratio; base year = valp_jv_aged;
+      3. just value: survey year = valp_2024 (or VALP) x just/market ratio; base year = valp_jv_aged;
          years between interpolated geometrically;
       4. assessed value rolled forward each year: min(prior x cap, just value);
       5. school and non-school taxable value after the homestead exemption, both years;
@@ -127,7 +127,9 @@ def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year:
     purchase = (survey_year - years_ago).round().clip(lower=1994).astype(int)
     ratio0 = florida.soh_ratio_from_purchase(purchase, survey_year, hist)
 
-    jv0 = o["VALP"].to_numpy() * o["jv_to_market"].to_numpy()
+    # Survey-year value: valp_2024 (top-coded values replaced, ptm.topcode) when present, else VALP
+    valp0 = o["valp_2024"] if "valp_2024" in o else o["VALP"]
+    jv0 = valp0.to_numpy() * o["jv_to_market"].to_numpy()
     jv1 = o["valp_jv_aged"].to_numpy()
     av = ratio0 * jv0
     n = base_year - survey_year
