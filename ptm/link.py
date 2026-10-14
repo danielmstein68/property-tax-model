@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ptm.parcels import out_of_state
 from ptm.geo import fl_parcel_counts_by_puma
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,7 +130,8 @@ def assign_homestead(h: pd.DataFrame, base_year: int, persons_path, survey_year:
         out = out.merge(householder_citizenship(persons_path), on="SERIALNO", how="left")
     owner = (out["tenure"] == "owner") & ~out["mh_rented_lot"].fillna(False).astype(bool)
 
-    roll = _roll(base_year, ["CO_NO", "CENSUS_BK", "DOR_UC", "homestead", "own_out_of_state"])
+    roll = _roll(base_year, ["CO_NO", "CENSUS_BK", "DOR_UC", "homestead", "own_state"])
+    roll["own_out_of_state"] = out_of_state(roll["own_state"])  # recomputed: stored flag wrong where state is spelled out
     roll["type"] = roll["DOR_UC"].map(ROLL_HOME_TYPE)
     roll = roll[roll["type"].notna()]
     for t in ["sfr", "condo", "mobile"]:

@@ -196,13 +196,16 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
 def roll_districts(base_year: int) -> pd.DataFrame:
     """Residential roll parcels with PUMA (or county fallback), homestead, just value, district code."""
     files = glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet"))
-    p = pd.concat([pd.read_parquet(f, columns=["CO_NO", "CENSUS_BK", "DOR_UC", "JV", "homestead", "TAX_AUTH_CD"])
-                   for f in files], ignore_index=True)
+    cols = ["CO_NO", "CENSUS_BK", "DOR_UC", "JV", "homestead", "TAX_AUTH_CD", "own_state", "own_business"]
+    p = pd.concat([pd.read_parquet(f, columns=cols) for f in files], ignore_index=True)
     p = p[p["DOR_UC"].isin(["001", "002", "004", "005", "003", "008"]) & (p["JV"] > 0)]
     p["county_fips"] = fl_dor_to_fips(p["CO_NO"])
     p["PUMA"] = fl_parcel_puma(p)
     p["code"] = p["TAX_AUTH_CD"].astype(str).str.strip()
-    return p[["county_fips", "PUMA", "homestead", "JV", "code"]]
+    # Florida-resident individual owner (not a company, mailing address in Florida)
+    from ptm.parcels import out_of_state  # stored own_out_of_state is wrong where the state is spelled out
+    p["fl_individual"] = ~out_of_state(p["own_state"]) & ~p["own_business"].fillna(False).astype(bool)
+    return p[["county_fips", "PUMA", "homestead", "JV", "code", "fl_individual"]]
 
 
 def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, seed: int = 2026,
@@ -210,7 +213,7 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
     """Give each owner (not rented-lot mobile homes) a tax district and its millage; modelled tax.
 
     Requires assign_exemptions (taxable_sd_<base>, taxable_nsd_<base>).
-    Cells: PUMA x homestead x value third (donors: roll parcels in the PUMA; parcels whose
+    Cells: PUMA x homestead x value third (donors: roll parcels in the PUMA, non-homestead ones only if owned by a Florida-resident individual; parcels whose
     CENSUS_BK doesn't map to a PUMA are pooled by county and used for the county's PUMAs when the
     PUMA cell is thin). Adds county_fips_tax, tax_district, school_millage, nonschool_millage,
     tax_school_<base>, tax_nonschool_<base>, tax_model_<base> (2025 rates on 2026 taxable values).
@@ -222,6 +225,11 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
     roll = roll_districts(base_year)
     roll = roll.join(rates[["total_millage"]], on=["county_fips", "code"])
     roll = roll[roll["total_millage"].notna()]
+    # Non-homestead owners in PUMS are Florida residents living in the home, so their donors are
+    # non-homestead parcels owned by Florida-resident individuals, not second homes of out-of-state
+    # owners or company-owned rentals (which over-picked coastal districts such as Marco Island).
+    roll_all = roll
+    roll = roll[roll["homestead"].fillna(False).astype(bool) | roll["fl_individual"]]
     pct = roll.groupby(["PUMA", "homestead"])["JV"].rank(pct=True, method="first")
     roll["band"] = pd.cut(pct, [0, 1 / 3, 2 / 3, 1.0001], labels=["low", "mid", "high"]).astype(str)
 
@@ -240,12 +248,15 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
 
     cells = {k: g for k, g in roll[roll["PUMA"].notna()].groupby(["PUMA", "homestead", "band"])}
     pumas = {k: g for k, g in roll[roll["PUMA"].notna()].groupby(["PUMA", "homestead"])}
+    pumas_all = {k: g for k, g in roll_all[roll_all["PUMA"].notna()].groupby(["PUMA", "homestead"])}
     report = []
     for (puma, is_hs, band), idx in o.groupby(["PUMA", "is_hs", "band"]).groups.items():
         g = o.loc[idx]
         donors, level = cells.get((puma, is_hs, band)), "puma x homestead x band"
         if donors is None or len(donors) < min_donors:
             donors, level = pumas.get((puma, is_hs)), "puma x homestead"
+        if donors is None or len(donors) < min_donors:  # too few Florida-individual parcels: use all
+            donors, level = pumas_all.get((puma, is_hs)), "puma x homestead (all owners)"
         if donors is None or len(donors) < min_donors:
             report.append({"PUMA": puma, "homestead": is_hs, "band": band, "level": "no donors",
                            "records": len(g)})

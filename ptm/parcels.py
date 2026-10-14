@@ -74,6 +74,16 @@ def owner_ids(name: pd.Series) -> pd.Series:
     return norm.map(lambda n: hmac.new(key, n.encode(), hashlib.sha256).hexdigest()[:16] if n else pd.NA)
 
 
+FLORIDA_NAMES = {"FL", "FLORIDA", "FLA"}
+
+
+def out_of_state(own_state: pd.Series) -> pd.Series:
+    """True where the owner's mailing state is known and isn't Florida. Some counties (Broward,
+    Leon, Palm Beach, ...) write the state in full ("FLORIDA"), so compare normalised names."""
+    st = own_state.fillna("").astype(str).str.upper().str.strip().str.rstrip(".")
+    return (st != "") & ~st.isin(FLORIDA_NAMES)
+
+
 def owner_flags(nal: pd.DataFrame) -> pd.DataFrame:
     """Reduce owner name and mailing address to an anonymous ID and flags."""
     name = nal["OWN_NAME"].fillna("").str.upper()
@@ -83,7 +93,7 @@ def owner_flags(nal: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame({
         "owner_id": owner_ids(nal["OWN_NAME"]),
         "own_state": own_state.replace("", pd.NA),
-        "own_out_of_state": (own_state != "") & (own_state != "FL"),
+        "own_out_of_state": out_of_state(own_state),
         # Unknown (NA) when either ZIP is missing: some counties (e.g. Miami-Dade) leave
         # most owner ZIPs blank, so treating blanks as "same ZIP" would be wrong.
         "own_zip_differs": (own_zip != phy_zip).astype("boolean").mask((own_zip == "") | (phy_zip == "")),
