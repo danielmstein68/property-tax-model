@@ -11,9 +11,10 @@ Steps (Florida, 2024 PUMS -> 2026):
   4. age home values by county x type x tier, market and just value (add_aged_values)
   5. age reported property tax with Save Our Homes and homestead rules (add_aged_taxamt_rules)
   6. reweight for homes built after the survey (ptm.reweight)
-  7. link to the parcel roll (ptm.link): mobile homes on rented lots
+  7. link to the parcel roll (ptm.link): mobile homes on rented lots, then homestead status
+     (roll counts by PUMA x type; households chosen mainly by the implied-rate test)
 
-Not yet in the baseline (next steps): homestead status, assessment gaps from parcels,
+Not yet in the baseline (next steps): assessment gaps from parcels,
 top-coded values, $0-tax owners, calibration to the roll and published levies, renters' tax burden.
 
 A JSON file next to the Parquet records when and from what it was built.
@@ -27,7 +28,7 @@ from pathlib import Path
 import pandas as pd
 
 from ptm.aging import (add_aged_income, add_aged_rent, add_aged_taxamt_rules, add_aged_values)
-from ptm.link import assign_mobile_home_lots
+from ptm.link import assign_homestead, assign_mobile_home_lots
 from ptm.load import load_households
 from ptm.reweight import new_home_targets, reweight_new_development
 
@@ -50,6 +51,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
     h["WGTP_survey"] = h["WGTP"]
     h, report = reweight_new_development(h, new_home_targets(base_year, survey_year), survey_year)
     h, mh_report = assign_mobile_home_lots(h, base_year)
+    h, hs_report = assign_homestead(h, base_year, raw / "psam_p12.csv", survey_year=survey_year)
     h["survey_year"], h["base_year"] = survey_year, base_year
 
     if save:
@@ -58,6 +60,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
         h.to_parquet(dest, index=False)
         report.to_csv(dest.with_name(f"baseline_fl_{base_year}_newdev_report.csv"), index=False)
         mh_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_mobile_home_report.csv"), index=False)
+        hs_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_homestead_report.csv"), index=False)
         try:
             commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
                                     capture_output=True, text=True).stdout.strip()
