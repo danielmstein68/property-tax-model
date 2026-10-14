@@ -18,7 +18,7 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 2. [x] **Mobile homes on rented lots** — `assign_mobile_home_lots` in `ptm/link.py`, in the baseline build. Per PUMA: PUMS mobile-home owners − roll homestead mobile-home parcels (230k) = rented lot (294,747 assigned); priority lot < 1 acre, $0 tax, high `MHP` (includes site rent), low value. Flag `mh_rented_lot`: no real-estate tax, no homestead; their burden comes via lot rent (pass-through).
 3. **Assessment gap by donor draw** from similar nearby homesteads (replaces move-in-year estimate; county correlation only 0.40 now).
 4. [x] **Top-coded values** — `ptm/topcode.py` (`impute_topcoded_values`), tests in `tests/test_topcode.py`. Draws from the roll's real homesteads above the statewide cut-off ($3.09M, 2024 market), by region (11 counties + rest), matched by reported tax with noise. All 706 records replaced (min $3.09M, weighted mean $5.94M, max $263M). `valp_2024` holds the corrected value (VALP untouched); tax aging uses it.
-   - [ ] Add to `ptm/baseline.py` after `add_aged_values`, before `add_aged_taxamt_rules` — **after piece 1 is committed** (both edit `baseline.py`).
+   - [x] In the baseline build (step 5, after `add_aged_values`, before `add_aged_taxamt_rules`); report saved as `baseline_fl_2026_topcode_report.csv`.
    - [ ] Top-coded tax ($42,500): impute at piece 7 from taxable value × county rates.
 5. **$0-tax owners** — compare with roll $0-taxable share by value band; impute only the excess.
 6. **Calibrate values** to the roll by PUMA × type. **?** Quantile mapping vs reweighting.

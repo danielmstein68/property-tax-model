@@ -9,13 +9,14 @@ Steps (Florida, 2024 PUMS -> 2026):
   2. age income by type, person by person (ptm.aging.add_aged_income)
   3. age rents by CPI area (add_aged_rent)
   4. age home values by county x type x tier, market and just value (add_aged_values)
-  5. age reported property tax with Save Our Homes and homestead rules (add_aged_taxamt_rules)
-  6. reweight for homes built after the survey (ptm.reweight)
-  7. link to the parcel roll (ptm.link): mobile homes on rented lots, then homestead status
+  5. replace top-coded home values with draws from the roll's top homesteads (ptm.topcode)
+  6. age reported property tax with Save Our Homes and homestead rules (add_aged_taxamt_rules)
+  7. reweight for homes built after the survey (ptm.reweight)
+  8. link to the parcel roll (ptm.link): mobile homes on rented lots, then homestead status
      (roll counts by PUMA x type; households chosen mainly by the implied-rate test)
 
-Not yet in the baseline (next steps): assessment gaps from parcels,
-top-coded values, $0-tax owners, calibration to the roll and published levies, renters' tax burden.
+Not yet in the baseline (next steps): assessment gaps from parcels, $0-tax owners,
+calibration to the roll and published levies (incl. top-coded tax), renters' tax burden.
 
 A JSON file next to the Parquet records when and from what it was built.
 """
@@ -31,6 +32,7 @@ from ptm.aging import (add_aged_income, add_aged_rent, add_aged_taxamt_rules, ad
 from ptm.link import assign_homestead, assign_mobile_home_lots
 from ptm.load import load_households
 from ptm.reweight import new_home_targets, reweight_new_development
+from ptm.topcode import impute_topcoded_values
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = ["aging_factors_{base}.csv", "value_growth_fl_{base}.csv", "just_value_ratio_fl_{base}.csv",
@@ -47,6 +49,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
     h = add_aged_income(h, raw / "psam_p12.csv", base_year)
     h = add_aged_rent(h, base_year)
     h = add_aged_values(h, base_year)
+    h, tc_report = impute_topcoded_values(h, base_year)
     h = add_aged_taxamt_rules(h, survey_year, base_year)
     h["WGTP_survey"] = h["WGTP"]
     h, report = reweight_new_development(h, new_home_targets(base_year, survey_year), survey_year)
@@ -61,6 +64,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
         report.to_csv(dest.with_name(f"baseline_fl_{base_year}_newdev_report.csv"), index=False)
         mh_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_mobile_home_report.csv"), index=False)
         hs_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_homestead_report.csv"), index=False)
+        tc_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_topcode_report.csv"), index=False)
         try:
             commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
                                     capture_output=True, text=True).stdout.strip()
