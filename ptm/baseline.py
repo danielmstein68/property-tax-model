@@ -19,6 +19,8 @@ Steps (Florida, 2024 PUMS -> 2026):
  11. special exemptions (veterans, disabled, low-income seniors) matched to roll counts, modelled
      taxable value, and classification of $0-tax owners (ptm.exemptions)
  12. tax districts and 2025 millage (latest published) from roll donors; modelled tax (ptm.millage)
+ 13. 2026 rates (ptm.ratemodel): official 2026 school RLE; county general rates adopted (collected)
+     or predicted (keep last year's rate, capped at 110% of rolled-back); cities/special districts at 2025
 
 Not yet in the baseline (next steps):
 calibration to the roll and published levies (incl. top-coded tax), renters' tax burden.
@@ -38,6 +40,7 @@ from ptm.calibrate import calibrate_values
 from ptm.exemptions import assign_exemptions
 from ptm.gaps import assign_assessment_gaps
 from ptm.millage import assign_districts
+from ptm.ratemodel import apply_2026_rates
 from ptm.link import assign_homestead, assign_mobile_home_lots
 from ptm.load import load_households
 from ptm.reweight import new_home_targets, reweight_new_development
@@ -68,6 +71,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
     h, gap_report = assign_assessment_gaps(h, base_year)
     h, ex_report = assign_exemptions(h, base_year, raw / "psam_p12.csv")
     h, district_report = assign_districts(h, base_year)
+    h, rate_report = apply_2026_rates(h, base_year)
     h["survey_year"], h["base_year"] = survey_year, base_year
 
     if save:
@@ -82,6 +86,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
         gap_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_assessment_gap_report.csv"), index=False)
         ex_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_exemptions_report.csv"), index=False)
         district_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_tax_district_report.csv"), index=False)
+        rate_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_rates_2026_report.csv"), index=False)
         try:
             commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
                                     capture_output=True, text=True).stdout.strip()

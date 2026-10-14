@@ -1,22 +1,30 @@
 county,adopted_2026,status,rolled_back_2026_reported,source_type,source_url,note
 Alachua,7.2107,final,7.2107,news + official recommendation,https://alachuacounty.us/Depts/OMB/TodayInBudget/Absolute%20FINAL%20%20FY27%20Budget%20Message.pdf,
+Bay,5.4362,tentative,,news,https://www.wjhg.com/2026/07/22/bay-county-commissioners-approve-proposed-millage-rate-budget-talks-begin/,proposed max
 Brevard,3.0942,final,2.8129,news,https://talkoftitusville.com/2026/09/24/brevard-county-commissioners-approve-2-43-billion-budget-for-fy-2026-2027-tax-rates-set-amid-infrastructure-emergencies/,110% of RB (two-thirds cap)
 Broward,5.6658,final,5.3946,official resolution + news,https://www.browardcdn.org/api/public/content/4a0ba5b9e0d4414dbfbe5d4dbb605b3a?v=782b5eb1,
 Charlotte,6.1275,final,6.0866,official presentation + news,https://data.charlottecountyfl.gov/Agenda/20260928/1b.pdf,countywide total = Table 1 line
+Citrus,6.7382,tentative,6.7382,news,https://www.chronicleonline.com/news/local/commissioners-propose-a-slightly-smaller-tax-rate/article_fb9ce64d-c3d8-5c65-9ffb-d8c039a6bef8.html,set at rolled-back (July)
+Clay,5.5471,final,5.3686,official property appraiser final millage sheet,https://www.ccpao.com/wp-content/uploads/sites/19/2026/10/2026-Final-Millage-Rates.pdf,County Services; unchanged
 Collier,3.0107,tentative,2.9814,official tentative budget,https://www.collier.gov/files/assets/county/v/2/budget/documents/adopted-budgets/fy-27-tentative-budget-book.pdf,general fund
 Columbia,7.815,final,,news,https://citizenportal.ai/articles/10067605,
 Escambia,6.571,tentative,,news,https://citizenportal.ai/articles/9959975,
+Flagler,7.9737,final,,"official property appraiser 2026 rate sheet (post-hearing, not labelled final)",https://flaglerpa.com/wp-content/uploads/sites/76/2023/06/CURRENT-MILLAGE-1.pdf,BCC operating; 2025 7.9945
 Franklin,5.4109,final,4.7994,official adopted budget,https://www.franklincountyflorida.com/wp-content/uploads/2026/09/2627-BOCC-Adopted-Annual-Budget.pdf,single operating rate; 12.74% above RB
+Highlands,7.5,final,,official property appraiser 2026 final millage,https://www.hcpao.org/files/2026_Millages.pdf,combined county commission rate; cut from 7.6
 Hillsborough,5.4212,final,,official agenda packet,https://eagenda.hcfl.gov/portal/PTL29560/open/OBJ2R5YWQ,countywide incl. ESL debt (Table 1 basis)
 Holmes,10.0,final,9.1697,official clerk minutes,https://holmesclerk.com/uploads/2026/10/september-28-2026-final-budget-hearing.pdf,single operating rate
+Indian River,3.5475,tentative,3.3907,official final-hearing presentation (vote not verified),https://indianriver.gov/Document%20Center/Services/Management%20&%20Budget/Annual%20Budget%20Documents/2026-27/FinalBudgetHearingPresentation.pdf,4.62% above RB
 Jackson,7.945,final,,news,https://www.thegracevillenews.com/post/jackson-county-commissioners-approve-budget-grants-and-infrastructure-projects,
 Lake,5.0254,final,4.8235,official property appraiser final comparison sheet,https://www.lakecopropappr.com/pdfs/2026/2026%20Final%20Millage%20Rates%20and%20Values%20Comparison%20Sheet.pdf,general fund; unchanged
 Lee,3.7623,final,3.7292,news,https://www.gulfshorebusiness.com/lee/county-reserves-increase-to-768-million-amid-budget-growth/article_5e25bbf1-6de7-4d4b-991b-1342c5c677d9.html,
 Leon,8.3144,final,,official agenda + news,https://www2.leoncountyfl.gov/coadmin/agenda/book/260922/agenda.pdf,
 Manatee,4.5822,final,4.6417,official property appraiser final adopted millage,https://www.manateepao.gov/data/Tax_Roll_Data/Millages/2026%20Final%20Adopted%20Millage%20Rates.pdf,countywide operating; 2025 4.5942 (DOR Table 1 PDF reading 0.4833 is wrong)
+Martin,6.5614,tentative,6.2683,official DR-420 compilation (preliminary),https://www.pamartinfl.gov/images/stories/files/Tax_Roll_Info/2026_Preliminary_Taxing_Authority_Millage_Certification_DR-420.pdf,proposed = 2025
 Miami-Dade,4.574,final,4.3301,official ordinance,https://www.miamidade.gov/govaction/legistarfiles/MinMatters/Y2026/261531min.pdf,
 Monroe,2.6929,final,,county press release,https://www.keywestchamber.org/latest-community-news/commissioners-approve-and-finalize-fiscal-year-2027-budget-prioritize-public-safety,combined countywide
 Nassau,6.5178,final,6.3954,official resolution,https://www.nassaucountyfl.com/DocumentCenter/View/32063/FY26-27-Adopted-Budget,countywide total (GF 5.1501) = Table 1 basis
+Okaloosa,3.8308,final,,official property appraiser 2026 final millage,https://www.okaloosapa.com/wp-content/uploads/sites/29/2026/10/2026-Final-Millage.pdf,County levy; unchanged
 Okeechobee,7.5,final,,news,https://www.wgcu.org/government-politics/2026-09-25/final-budget-and-millage-set-in-okeechobee,
 Orange,4.4347,final,4.2404,official county certificate,https://www.orangecountyfl.net/Portals/0/resource%20library/open%20government/FY%202027%20Budget%20Public%20Hearing-CERT.pdf,countywide total = Table 1 line
 Osceola,6.7,final,6.7726,official resolution,https://www.osceola.org/files/assets/county/v/3/government/budget-and-financial/budget-documents/2027/resolution-26-138r-majority-millages_accessible.pdf,
@@ -29,5 +37,6 @@ Sarasota,3.2317,final,,official property appraiser sheet (not labelled final; ed
 Seminole,5.3751,final,,official property appraiser final millage sheet,https://files.scpafl.org/files/Public/TAXROLLDORFORMSCERTIFICATIONS/2026/MillageRateReport.pdf,county operating; unchanged
 St. Johns,4.4999,final,,news,https://www.sjcfl.us/sjc-approves-fiscal-year-2027-budget/,
 St. Lucie,4.0441,tentative,4.0441,search summary,https://www.paslc.gov/249/Taxing-Authority-Rates-Hearing-Informati,
+Sumter,4.89,final,,official property appraiser certified 2026 millage,https://www.sumterpa.com/tax-and-exemptions/tax-rates/,unchanged; new county fire district 4.6000 separate
 Volusia,3.1007,final,3.1007,official resolution,https://www.volusia.org/file/5892/Budget-Resolution-2026-148.pdf,
 Wakulla,7.7,tentative,,news,https://www.wtxl.com/news/local-news/in-your-neighborhood/wakulla-county/happening-tomorrow-wakulla-county-commissioners-to-vote-on-millage-rate-budget-and-service-fees,final cannot exceed 7.7

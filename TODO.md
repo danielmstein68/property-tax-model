@@ -36,7 +36,7 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
    - [ ] Special-district class: break out independent districts and water management districts (affects only senior exemptions, ~$20/yr).
    - [ ] Swap in 2026 rates when DOR posts the 2026 TACD tables.
    - [x] Rate model (`ptm/ratemodel.py`, 2026-10-14): rolled-back rate from official data (2025 test vs DOR: median error -0.10%, 92% within 3%; 2026 vs 14 official/reported: median 0.55%); behaviours scored on 22 final 2026 county rates — keep last year's rate (capped at 110% of rolled-back) best (median error 0%, county revenue +0.21%); 2026 school rates from official FLDOE RLE; `county_general_2026()` uses 24 collected adopted rates (`inputs/fl_county_general_2026.csv`, sourced) else keep-rate. Owner tax on 2026 rates: $25.30B vs $25.43B on 2025 rates (school -1.1%, county -0.1%).
-   - [ ] Wire 2026 rates into the baseline build (school + county general deltas; cities/special districts keep 2025 rates).
+   - [x] 2026 rates wired into the baseline build (`apply_2026_rates`, step 13): official 2026 school RLE; county general rates adopted where collected (33 final, 81% of owners) else keep-rate; cities/special districts and Duval (consolidated) at 2025. 2025-rate values kept as `*_2025rates`. Owner tax $25.30B.
    - [ ] Collect remaining 2026 adopted county rates (web-search limit hit this session) or use DOR 2026 Table 1 when posted; verify news-only entries.
    - Small gaps: Lee 325 (263 homesteads, likely new 2026 district); Lake 3 / Flagler 1 / Bay 1 codes with ~0 homesteads; Liberty code mapping inferred.
 

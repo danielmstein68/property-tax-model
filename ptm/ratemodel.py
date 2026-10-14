@@ -144,6 +144,47 @@ def county_general_2026(behaviour: str = "keep_rate") -> pd.DataFrame:
     return out
 
 
+def apply_2026_rates(h: pd.DataFrame, base_year: int = 2026, behaviour: str = "keep_rate") -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Move households from 2025 district rates to 2026 rates and recompute tax.
+
+    Requires ptm.millage.assign_districts (millage_<class>, taxable_<class>_<base>, tax_*).
+      school:   + (2026 - 2025) district school millage (official 2026 RLE; school_rates_2026)
+      county:   + (2026 - 2025) county general millage (collected adopted rate, else predicted;
+                county_general_2026)
+      municipal, special: held at 2025 (no 2026 source yet; "keep rate" is the tested default)
+    Keeps the 2025-rate values as millage_<class>_2025rates and tax_model_<base>_2025rates.
+    Returns (households, county rate report).
+    """
+    from ptm.millage import county_fips_by_name
+
+    out = h.copy()
+    ckey = out["county_fips"].map({v: k for k, v in county_fips_by_name().items()}).map(norm)
+    sch = school_rates_2026().set_index("key")
+    cty = county_general_2026(behaviour).set_index("key")
+    d_school = ckey.map(sch["school_2026"] - sch["school_2025"]).fillna(0)
+    d_county = ckey.map(cty["mill_2026"] - cty["mill_2025"]).fillna(0)
+
+    classes = ["school", "county", "municipal", "special"]
+    for c in classes:
+        out[f"millage_{c}_2025rates"] = out[f"millage_{c}"]
+    out[f"tax_model_{base_year}_2025rates"] = out[f"tax_model_{base_year}"]
+    has_rate = out["millage_school"].notna()
+    out.loc[has_rate, "millage_school"] = out.loc[has_rate, "millage_school"] + d_school[has_rate]
+    out.loc[has_rate, "millage_county"] = out.loc[has_rate, "millage_county"] + d_county[has_rate]
+    out["county_rate_source_2026"] = ckey.map(cty["source_2026"])
+
+    owner = out[f"tax_model_{base_year}"].notna()
+    total = 0
+    for c in classes:
+        tax = out[f"taxable_{c}_{base_year}"] * out[f"millage_{c}"] / 1000
+        out[f"tax_{c}_{base_year}"] = tax
+        total = total + tax.fillna(0)
+    out[f"tax_model_{base_year}"] = total.where(owner)
+    out["rate_year"] = 2026
+    report = cty.reset_index().merge(sch[["school_2025", "school_2026"]].reset_index(), on="key", how="left")
+    return out, report
+
+
 def county_rate_table() -> pd.DataFrame:
     """Join Table 1 general levies with the data book; reading check; 2025 rolled-back test;
     2026 rolled-back rate and candidate predictions."""
