@@ -31,3 +31,5 @@ The table gives no key from suffix letter to district. These codes therefore car
 - F: 3,250. B: 3,119. E: 2,391. K: 2,116. V: 1,593. G: 1,145. The rest are small.
 
 These are not imputed. A suffix-to-district key from BCPA (or the NAL special-district fields) would resolve them.
+
+**Replaced (2026-10-14):** all 74 codes now use DOR's 2025 TACD spreadsheet ("Total Real Property"), which includes the letter-suffixed special-district codes (e.g. H = Central Broward Water Control 0.89, I = Cocomar 0.1363, K = county street lighting 0.3743). 28 codes changed.

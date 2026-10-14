@@ -4,15 +4,19 @@ Usage:
     python scripts/fl_rates.py              # 2025
     python scripts/fl_rates.py --year 2025
 
-Two kinds of file (PDF, one per county):
-  tacd    Taxing Authority Code Descriptions: each tax district code (TAX_AUTH_CD in the parcel
-          roll) and its millage by component (school, county, city, special districts).
-          2025: 58 counties; Baker, Brevard, Broward, Gadsden, Hernando, Lee, Liberty, Palm Beach
-          and Sarasota have none (also none for 2024).
-  table1  Comparison of Levies: each taxing authority's millage, rolled-back rate and taxes
-          levied; all 67 counties plus a statewide file.
-The directory pages need a browser, so the manifest is collected by hand (one file name has a
-DOR typo: "Heranando Table 1.pdf"). Files go to data/raw/fl_rates_<year>/<kind>/.
+Kinds of file (one per county unless noted):
+  tacd       Taxing Authority Code Descriptions (PDF): each tax district code (TAX_AUTH_CD in the
+             parcel roll) and its millage by component. 58 counties.
+  tacd_xlsx  The same as spreadsheets for 8 counties (Baker, Brevard, Broward, Gadsden, Hernando,
+             Lee, Palm Beach, Sarasota). The portal web page hides them; only Liberty has none.
+  table1     Comparison of Levies: county and city authorities' millage, rolled-back rate and
+             taxes levied; 67 counties plus statewide.
+  table2     Distribution of Taxes: share of each authority's taxes by property class (homestead,
+             non-homestead residential, commercial, ...); 67 counties plus statewide.
+  nav        Non-ad valorem assessment reports (statewide summaries by county, city, district).
+Folder contents can be listed with SharePoint REST:
+  https://floridarevenue.com/property/dataportal/_api/web/GetFolderByServerRelativeUrl('<path>')/Files
+(one file name has a DOR typo: "Heranando Table 1.pdf"). Files go to data/raw/fl_rates_<year>/<kind>/.
 """
 
 import argparse
@@ -35,7 +39,7 @@ def main() -> None:
     with open(ROOT / "manifests" / f"fl_rates_{year}.csv") as fh:
         rows = list(csv.DictReader(fh))
     for i, r in enumerate(rows, 1):
-        dest = out / r["kind"] / f"{r['county']}.pdf"
+        dest = out / r["kind"] / f"{r['county']}{Path(r['path']).suffix.lower()}"
         if dest.exists() and dest.stat().st_size > 1000:
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)

@@ -16,3 +16,5 @@
 Roll code 325 (794 parcels, 263 homesteads, PHY_CITY Fort Myers) is not in the 2025 book. It is presumably a district created for 2026. Its total is left blank and not imputed. If it turns out to be a City of Fort Myers CRA sub-area, all such districts are 16.5269 in 2025.
 
 The book also has district 000 (centrally assessed), which is excluded, and district 312 "DISTRICT TO BE REVIEWED" (9.3708), which is not in the roll but is written.
+
+**Replaced (2026-10-14):** 106 of 108 codes now use DOR's 2025 TACD spreadsheet (district "Millage" column = sum of its authority rates). It differs from the appraiser millage book mostly by 0.0235 mills: Lee County Mosquito Control 0.2116 (DOR) vs 0.2351 (book); not independently confirmed. Codes 312 and 325 aren't in the DOR file (312 kept from the book; 325 blank).
