@@ -110,6 +110,33 @@ def school_rates_2026() -> pd.DataFrame:
     return d[["county", "key", "rle", "prior_period_adjustment", "rle_millage_2026", "school_2025", "school_2026"]]
 
 
+def county_general_2026(behaviour: str = "keep_rate") -> pd.DataFrame:
+    """2026 county general millage per county: the actual adopted rate where a final 2026 rate
+    has been collected (inputs/fl_county_general_2026.csv, with sources), otherwise predicted.
+
+    Behaviours (tested against 22 final 2026 adopted rates, 2026-10-14):
+      keep_rate    last year's rate, capped at 110% of the rolled-back rate (two-thirds-vote
+                   ceiling, s. 200.065(5)(a) as amended 2026) — best: median error 0%, mean 1.3%,
+                   county revenue error +0.21%
+      rolled_back  the 2026 rolled-back rate (median error 3.0%) — a revenue-neutral scenario
+    """
+    d = county_rate_table()
+    if behaviour == "keep_rate":
+        pred = np.minimum(d["mill"], 1.10 * d["rbr_2026"])
+    elif behaviour == "rolled_back":
+        pred = d["rbr_2026"]
+    else:
+        raise ValueError("behaviour must be 'keep_rate' or 'rolled_back'")
+    actual = pd.read_csv(ROOT / "inputs" / "fl_county_general_2026.csv")
+    actual = actual[actual["status"] == "final"]
+    actual["key"] = actual["county"].map(norm)
+    a = actual.set_index("key")["adopted_2026"]
+    out = d[["county", "key", "mill", "rbr_2026"]].rename(columns={"mill": "mill_2025"})
+    out["mill_2026"] = out["key"].map(a).fillna(pd.Series(pred.to_numpy(), index=out.index))
+    out["source_2026"] = np.where(out["key"].isin(a.index), "adopted (collected)", f"predicted ({behaviour})")
+    return out
+
+
 def county_rate_table() -> pd.DataFrame:
     """Join Table 1 general levies with the data book; reading check; 2025 rolled-back test;
     2026 rolled-back rate and candidate predictions."""

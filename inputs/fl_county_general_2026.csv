@@ -1,0 +1,30 @@
+county,adopted_2026,status,rolled_back_2026_reported,source_type,source_url,note
+Alachua,7.2107,final,7.2107,news + official recommendation,https://alachuacounty.us/Depts/OMB/TodayInBudget/Absolute%20FINAL%20%20FY27%20Budget%20Message.pdf,
+Brevard,3.0942,final,2.8129,news,https://talkoftitusville.com/2026/09/24/brevard-county-commissioners-approve-2-43-billion-budget-for-fy-2026-2027-tax-rates-set-amid-infrastructure-emergencies/,110% of RB (two-thirds cap)
+Broward,5.6658,final,5.3946,official resolution + news,https://www.browardcdn.org/api/public/content/4a0ba5b9e0d4414dbfbe5d4dbb605b3a?v=782b5eb1,
+Charlotte,6.1275,final,6.0866,official presentation + news,https://data.charlottecountyfl.gov/Agenda/20260928/1b.pdf,countywide total = Table 1 line
+Collier,3.0107,tentative,2.9814,official tentative budget,https://www.collier.gov/files/assets/county/v/2/budget/documents/adopted-budgets/fy-27-tentative-budget-book.pdf,general fund
+Columbia,7.815,final,,news,https://citizenportal.ai/articles/10067605,
+Escambia,6.571,tentative,,news,https://citizenportal.ai/articles/9959975,
+Franklin,5.4109,final,4.7994,official adopted budget,https://www.franklincountyflorida.com/wp-content/uploads/2026/09/2627-BOCC-Adopted-Annual-Budget.pdf,single operating rate; 12.74% above RB
+Hillsborough,5.4212,final,,official agenda packet,https://eagenda.hcfl.gov/portal/PTL29560/open/OBJ2R5YWQ,countywide incl. ESL debt (Table 1 basis)
+Holmes,10.0,final,9.1697,official clerk minutes,https://holmesclerk.com/uploads/2026/10/september-28-2026-final-budget-hearing.pdf,single operating rate
+Jackson,7.945,final,,news,https://www.thegracevillenews.com/post/jackson-county-commissioners-approve-budget-grants-and-infrastructure-projects,
+Lake,5.0254,tentative,,news,https://www.midfloridanewspapers.com/clermont_sun/lake-county-holds-line-on-most-property-tax-rates-cuts-wellness-way-millage/article_078ed913-c85d-4d73-b979-9a0ee4402334.html,
+Lee,3.7623,final,3.7292,news,https://www.gulfshorebusiness.com/lee/county-reserves-increase-to-768-million-amid-budget-growth/article_5e25bbf1-6de7-4d4b-991b-1342c5c677d9.html,
+Leon,8.3144,final,,official agenda + news,https://www2.leoncountyfl.gov/coadmin/agenda/book/260922/agenda.pdf,
+Miami-Dade,4.574,final,4.3301,official ordinance,https://www.miamidade.gov/govaction/legistarfiles/MinMatters/Y2026/261531min.pdf,
+Monroe,2.6929,final,,county press release,https://www.keywestchamber.org/latest-community-news/commissioners-approve-and-finalize-fiscal-year-2027-budget-prioritize-public-safety,combined countywide
+Nassau,6.5178,final,6.3954,official resolution,https://www.nassaucountyfl.com/DocumentCenter/View/32063/FY26-27-Adopted-Budget,countywide total (GF 5.1501) = Table 1 basis
+Okeechobee,7.5,final,,news,https://www.wgcu.org/government-politics/2026-09-25/final-budget-and-millage-set-in-okeechobee,
+Orange,4.4347,final,4.2404,official county certificate,https://www.orangecountyfl.net/Portals/0/resource%20library/open%20government/FY%202027%20Budget%20Public%20Hearing-CERT.pdf,countywide total = Table 1 line
+Osceola,6.7,final,6.7726,official resolution,https://www.osceola.org/files/assets/county/v/3/government/budget-and-financial/budget-documents/2027/resolution-26-138r-majority-millages_accessible.pdf,
+Palm Beach,4.5,final,4.2678,official hearing package,https://discover.pbc.gov/ofmb/budget/PDF/Second_Public_Hearing_Final.pdf,
+Pasco,7.2488,final,7.2488,official executed resolution,https://cms1files.revize.com/pasco/Documents/Services/Office%20of%20Management%20%26%20Budget/Resolution%20No.%2026-399%20Adopting%20Ad%20Valorem%20Taxes.pdf,
+Pinellas,4.4989,final,,county press release,https://pinellas.gov/news/bcc-adopts-fy27-budget-after-months-of-difficult-choices/,
+Polk,6.6348,final,6.52,news aggregator,https://citizenportal.ai/articles/10120517,RB from tentative stage
+Putnam,8.7418,final,,news,https://citizenportal.ai/articles/10284013,
+St. Johns,4.4999,final,,news,https://www.sjcfl.us/sjc-approves-fiscal-year-2027-budget/,
+St. Lucie,4.0441,tentative,4.0441,search summary,https://www.paslc.gov/249/Taxing-Authority-Rates-Hearing-Informati,
+Volusia,3.1007,final,3.1007,official resolution,https://www.volusia.org/file/5892/Budget-Resolution-2026-148.pdf,
+Wakulla,7.7,tentative,,news,https://www.wtxl.com/news/local-news/in-your-neighborhood/wakulla-county/happening-tomorrow-wakulla-county-commissioners-to-vote-on-millage-rate-budget-and-service-fees,final cannot exceed 7.7
