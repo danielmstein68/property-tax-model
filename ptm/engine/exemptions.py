@@ -6,6 +6,11 @@ Input: a DataFrame of units with
   <household_flag>    eligibility for each exemption rule (bool, or a count for fixed-amount
                       rules where several people qualify, e.g. two $5,000 exemptions)
   <value_column>      per-unit value for local_option / percent / reduction rules
+  av_homestead_portion  optional: assessed value of the homestead part of the property (e.g. the
+                      owner's unit in a duplex, the home on a mixed lot). Homestead exemptions are
+                      measured on this part only. Default: the whole assessed value.
+  homestead_share     optional: share of the homestead exemptions granted (co-owners who don't
+                      live there reduce it, e.g. 0.5). Default 1.
 Columns that are missing count as "not eligible" (listed in the result's `missing` attribute).
 
 Order (s. 196.031(8), s. 196.082(6), F.S. — rule `exemption_order` in the spec):
@@ -66,15 +71,35 @@ def apply_exemptions(units: pd.DataFrame, law: Law, year: int, detail: bool = Fa
 
     first = [r for r in rules if r.id in HOMESTEAD_FIRST]
     others = [r for r in rules if r.id not in HOMESTEAD_FIRST and r.spec["kind"] in {"fixed", "band", "local_option", "reduction"}]
+    portion = units["av_homestead_portion"].to_numpy(float) if "av_homestead_portion" in units else None
+    hs_share = units["homestead_share"].fillna(1).to_numpy(float) if "homestead_share" in units else 1.0
+
+    def hs_base(c):
+        """Raw assessed value the homestead exemptions are measured on (homestead part only)."""
+        return av[c] if portion is None else np.minimum(av[c], np.nan_to_num(portion, nan=np.inf))
+
     for r in first + others:
         kind = r.spec["kind"]
         elig = _flag(units, r.spec["household_flag"], missing)
+        if r.id in HOMESTEAD_FIRST:
+            # s. 196.031: on the residence (homestead part), measured on raw assessed value,
+            # prorated for co-owners who don't live there
+            for c in r.spec["applies_to"]:
+                base = hs_base(c)
+                if kind == "fixed":
+                    amount = (elig > 0) * np.minimum(base, float(r.get("amount", year))) * hs_share
+                else:
+                    start, width = float(r.spec["band_start"]), float(r.get("amount", year))
+                    amount = (elig > 0) * np.clip(base - start, 0, width) * hs_share
+                take = np.minimum(np.maximum(remaining[c], 0), amount)
+                remaining[c] = remaining[c] - take
+                if detail:
+                    out[f"exempt_{r.id}_{c}"] = take
+            continue
         if kind == "fixed":
             amount = elig * float(r.get("amount", year))           # a count multiplies the amount
         elif kind == "band":
             start, width = float(r.spec["band_start"]), float(r.get("amount", year))
-            # measured on the raw assessed value (s. 196.031(8)); same raw value in every
-            # class it applies to, so use the first class's assessed value
             base = av[r.spec["applies_to"][0]]
             amount = (elig > 0) * np.clip(base - start, 0, width)
         elif kind == "local_option":

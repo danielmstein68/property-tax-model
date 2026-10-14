@@ -169,6 +169,19 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **The nine missing counties:** Broward, Lee, Brevard, Baker, Hernando from appraiser/tax collector tables; Palm Beach's 2025 table recovered from the Internet Archive (it matched a rebuild from 2026 composition × 2025 rates exactly); Sarasota rebuilt from 2026 composition × 2025 certified rates (no 2025 copy archived); Gadsden and Liberty built from county, city, school and water district rates. Broward's letter-suffix codes (18% of its homesteads) lack a key to their special districts, so they miss 0.01–2 mills.
 - **Lesson:** a parser that "mostly works" is dangerous for rates — errors look plausible. Check each county against independent totals before use.
 
+### Testing the rules engine against the roll
+- **Method:** `scripts/roll_test.py` feeds each residential parcel's own assessed values and recorded exemptions to the engine and compares taxable value with the roll's TV_SD (school) and TV_NSD (county). Result: 99.39% exact on all 9.85M parcels; 99.82% excluding explained cases.
+- **Rules the roll revealed (now in the engine):**
+  - Homestead exemptions apply only to the **homestead part** of a parcel (owner's unit in a duplex, the home on a mixed lot): measured on `AV_HMSTD`, not the whole parcel.
+  - **Co-owners** who don't live there reduce the exemption proportionally (e.g. $12,500 = half).
+  - **Save Our Homes status ≠ exemption granted:** contiguous land can be assessed as homestead while the exemption sits on the house's parcel. Use the exemption fields, not `JV_HMSTD`, to tell who gets the exemption.
+  - The **veterans' discount** is a percentage applied per levy (the roll records the county dollar amount).
+- **County data quirks:**
+  - **Brevard records the $5,000 disability exemption under code 08** (statewide: total disability exemption). Treat 08 as total only when it wipes out the value. This also inflates statewide counts of the total disability exemption (~8,700 of 14,967).
+  - **Gadsden's preliminary 2026 roll uses the 2025 second-band amount** ($25,722 instead of $26,411; 4,712 parcels off by $689). Recheck with the final roll.
+  - **Broward condo common elements** (use 009) carry a nominal $10 value and $0 taxable; not homes.
+- **Out of scope:** 28k parcels carry exemptions the spec doesn't cover (charitable, affordable housing, etc.).
+
 ### Getting the parcel tax roll (NAL files)
 - **Source:** Florida DOR Data Portal → Tax Roll Data Files → NAL. One zip per county (67 counties).
 - **Roll stages:** preliminary (`2026P`, ~July) and final (`2026F`, certified county by county from October). Each county appears in only one folder — when its final roll is certified, it moves from `2026P` to `2026F`. On 2026-10-13: 29 final, 38 preliminary.
