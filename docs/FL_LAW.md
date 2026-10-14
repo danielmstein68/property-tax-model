@@ -268,6 +268,7 @@ County option: up to $50,000 off county levies for an owner 65+ whose household 
 | kind | local_option |
 | order | 8 |
 | household_flag | ex_senior_lowinc |
+| value_column | ex_senior_amount |
 | roll_code | EXMPT_03 |
 | applies_to | county |
 | max_amount | 50,000 |
@@ -289,6 +290,7 @@ City-option version of the low-income senior exemption (city levies).
 | kind | local_option |
 | order | 9 |
 | household_flag | ex_senior_lowinc_city |
+| value_column | ex_senior_city_amount |
 | roll_code | EXMPT_04 |
 | applies_to | municipal |
 | max_amount | 50,000 |
@@ -348,6 +350,7 @@ County option: assessed value reduced for construction that provides living quar
 | kind | reduction |
 | order | 12 |
 | household_flag | ex_granny_flat |
+| value_column | ex_granny_amount |
 | roll_code | EXMPT_81 |
 | applies_to | school, county, municipal, special |
 | max_share_of_assessed | 20.0% |
@@ -367,6 +370,7 @@ Additional exemption for a homesteaded servicemember deployed outside the contin
 | kind | percent |
 | order | 13 |
 | household_flag | ex_deployed_military |
+| value_column | ex_deployed_share |
 | roll_code | EXMPT_38 |
 | applies_to | school, county, municipal, special |
 
@@ -385,6 +389,7 @@ Veterans 65+ with a combat-related, permanent service-connected disability get a
 | kind | percent |
 | order | 14 |
 | household_flag | ex_vet_discount |
+| value_column | ex_vet_discount_share |
 | roll_code | EXMPT_80 |
 | applies_to | school, county, municipal, special |
 
