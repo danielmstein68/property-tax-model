@@ -81,6 +81,7 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
   - [ ] Portability: revisit when projecting movers (not modelled explicitly for 2026). Roll: ~25% of 2025 homestead buyers ported, median $104,957 (`ASS_DIF_TRNS`).
 - [ ] **Calibration** — match modelled tax to reported `TAXAMT` and published levy totals
 - [ ] **Metrics** — distribution tables by income decile etc., Suits index, replicate-weight SEs
+- [ ] **Public results display — the first public output** (agreed 2026-10-14). Once the status quo is complete (owners only): a public page presenting Florida's current property tax by income decile, age, region and home type, with clear "owners only" labelling and links to LIMITATIONS. Plan the design together before building.
 - [ ] **Current-law projection** — 2026 → 2036
 - [ ] **Amendment 3** (Florida, Nov 3 2026 ballot) — first policy
   - **Take-up setting** (default off): "possibly eligible" non-claimers start claiming with probability rising in the benefit (bigger exemptions → more filers → bigger revenue loss). Show static and with-take-up results.
