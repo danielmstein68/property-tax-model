@@ -94,7 +94,8 @@ def tax_implied_ratio(o: pd.DataFrame, base_year: int) -> pd.Series:
 
 def assign_assessment_gaps(h: pd.DataFrame, base_year: int, seed: int = 2026, min_pums: int = 20,
                            min_roll: int = 200, tax_weight: float = 1.0,
-                           recent_tax_weight: float | None = 0.2) -> tuple[pd.DataFrame, pd.DataFrame]:
+                           recent_tax_weight: float | None = 0.2,
+                           tax_rank_value_groups: int = 10) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Give each owner (not rented-lot mobile homes) school and non-school assessed/just ratios.
 
     Requires calibrate_values (value_area, valp_jv_cal) and add_aged_taxamt_rules
@@ -123,7 +124,19 @@ def assign_assessment_gaps(h: pd.DataFrame, base_year: int, seed: int = 2026, mi
     jitter = rng.random(len(o)) * 1e-6
     model_rank = (o[f"soh_ratio_{base_year}"].fillna(1.0) + jitter).groupby(o["value_area"]).rank(pct=True)
     tax_ratio = tax_implied_ratio(o, base_year)
-    tax_rank = (tax_ratio + jitter).groupby(o["value_area"]).rank(pct=True)
+    # Rank the tax-implied gap only against homes of similar value (value_groups within each donor
+    # cell): high-value owners report low tax relative to their calibrated value, so ranking
+    # across the whole cell gave $2M+ homes the deepest gaps (assessed/just 0.53 vs roll 0.64).
+    if tax_rank_value_groups and tax_rank_value_groups > 1:
+        o["_vg"] = 0
+        for _, idx in o.groupby(["value_area", "home_type", "is_hs", "band"]).groups.items():
+            v = o.loc[idx, "valp_jv_cal"]
+            order = v.sort_values(kind="stable").index
+            cum = o.loc[order, "WGTP"].cumsum() / o.loc[order, "WGTP"].sum()
+            o.loc[order, "_vg"] = np.minimum((cum.to_numpy() * tax_rank_value_groups).astype(int), tax_rank_value_groups - 1)
+        tax_rank = (tax_ratio + jitter).groupby([o["value_area"], o["home_type"], o["is_hs"], o["band"], o["_vg"]]).rank(pct=True)
+    else:
+        tax_rank = (tax_ratio + jitter).groupby(o["value_area"]).rank(pct=True)
     # Recent movers (MV 1-3: moved in under 5 years before the survey) can use their own weight:
     # their reported tax is often the previous owner's capped bill, not their reset assessment.
     tw = np.where(o["MV"].fillna(4) <= 3, tax_weight if recent_tax_weight is None else recent_tax_weight, tax_weight)

@@ -84,7 +84,9 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 - [ ] **Calibration** — match modelled tax to reported `TAXAMT` and published levy totals
 - [ ] **Metrics** — distribution tables by income decile etc., Suits index, replicate-weight SEs
 - [x] **Monroe County check** — fixed (shared PUMA merged Monroe with Miami-Dade); now 0.95 of roll. See CHALLENGES.md.
-- [ ] **Putnam check** — model homestead tax 21% above the roll (218 records).
+- [ ] **Putnam check** — model homestead tax 12% above the roll (218 records).
+- [ ] **Under-$100k homesteads** — 9% below the roll since value-tenth ranking (small bills; low priority).
+- [ ] **Escambia check** — 8% below the roll (814 records; 41 parcels missing JV).
 - [~] **Public results display — the first public output** (agreed 2026-10-14). Draft built (private artifact): `ptm/results.py` → `scripts/results_2026.py` → `scripts/build_display.py` (`display/template.html`), styled after landeconomics.org. Next: county map, example households, "how the model compares" section; sharing is Daniel's call. Once the status quo is complete (owners only): a public page presenting Florida's current property tax by income decile, age, region and home type, with clear "owners only" labelling and links to LIMITATIONS. Plan the design together before building.
 - [ ] **Current-law projection** — 2026 → 2036
 - [ ] **Amendment 3** (Florida, Nov 3 2026 ballot) — first policy

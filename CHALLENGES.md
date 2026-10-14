@@ -223,6 +223,10 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **Solution (Solved):** a county with a PUMA entirely its own (Miami-Dade, St. Johns) is no longer merged through a PUMA it shares; the shared PUMA goes to the small county's area, and the big county's parcels in those tracts are assigned by tract (`ptm.geo.parcel_area`, used in value calibration, assessment gaps, exemption counts and city senior exemptions). A looser rule (any county with 2+ PUMAs) would also have split Highlands, whose PUMAs are all shared, leaving it no PUMS households — rejected. Result: Monroe 0.95 of roll (was 0.69), Miami-Dade 0.99 (was 1.03), St. Johns 1.00; statewide unchanged ($25.15B owner tax).
 - **Leftover:** 44% of Miami-Dade parcels have no usable tract code (`CENSUS_BK`), so some Dade parcels in the shared tracts stay in Miami-Dade's area. Putnam remains high (1.21, 218 records).
 
+### $2M+ homesteads taxed too low (2026-10-14)
+- **Problem:** after ordering gaps by reported tax, $2M+ homesteads came out 11% below the roll (assessed/just 0.54 vs roll 0.64). High-value owners whose tax isn't top-coded report low tax relative to their calibrated value ($13,250 reported vs $18,290 modelled), so ranking the tax-implied gap across a whole donor cell (top third of an area's values also holds $600k homes) partly sorted by value and gave them the deepest gaps.
+- **Solution (Solved):** rank the tax-implied gap only within value tenths of each donor cell (`assign_assessment_gaps(tax_rank_value_groups=10)`). Tested none / fifths / tenths. With tenths: $2M+ 0.94 of roll (was 0.89), $1–2M 1.02, assessed/just 0.61; homestead average $4,069 vs roll $4,056; years-in-home vs reported 1.22 / 0.96 / 0.93 / 0.90 / 0.90; Monroe 1.01, Putnam 1.12 (was 1.21). Trade-offs: homes under $100k now 0.91 of roll (avg bill ~$300; < 0.3% of tax); owners within 25% of their reported tax 53% (was 55%).
+
 ---
 
 ## Ohio
