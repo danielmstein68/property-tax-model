@@ -211,6 +211,13 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **County list:** file names are inconsistent (e.g. Broward has no county number). The list is saved by hand in `manifests/fl_nal_2026.csv`; refresh it as counties move from preliminary to final.
 - **Directory pages load with JavaScript**, so scripted listing needs a browser or the direct file URLs: `https://floridarevenue.com/property/dataportal/Documents/PTO Data Portal/Tax Roll Data Files/NAL/<stage>/<file>.zip`.
 
+### Validating the 2026 status quo (2026-10-14)
+- **Problem:** how close is the modelled 2026 tax to independent numbers? Script: `scripts/validate_2026.py`.
+- **Against the parcel rolls** (homestead parcels, 2025 district rates on both sides): tax $20.79B vs roll $21.10B (−1.5%); average $4,035 vs $4,056; median $2,750 vs $2,739; county totals correlate 0.999; large counties within ~4%. Partly by construction (homestead counts, just values, assessed/just ratios and districts are all drawn from the roll), so this mainly tests the exemption and cap engine. Small counties (< ~100 PUMS records) are noisy; **Monroe is off (−31%, 183 records) — open.** The $2M-and-over band is 11% low after the change below (was 4% low).
+- **Against reported tax** (ACS `TAXAMT` aged to 2026): model $25.17B vs reported $26.22B (−4%; some owners include non-ad valorem fees). By income decile the model is 4–11% below reported except the top decile (+3%).
+- **Finding:** by years in home, the model was 23% below reported for owners there 20+ years and 17% above for recent buyers. Assessed/just ratios from roll donors were ordered by a 50/50 blend of the move-in-year estimate and the ratio implied by reported tax, which made long-time owners' gaps too deep. Recent buyers' reported tax implies a ratio of 0.68, which is implausible right after a reset — many report the previous owner's capped bill — so reported tax is a poor guide for them.
+- **Solution (Solved):** `assign_assessment_gaps(tax_weight=1.0, recent_tax_weight=0.2)`: owners in the home 5+ years are ordered by the reported-tax ratio; recent movers (MV 1–3) mostly by move-in year. Model ÷ reported by years in home went from 1.17 / 1.06 / 1.01 / 0.84 / 0.77 to 1.24 / 0.98 / 0.91 / 0.87 / 0.88; income-decile ratios moved ≤ 1 point; owners within 25% of their reported tax rose from 49% to 55%. Effective rate on value: recent buyers 1.10%, 20+ years 0.63% (was 1.04% / 0.54%). Variants tested (0.5; 0.8/0.2; 1.0/0.2; 0.8/0.5) are recorded in this entry's numbers.
+
 ---
 
 ## Ohio

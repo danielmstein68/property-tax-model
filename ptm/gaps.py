@@ -94,7 +94,8 @@ def tax_implied_ratio(o: pd.DataFrame, base_year: int) -> pd.Series:
 
 
 def assign_assessment_gaps(h: pd.DataFrame, base_year: int, seed: int = 2026, min_pums: int = 20,
-                           min_roll: int = 200, tax_weight: float = 0.5) -> tuple[pd.DataFrame, pd.DataFrame]:
+                           min_roll: int = 200, tax_weight: float = 1.0,
+                           recent_tax_weight: float | None = 0.2) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Give each owner (not rented-lot mobile homes) school and non-school assessed/just ratios.
 
     Requires calibrate_values (value_area, valp_jv_cal) and add_aged_taxamt_rules
@@ -124,7 +125,10 @@ def assign_assessment_gaps(h: pd.DataFrame, base_year: int, seed: int = 2026, mi
     model_rank = (o[f"soh_ratio_{base_year}"].fillna(1.0) + jitter).groupby(o["value_area"]).rank(pct=True)
     tax_ratio = tax_implied_ratio(o, base_year)
     tax_rank = (tax_ratio + jitter).groupby(o["value_area"]).rank(pct=True)
-    hs_order = np.where(tax_rank.notna(), (1 - tax_weight) * model_rank + tax_weight * tax_rank, model_rank)
+    # Recent movers (MV 1-3: moved in under 5 years before the survey) can use their own weight:
+    # their reported tax is often the previous owner's capped bill, not their reset assessment.
+    tw = np.where(o["MV"].fillna(4) <= 3, tax_weight if recent_tax_weight is None else recent_tax_weight, tax_weight)
+    hs_order = np.where(tax_rank.notna(), (1 - tw) * model_rank + tw * tax_rank, model_rank)
     o["_order"] = np.where(o["is_hs"], hs_order, -o["MV"].fillna(4) + jitter)
 
     groups = {k: g for k, g in roll.groupby(["area", "type", "homestead", "band"])}
