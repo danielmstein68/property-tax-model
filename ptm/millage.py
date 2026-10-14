@@ -14,6 +14,7 @@ districts, e.g. cities with their own levy); where reported tax isn't usable, or
 
 import csv
 import glob
+import re
 from pathlib import Path
 
 import numpy as np
@@ -57,6 +58,34 @@ def load_rates(year: int = 2025) -> pd.DataFrame:
 NOT_A_CITY = (r"\b(county|fire|rescue|library|district|dda|mstu|msbu|school|hospital|health|water|children|"
               r"debt|port of|port authority|navigation|inlet|mosquito|drainage|erosion|lighting|road|parks|"
               r"improvement|authority|trust|unit|basin|transit|police|sheriff|fund|services|redevelopment|cra)\b")
+
+
+NONCITY_NOTE = r"\b(fire|rescue|mstu|msbu|unincorporated|uninc)\b"
+
+
+def tacd_municipal_authorities(year: int = 2025) -> dict[str, dict[int, tuple[str, float]]]:
+    """Municipal authorities (class 4) from county TACD millage tables that list authorities by number
+    (Collier's TBL202 format: CODE, NAME, LY-RATE, RB-RATE, TY-RATE, CLASS). county_fips ->
+    {authority number: (city name, this year's rate)}."""
+    from ptm.rates import pdf_text
+
+    out = {}
+    for county in ["Collier"]:
+        f = ROOT / "data" / "raw" / f"fl_rates_{year}" / "tacd" / f"{county}.pdf"
+        if not f.exists():
+            continue
+        auth = {}
+        pat = r"^\s*(\d+)\s+(.+?)\s+(\d*\.\d{4})\s+(\d*\.\d{4})\s+(\d*\.\d{4})\s+4\s*$"
+        for m in re.finditer(pat, pdf_text(f), re.M):
+            name = m.group(2).strip().upper()
+            if "CITY" not in name:  # class 4 also holds cities' dependent districts
+                continue
+            city = name.replace("GENERAL FUND (CITY OF ", "").replace("OPERATING CITY OF ", "")
+            city = city.replace("OPERATING ", "").strip(" )")
+            city = {"MARCO ISL": "MARCO ISLAND"}.get(city, city)
+            auth.setdefault(int(m.group(1)), (city, float(m.group(5))))
+        out[county_fips_by_name()[county]] = auth
+    return out
 
 
 def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
@@ -129,6 +158,23 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
     named = named.where(named.notna(), note.where(~uninc & (note != "")))
     named_mills = [city_mills.get((f, norm(n))) if isinstance(n, str) else None for f, n in zip(r["county_fips"], named)]
     mail_mills = [city_mills.get((f, norm(c))) if isinstance(c, str) else None for f, c in zip(r["county_fips"], r["city"])]
+    # A district whose description names a fire district, MSTU or unincorporated area, and not the
+    # mailing city, is not in that city (Manatee's East Manatee Fire district has Bradenton
+    # addresses but is unincorporated).
+    # (only the description's name part: some notes are about how the rate file was read)
+    name_part = note.str.split(r"[|;]").str[0].where(~note.str.contains("stacked header|column", case=False), "")
+    noncity = name_part.str.contains(NONCITY_NOTE, case=False, regex=True)
+    mail_mills = [None if nc and isinstance(c, str) and norm(c) not in norm(n) else mm
+                  for mm, nc, c, n in zip(mail_mills, noncity, r["city"], note)]
+    # Districts described by their authority list (Collier: "authorities 1+6+8+..."): in a city
+    # only if a municipal authority (TACD class 4) is in the list; no mailing-city fallback.
+    for fips, auth in tacd_municipal_authorities(year).items():
+        for i in r.index[(r["county_fips"] == fips) & note.str.startswith("authorities")]:
+            nums = {int(x) for x in re.findall(r"\d+", note[i])}
+            hit = [auth[a] for a in sorted(nums) if a in auth]
+            named.loc[i] = hit[0][0] if hit else None
+            named_mills[r.index.get_loc(i)] = hit[0][1] if hit else None
+            mail_mills[r.index.get_loc(i)] = None
     r["city_millage"] = [nm if nm is not None else mm for nm, mm in zip(named_mills, mail_mills)]
     r.loc[uninc, "city_millage"] = None
     r["city"] = np.where(pd.notna(named) & pd.Series(named_mills, index=r.index).notna(), named.fillna(""), r["city"])
@@ -140,8 +186,11 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
     r["millage_special"] = 0.0
     r["millage_county"] = rest - r["millage_municipal"]
     r["municipality"] = np.where(ok, r["city"], "")
+    named_ok = pd.Series(named_mills, index=r.index).notna()
+    r["city_source"] = np.where(ok & named_ok, "district note", np.where(ok, "mailing city", ""))
+    r["note"] = note
     return r[["county_fips", "code", "municipality", "total_millage", "millage_school", "millage_county",
-              "millage_municipal", "millage_special"]]
+              "millage_municipal", "millage_special", "city_source", "note"]]
 
 
 def roll_districts(base_year: int) -> pd.DataFrame:
