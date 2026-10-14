@@ -82,6 +82,33 @@ def fl_parcel_counts_by_puma(parcels: pd.DataFrame, cols: list[str]) -> pd.DataF
     return out.groupby("PUMA")[cols].sum().reset_index()
 
 
+def county_groups(state_fips: str = "12") -> pd.DataFrame:
+    """Group counties that share PUMAs, so PUMS (by PUMA) and the roll (by county) cover the
+    same areas. Large counties with their own PUMAs are their own group; small counties that
+    share a PUMA are grouped. Returns county_fips, PUMA, area (group id = smallest county FIPS).
+    """
+    if not TRACT_TO_PUMA.exists():
+        puma_main_county(state_fips)
+    t = pd.read_csv(TRACT_TO_PUMA, dtype=str, encoding="utf-8-sig")
+    t = t[t["STATEFP"] == state_fips][["COUNTYFP", "PUMA5CE"]].drop_duplicates()
+    parent = {c: c for c in t["COUNTYFP"]}
+
+    def find(c):
+        while parent[c] != c:
+            parent[c] = parent[parent[c]]
+            c = parent[c]
+        return c
+
+    for _, cs in t.groupby("PUMA5CE")["COUNTYFP"]:
+        cs = sorted(cs)
+        for c in cs[1:]:
+            a, b = find(cs[0]), find(c)
+            if a != b:
+                parent[max(a, b)] = min(a, b)
+    t["area"] = t["COUNTYFP"].map(find)
+    return t.rename(columns={"COUNTYFP": "county_fips", "PUMA5CE": "PUMA"})
+
+
 def fl_cpi_area(county_fips: pd.Series) -> pd.Series:
     """Map Florida county FIPS to a CPI area: miami, tampa, or other_fl (South region)."""
     out = pd.Series("other_fl", index=county_fips.index)

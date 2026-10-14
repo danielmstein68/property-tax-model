@@ -21,7 +21,8 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
    - [x] In the baseline build (step 5, after `add_aged_values`, before `add_aged_taxamt_rules`); report saved as `baseline_fl_2026_topcode_report.csv`.
    - [ ] Top-coded tax ($42,500): impute at piece 7 from taxable value × county rates.
 5. **$0-tax owners** — compare with roll $0-taxable share by value band; impute only the excess.
-6. **Calibrate values** to the roll by PUMA × type. **?** Quantile mapping vs reweighting.
+6. [x] **Calibrate values** — `calibrate_values` in `ptm/calibrate.py`, in the baseline build after homestead status. Decided: match percentiles (quantile mapping), not reweighting. Homesteads mapped onto roll homestead just values by county group (41 groups, `county_groups` in `ptm/geo.py`) × home type; top-coded households included (their draws set the order, the roll sets the level); non-claimers get the homesteads' ratio at the same value position; thin cells (33 of 123) use a statewide ratio per type. Result: medians match the roll in all 90 mapped cells; homestead total $2.327T vs roll $2.354T. Miami-Dade single-family median $437k → $529k; Duval $308k → $290k. New columns `valp_jv_cal`, `valp_market_cal`, `value_cal_factor`.
+   - Tax aging (`taxamt_aged`) still uses pre-calibration values; pieces 3 and 7 recompute taxable value from calibrated values.
 7. **Tax rates** — 2026 county millage (DOR); replace school share 0.37; calibrate tax to `TAXAMT` and levies.
 
 ## Next

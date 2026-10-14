@@ -14,6 +14,7 @@ Steps (Florida, 2024 PUMS -> 2026):
   7. reweight for homes built after the survey (ptm.reweight)
   8. link to the parcel roll (ptm.link): mobile homes on rented lots, then homestead status
      (roll counts by PUMA x type; households chosen mainly by the implied-rate test)
+  9. calibrate just values to the roll by county group x home type (ptm.calibrate)
 
 Not yet in the baseline (next steps): assessment gaps from parcels, $0-tax owners,
 calibration to the roll and published levies (incl. top-coded tax), renters' tax burden.
@@ -29,6 +30,7 @@ from pathlib import Path
 import pandas as pd
 
 from ptm.aging import (add_aged_income, add_aged_rent, add_aged_taxamt_rules, add_aged_values)
+from ptm.calibrate import calibrate_values
 from ptm.link import assign_homestead, assign_mobile_home_lots
 from ptm.load import load_households
 from ptm.reweight import new_home_targets, reweight_new_development
@@ -55,6 +57,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
     h, report = reweight_new_development(h, new_home_targets(base_year, survey_year), survey_year)
     h, mh_report = assign_mobile_home_lots(h, base_year)
     h, hs_report = assign_homestead(h, base_year, raw / "psam_p12.csv", survey_year=survey_year)
+    h, cal_report = calibrate_values(h, base_year)
     h["survey_year"], h["base_year"] = survey_year, base_year
 
     if save:
@@ -65,6 +68,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
         mh_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_mobile_home_report.csv"), index=False)
         hs_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_homestead_report.csv"), index=False)
         tc_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_topcode_report.csv"), index=False)
+        cal_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_value_calibration_report.csv"), index=False)
         try:
             commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
                                     capture_output=True, text=True).stdout.strip()
