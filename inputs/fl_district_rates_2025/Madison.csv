@@ -1,0 +1,5 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+10,14.2928,5.334,tacd row total,high,County/unincorporated
+1,21.2928,5.334,tacd row total,high,"City of Madison (code read as ""1,560"" = code 1 + count 560; by elimination)"
+3,23.37,5.334,tacd row total,high,Town of Greenville
+2,22.7928,5.334,tacd row total,high,Town of Lee

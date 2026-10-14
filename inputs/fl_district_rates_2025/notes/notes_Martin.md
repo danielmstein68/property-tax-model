@@ -1,0 +1,4 @@
+- TACD has one row per code with components and Total; parsed all 12 rows and re-summed components (all equal printed totals).
+- School = RLE 3.0540 + disc 1.6980 + add'l voted 0.4250 = 5.1770.
+- Table 1 matches: county 6.5614, stormwater 0.5722, parks 0.1474, fire 2.6376, district MSTUs (0.0404/0.0671/0.0666/0.0742/0.0478), Stuart 4.9000, Jupiter Island 2.8259 + beach 0.9593, Ocean Breeze 0.7665, Sewall's Point 3.2700, Indiantown 1.8250. Hutchinson Island special district A in TACD row 6106 is 0.2465 (incl. district one 0.0666 + 0.1799).
+- Generic reader was wrong for 3003 (0.1026).

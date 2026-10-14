@@ -1,0 +1,4 @@
+- TACD is one row per district code with components and Total Millage; city millage cells print as "#####" (column too narrow) but totals are intact. Took the row total.
+- Re-derived: county GF 5.5493 + voted 0.4833 + school 6.3040 (RLE 3.0560 + disc 0.7480 + cap 1.5000 + voted add'l op 1.0000) + SWFWMD 0.1831 + mosquito 0.1400 + WCIND 0.0394 = 12.6991, + unincorporated MSTU 0.6109, + fire district, + city; all match (Bradenton 5.7101, Palmetto 5.9671, Anna Maria 1.6500, Holmes Beach 1.9900, Bradenton Beach 2.3329). Longboat Key codes imply LBK 1.9600 (LBK is on Sarasota's Table 1).
+- FLAG: Manatee Table 1 shows County BCC 2025 = 0.4833 (vs 6.0826 in 2024) - looks like a Table 1 data problem (only the voted levy listed); TACD shows general fund 5.5493 + voted 0.4833. Used TACD.
+- Generic reader was wrong for 0021, 0256, 0025, 0313 (and blank for 0019, 0024, 0023, 0156).

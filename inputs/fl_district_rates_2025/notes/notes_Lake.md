@@ -1,0 +1,4 @@
+- TACD is a PA matrix: 11 unincorporated mill-group columns (header groups like "0002/CG02SP02" share a column) with a TOTAL COUNTY MILLAGE row, plus one row per city with the mill-group codes in parentheses and a total.
+- Rebuilt every total from components: base = county 5.0254 + debt 0.0400 + EMS 0.4629 + school 6.0850 + Lake Water 0.2940 + SJRWMD 0.1793 (SWFWMD 0.1831 in 0004), plus fire MSTU 0.4800 / stormwater 0.4957 (unincorporated) / N. Lake hospital 0.3859 / Wellness Way 0.4585 where applicable, plus city; all 11 columns and all 18 city rows reproduce exactly. Tavares total includes its 0.1467 debt levy.
+- School = state 3.0870 + local 2.9980 = 6.0850. Table 1 county/MSTU/city 2025 rates all match.
+- EA0C, AP0F, LIMA are not in the TACD (0 homestead parcels each) - left blank, low confidence; probable values in note.

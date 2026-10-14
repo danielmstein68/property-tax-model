@@ -1,0 +1,14 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+GS,17.7412,6.3430,tacd row total (rows grouped by code lists),high,General Services District
+USD1,17.7412,6.3430,tacd row total (rows grouped by code lists),high,Old City of Jacksonville
+USD2,18.4452,6.3430,tacd row total (rows grouped by code lists),high,Jacksonville Beach
+USD3,17.2004,6.3430,tacd row total (rows grouped by code lists),medium,Atlantic Beach; TACD city rate 2.7499 vs Table 1 adopted 2.8410 (+0.0911 if Table 1 right)
+USD4,17.8161,6.3430,tacd row total (rows grouped by code lists),high,Neptune Beach
+USD2B,18.4452,6.3430,tacd row total (rows grouped by code lists),high,Jacksonville Beach
+USD2A,18.4452,6.3430,tacd row total (rows grouped by code lists),high,Jacksonville Beach
+GSRA,17.7412,6.3430,tacd row total (rows grouped by code lists),high,General Services District
+GSK,17.7412,6.3430,tacd row total (rows grouped by code lists),high,General Services District
+USD5,18.9701,6.3430,tacd row total (rows grouped by code lists),medium,Baldwin; TACD city rate 3.0000 vs Table 1 adopted 1.9620 (-1.038 if Table 1 right)
+USD1A,17.7412,6.3430,tacd row total (rows grouped by code lists),high,Old City of Jacksonville
+USD1C,17.7412,6.3430,tacd row total (rows grouped by code lists),high,Old City of Jacksonville
+USD1B,17.7412,6.3430,tacd row total (rows grouped by code lists),high,Old City of Jacksonville

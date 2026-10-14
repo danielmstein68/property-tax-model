@@ -1,0 +1,4 @@
+- TACD text extraction splits each row over 4 lines but the TOTAL column is intact; took the row total and verified it = county 7.6000 + water mgmt + school 5.3520 (RLE 3.1040 + disc 2.2480) + city.
+- Table 1: county 7.6000; Avon Park 6.0000, Sebring 6.3500, Lake Placid 3.6500 match TACD city columns and city-unincorporated differences exactly.
+- Code 60 is the South Florida WMD portion (SFWMD 0.0948 + Okeechobee basin 0.1353 instead of SWFWMD 0.1831).
+- Generic reader returned 0.0 for every code (useless). No school debt/cap outlay column shown separately; school = 5.3520.

@@ -26,6 +26,11 @@ What the model can't do, or does only approximately. Read this before citing res
 - **Preliminary rolls.** Some counties' 2026 parcel data is preliminary; final values can differ slightly until we rerun with final rolls.
 - **Owner linking by name.** Anonymous owner IDs match on name spelling, so individuals with several homes recorded under different spellings are undercounted. Works best for companies.
 
+- **2025 tax rates on 2026 values.** 2026 district rates aren't published statewide yet; 2025 final rates are used until they are. Where values fell, 2026 rates are probably a little higher.
+- **Tax district is imputed.** Each household gets the district of a real parcel in its PUMA with similar value (guided by its reported tax), not its own. Right for areas, not for individual homes.
+- **A few counties' rates are reconstructed or incomplete:** Orange (district composition rebuilt from authority rates), Sarasota (2026 composition), Gadsden and Liberty (components only), Broward letter-suffix districts (missing small special-district levies).
+- **Flat fees aren't in modelled tax yet.** Non-ad valorem assessments (fire, solid waste, stormwater) appear on bills and likely in reported tax, but aren't rate × value; modelled tax runs below reported tax in counties with large fire assessments.
+
 ## Scope: what's not modelled
 
 - **Residential property only.** No commercial, industrial, agricultural or tangible personal property. Revenue results cover the residential base; policies that shift tax onto other property types aren't fully captured.

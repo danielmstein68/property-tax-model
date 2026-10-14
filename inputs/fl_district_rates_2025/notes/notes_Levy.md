@@ -1,0 +1,4 @@
+- TACD is a scanned PA sheet with an OCR text layer: a column of codes (BR SR, BR'SW, CH, CK, cw, FS, IN, oc, WI, YT, RL, SW, SR) followed by the same-order list of 2025 total millage + local rate. Codes mapped in order (BR SR -> BRSR, BR'SW -> BRSW).
+- Every total re-derived: county 8.7500 + school 5.3320 + water mgmt (SWFWMD 0.1831 / SRWMD 0.2812) + city/local levy; all 13 reproduce exactly, which also confirms the order mapping and the garbled "22·. 9125" = 22.9125.
+- Table 1: county 8.7500 (up from 8.2500) and all city 2025 rates match. Cedar Key (CK) and CW include the Cedar Key Special Water & Sewer levy 2.0063.
+- School 5.3320 is printed as a single total (no breakdown).

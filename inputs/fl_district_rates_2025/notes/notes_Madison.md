@@ -1,0 +1,4 @@
+- TACD is OCR text, one row per district; took TOTAL. Code 1's row reads "1,560 C\TY OF MADISON" (code 1 glued to parcel count 560); rows 10, 2, 3 are explicit, so code 1 = City of Madison.
+- Verified: county 8.6776 + school 5.3340 (RLE 3.0860 + disc 2.2480) + SRWMD 0.2812 = 14.2928; + Madison 7.0000 / Lee 8.5000 / Greenville 9.0772.
+- Table 1 matches county 8.6776 and all three city rates.
+- Generic reader was wrong for all four codes (it attached 21.2928 / 22.7928 to wrong codes).

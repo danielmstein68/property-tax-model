@@ -1,0 +1,9 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+UF,16.8611,6.274,tacd column total adjusted to Table 1 adopted,medium,TACD total 16.9431; county op 7.4292->7.4042 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274
+ZH,22.7059,6.274,tacd column total adjusted to Table 1 adopted,medium,TACD total 22.7879; county op 7.4292->7.4042 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274
+NP,22.5334,6.274,tacd column total adjusted to Table 1 adopted,medium,"TACD total 22.7154; county op 7.4292->7.4042, city 8.3->8.2 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274"
+DC,23.0767,6.274,tacd column total adjusted to Table 1 adopted,medium,"TACD total 23.4679; county op 7.4292->7.4042, city 6.93->6.6208 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274"
+PR,20.6234,6.274,tacd column total adjusted to Table 1 adopted,medium,"TACD total 20.7654; county op 7.4292->7.4042, city 6.35->6.29 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274"
+SA,20.0336,6.274,tacd column total adjusted to Table 1 adopted,medium,"TACD total 20.2379; county op 7.4292->7.4042, city 3.7->3.5777 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274"
+SL,17.3224,6.274,tacd column total adjusted to Table 1 adopted,medium,TACD total 17.4044; county op 7.4292->7.4042 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274
+U,14.7386,6.274,tacd column total adjusted to Table 1 adopted,medium,TACD total 14.8206; county op 7.4292->7.4042 | school corrected from 6.331 (stale in county table) to FLDOE 2025-26 6.274

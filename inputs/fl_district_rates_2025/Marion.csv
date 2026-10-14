@@ -1,0 +1,15 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+9001,15.3493,6.32,tacd TOTAL LEVY row,high,"Unincorporated, SJRWMD"
+9002,15.3531,6.32,tacd TOTAL LEVY row,high,"Unincorporated, SWFWMD"
+1001,17.137,6.32,tacd TOTAL LEVY row,high,OCALA
+8002,16.3731,6.32,tacd TOTAL LEVY row,high,OAKS
+6701,15.3493,6.32,tacd TOTAL LEVY row,high,VILLAGES
+7011,18.3493,6.32,tacd TOTAL LEVY row,high,SSS-S
+5072,15.5331,6.32,tacd TOTAL LEVY row,high,HILLS
+5002,17.4531,6.32,tacd TOTAL LEVY row,high,R-L-E
+2001,16.6293,6.32,tacd TOTAL LEVY row,high,BELLEVIEW
+1005,17.1408,6.32,tacd TOTAL LEVY row,high,OCALA-W
+3002,16.3181,6.32,tacd TOTAL LEVY row,high,DUNNELLON
+4001,12.3718,6.32,tacd TOTAL LEVY row,medium,McIntosh; printed total has no EMS/law MSTU (county 4.02 + school 6.32 + SJRWMD + city 1.8525); EMS row has an extra value so EMS inclusion is ambiguous - if EMS 1.11 applies total would be 13.4818
+6001,15.3493,6.32,tacd TOTAL LEVY row,high,REDDICK
+1003,18.7702,6.32,tacd TOTAL LEVY row,high,OCALA-B

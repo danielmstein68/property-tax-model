@@ -1,0 +1,4 @@
+- TACD text columns scramble, so each district TOTAL MILLAGE was verified by re-summing the components: county general 5.4608, library 0.5583 (not Temple Terrace), county MSTU 4.6163 (unincorporated only), school 6.3400 (local 3.0920 + state RLE 3.2480), SWFWMD 0.1831, port 0.0604, children's board 0.4589, transit 0.5000 (not Plant City), 0.0737 other ISD, plus city millage.
+- All four sums match the printed totals: U 18.2515, TA 19.8428, PC 18.2926, TT 19.5319.
+- Table 1 matches: county 5.4608, MSTU 4.6163, library 0.5583, Tampa 6.2076, Plant City 5.7157, Temple Terrace 6.4550.
+- Only 4 district codes on the roll; no uncertainty.

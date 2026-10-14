@@ -1,0 +1,4 @@
+- TACD text layer reorders columns; code is glued to school disc 2.2480 ("2.248010" = code 10) and the TOTAL is the number after the MSTU column (e.g. 9.5165). Took TOTAL for all 17 codes.
+- Verified: county 3.8308 + NWFWMD 0.0207 + school 5.3770 (RLE 3.1290 + disc 2.2480) + unincorporated MSTU 0.2880 (unincorporated only) + fire district (Destin 1.0, OCW 2.75, Okaloosa Island 3.6, North Bay 2.27, E. Niceville 3.4, Florosa 2.3877) + city; all reproduce.
+- Table 1 matches county 3.8308, MSTU 0.2880 and all city 2025 rates (Crestview 6.6466, Destin 1.6150, FWB 4.3282, Laurel Hill 3.5, Mary Esther 5.0261, Niceville 4.5, Valparaiso 5.6504, Cinco Bayou 3.0, Shalimar 2.2).
+- Generic reader was wrong for nearly every code (scrambled column order). Unincorporated (9.5-13.1) totals are low but correct for Okaloosa.

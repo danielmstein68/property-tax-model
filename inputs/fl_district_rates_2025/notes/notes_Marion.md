@@ -1,0 +1,4 @@
+- TACD is a matrix: authority rows x district columns, with a TOTAL LEVY row and the column codes (1001 ... 9002) printed below it; 16 codes/totals align. Took TOTAL LEVY.
+- Re-derived each: county 4.0200 (general 3.09 + F&F 0.83 + health 0.10) + school 6.3200 (RLE 3.0720 + disc 0.7480 + cap 1.5000 + voted 1.0000) + WMD (SJR 0.1793 / SWF 0.1831) + city (Ocala 6.6177 + DTDD for 1002-1004; Belleview 5.0; Dunnellon 4.685; McIntosh 1.8525) + MSTUs (law 3.72, EMS 1.11, R-L, Oaks, SSS, Hills); all 16 reproduce. Table 1 2025 rates all match.
+- Authority rows print one more value than the 16 total columns (a 17th column in the PA sheet), so per-column alignment of the EMS/law rows can't be read directly; the TOTAL row is internally consistent. 4001 McIntosh shows no EMS MSTU (Belleview and Dunnellon do) - marked medium.
+- Generic reader was blank for all codes.

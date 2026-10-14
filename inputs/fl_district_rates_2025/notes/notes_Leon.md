@@ -1,0 +1,4 @@
+- TACD page 1 is the 2025 table (pages 2+ are 2024 and earlier years - ignored). Three codes; took the Total column.
+- Verified: county 8.3144 + EMS 0.7500 + Children's Services 0.3477 + school 5.3660 (RLE 3.1180 + disc 0.7480 + cap outlay 1.5000) + NWFWMD 0.0207 = 14.7988; + city 4.4072 = 19.2060; + DIA 1.0000 = 20.2060.
+- Table 1 matches county 8.3144, EMS 0.7500, Tallahassee 4.4072, DIA 1.0000.
+- Generic reader gave code 3 19.206 (missed DIA); corrected to 20.2060.

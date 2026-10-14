@@ -18,6 +18,7 @@ Steps (Florida, 2024 PUMS -> 2026):
  10. assessment gaps (school and non-school assessed / just) from roll donors (ptm.gaps)
  11. special exemptions (veterans, disabled, low-income seniors) matched to roll counts, modelled
      taxable value, and classification of $0-tax owners (ptm.exemptions)
+ 12. tax districts and 2025 millage (latest published) from roll donors; modelled tax (ptm.millage)
 
 Not yet in the baseline (next steps):
 calibration to the roll and published levies (incl. top-coded tax), renters' tax burden.
@@ -36,6 +37,7 @@ from ptm.aging import (add_aged_income, add_aged_rent, add_aged_taxamt_rules, ad
 from ptm.calibrate import calibrate_values
 from ptm.exemptions import assign_exemptions
 from ptm.gaps import assign_assessment_gaps
+from ptm.millage import assign_districts
 from ptm.link import assign_homestead, assign_mobile_home_lots
 from ptm.load import load_households
 from ptm.reweight import new_home_targets, reweight_new_development
@@ -65,6 +67,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
     h, cal_report = calibrate_values(h, base_year)
     h, gap_report = assign_assessment_gaps(h, base_year)
     h, ex_report = assign_exemptions(h, base_year, raw / "psam_p12.csv")
+    h, district_report = assign_districts(h, base_year)
     h["survey_year"], h["base_year"] = survey_year, base_year
 
     if save:
@@ -78,6 +81,7 @@ def build_baseline(survey_year: int = 2024, base_year: int = 2026, save: bool = 
         cal_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_value_calibration_report.csv"), index=False)
         gap_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_assessment_gap_report.csv"), index=False)
         ex_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_exemptions_report.csv"), index=False)
+        district_report.to_csv(dest.with_name(f"baseline_fl_{base_year}_tax_district_report.csv"), index=False)
         try:
             commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
                                     capture_output=True, text=True).stdout.strip()

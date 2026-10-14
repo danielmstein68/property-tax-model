@@ -1,0 +1,3 @@
+- TACD is an OCR text layer (some garbling in headers) but both rows read cleanly: CO 15.6672, MA 22.6672.
+- Verified: county 10.0000 + school 5.3860 (RLE 3.1380 + disc 2.2480) + SRWMD 0.2812 = 15.6672; Mayo adds 7.0000.
+- Table 1 matches county 10.0000 and Mayo 7.0000.

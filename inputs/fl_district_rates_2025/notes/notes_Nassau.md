@@ -1,0 +1,4 @@
+- TACD OCR text, one row per code (some digits garbled e.g. "22087", "01253"); took TOTAL and re-derived each: county 6.7457 + school 6.1910 (RLE 3.0430 + "discr." column 3.1480) + SJRWMD 0.1793 + independent district 0.0270 (FIND) or 0.1253 (FIND + Ocean Hwy/Port Auth on the island) + MSTU 2.2087 (unincorporated) / beach 0.0960 + city. All 8 reproduce.
+- Table 1 matches county 6.7457, MSF 2.2087, beach 0.0960, Callahan 1.6689, Hilliard 3.5000, Fernandina 4.6849.
+- School discretionary column 3.1480 likely bundles disc 0.748 + cap outlay 1.5 + voted 0.9 - school total 6.1910 taken as printed.
+- Generic reader was wrong for all 8 codes (offset by one row).

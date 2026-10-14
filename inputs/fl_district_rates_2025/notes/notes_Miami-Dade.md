@@ -1,0 +1,5 @@
+- TACD lists one row per millage code with components, a 2025 total and a 2024 total; took the 2025 total (second-to-last number) and re-summed components for every row (all match).
+- School = operating 5.4990 + voted operating 1.0000 + debt 0.1340 = 6.6330.
+- Countywide: county 4.5740 + debt 0.4171 + children's trust 0.4638 + SFWMD/Evergl/Okee 0.2301 + FIND 0.0270; fire district 2.3965 and library 0.2812 apply only where shown (e.g. Miami, Miami Beach, Coral Gables, Hialeah, Key Biscayne lack fire; Hialeah, N. Miami, NMB, Homestead etc. lack library).
+- Generic reader was wrong for 3000 (unincorporated: 24.3227 -> 16.9317), 0101 (0.39 -> 20.3778, Miami DDA), 1000 (Homestead 20.9465) and 2000 (Pinecrest 17.5257).
+- Table 1 (county 4.5740, UMSA 1.9090, fire 2.3965, library 0.2812 and city rates) consistent with the TACD city/UMSA column.

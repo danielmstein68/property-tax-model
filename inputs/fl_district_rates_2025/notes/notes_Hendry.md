@@ -1,0 +1,5 @@
+- TACD text layer clean: one row per district with components and Total Millage; took the row total (components re-summed and verified).
+- School = RLE 3.0980 + cap outlay 1.5000 + disc 0.7480 = 5.3460.
+- Table 1 check: county BCC 6.7700, Clewiston 6.3962, LaBelle 5.0000 all match the TACD columns; city rows = unincorporated 15.8461 + city millage exactly.
+- Generic reader was wrong for 15 (matched "05" row) and 20. Codes 15/15C/15D/16/17/17C/17D = City of Clewiston (22.2423); 10 = LaBelle (20.8461). Code 20 is "Unincorporated" in TACD (15.8461) though the generic reader said 20.8461 (prefix match on "20.8461"); used TACD.
+- Port LaBelle CDD (code 19) carries an extra 3.1454 mills (dependent district levied on roll).

@@ -1,0 +1,14 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+0100,13.6790,5.2490,tacd row total,high,Unincorporated (NAL 01)
+S100,18.1284,5.2490,tacd row total,high,Sanford 7.325
+W100,16.1883,5.2490,tacd row total,high,Winter Springs 2.62
+V100,16.7784,5.2490,tacd row total,high,Oviedo 5.861 + debt 0.114
+A100,17.5683,5.2490,tacd row total,high,Altamonte Springs 4.0
+C100,18.1808,5.2490,tacd row total,high,Casselberry 3.9999 + debt 0.6126
+M100,14.3929,5.2490,tacd row total,high,Lake Mary 3.5895
+L100,16.3034,5.2490,tacd row total,high,Longwood 5.5
+V500,16.7784,5.2490,tacd row total,high,Oviedo (V5)
+G100,10.8034,5.2490,tacd row total,medium,"Agriculture - Real Property (NAL G1): no fire/road MSTU; odd that 201 of 202 parcels are homesteads, check roll"
+V200,16.7784,5.2490,tacd row total,high,Oviedo (V2)
+W200,16.1883,5.2490,tacd row total,high,Winter Springs (W2)
+0200,13.6790,5.2490,tacd row total,high,Unincorporated (NAL 02)

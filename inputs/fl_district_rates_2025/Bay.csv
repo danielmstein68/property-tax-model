@@ -1,0 +1,12 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+55,12.3739,5.3370,tacd row total,high,"Uninc, county fire MSTU"
+16,15.7938,5.3370,tacd row total,high,Panama City
+56,12.2939,5.3370,tacd row total,high,"Uninc beach, fire MSTU"
+06,15.0439,5.3370,tacd row total,high,Lynn Haven
+13,10.9139,5.3370,tacd row total,high,Panama City Beach (no city millage)
+02,13.6939,5.3370,tacd row total,high,Callaway
+20,15.8589,5.3370,tacd row total,high,Springfield
+10,13.9939,5.3370,tacd row total,high,Parker
+08,16.2439,5.3370,tacd row total,high,Mexico Beach
+01,,,not found,low,code not found in TACD; left blank
+31,18.7938,5.3370,tacd row total,high,Panama City Downtown Improvement Board

@@ -1,0 +1,5 @@
+- TACD lists each tax area as a block of authority rates with a Total; parsed every block, re-summed the authorities, and all sums equal the printed Total.
+- School = SCHL local 2.7480 + SCHS state RLE 3.0050 = 5.7530 (same in all areas).
+- Table 1 matches: county 3.5475, MSTU 1.1506, Emergency Svc Dist 2.3531; Fellsmere 5.3500, Sebastian 3.4455, Vero Beach 2.9816, Indian River Shores 1.2810, Orchid 0.7000.
+- City areas drop the MSTU (MUNS); Indian River Shores (5, 6) also drops the EMSD; checks of city minus unincorporated are consistent.
+- Generic reader was wrong/blank for almost every code (it picked single component rates).

@@ -1,0 +1,3 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+1,14.6247,5.3800,sum of components: county BCC 9.2240 (DOR T1) + school 5.3800 (FLDOE) + NWFWMD 0.0207,medium,assumed unincorporated (large code; PHY_CITY Bristol/Hosford/Telogia mix)
+2,21.1814,5.3800,sum of components: county 9.2240 + school 5.3800 + NWFWMD 0.0207 + City of Bristol 6.5567 (DOR T1),low,"assumed City of Bristol (436 parcels, 96% PHY_CITY Bristol); mapping inferred, not documented"

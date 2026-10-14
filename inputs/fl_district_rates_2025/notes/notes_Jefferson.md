@@ -1,0 +1,4 @@
+- TACD lists each tax area as authority rates + Total; re-summed and matched: 1 = 19.6929 (Monticello), 2 = 12.8428 (NWFWMD), 3 = 13.1033 (SRWMD).
+- School = LRE 3.0480 + disc 2.2480 = 5.2960.
+- Table 1: county 7.5261 (down from 7.8266 in 2024), Monticello 6.8501 match.
+- Generic reader returned single component rates (2.248, 3.048) - wrong.

@@ -1,0 +1,4 @@
+# Saint Lucie 2025 rates
+- TACD (rotated page; text only via pypdf plain/position extraction) is an authority x district matrix: 8 numeric columns with TOTALS 33.5431, 19.0129, 19.1481, 19.6681, 19.3347, 22.3097, 24.2347, 22.1745; headers District 0001, 0002, 0050, 0009, {0011,9011,9111,9211,9341}, {0022,9022,9122,9222,9322}, 0041.
+- Values are concatenated per row, so column membership was solved from the totals: column 1 (33.5431) is the sum of every authority (the "Rate" column, not a district); the other 7 decompose uniquely (unincorporated MSTUs 1.8134, mosquito 0.1352, SHI erosion 0.52, Village 2.0, PSL 4.6607+0.3143 debt, Fort Pierce 6.9) and match header order and fund codes (VL09 -> 0009, FP22 -> 0022 group).
+- County GF 4.1985, MSTUs and city rates match Table 1 2025 adopted. School = 3.048+1.5+0.748+1.0 (voted) = 6.2960.

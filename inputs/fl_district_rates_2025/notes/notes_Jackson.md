@@ -1,0 +1,4 @@
+- TACD text layer reorders columns; the code is glued to school disc 2.2480 (e.g. "2.248010" = 2.2480 + code 10) and repeated as "10: MA:JA:..." in the authority string, so codes are unambiguous. Took the TOTAL column.
+- Verified every total = county 7.9450 + NWFWMD 0.0207 + school 5.3680 (RLE 3.1200 + disc 2.2480) + city millage.
+- Table 1 2025 city rates match exactly (Marianna 3.9985, Sneads 4.3600, Graceville 4.0000, Cottondale 4.5300, Jacob 4.4795, Alford 1.5575, Malone 1.5000, Greenwood 1.0000, Campbellton 2.9399).
+- Generic reader was wrong for most codes (e.g. 6 Graceville 13.3337 vs 17.3337; 16 is unincorporated 13.3337, not Campbellton).

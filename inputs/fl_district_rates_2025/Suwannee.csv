@@ -1,0 +1,4 @@
+code,total_millage_2025,school_millage_2025,method,confidence,note
+CO,14.4962,5.4150,tacd row total,high,"TACD prints code as lowercase ""co""; unincorporated"
+LO,23.7462,5.4150,tacd row total,high,Live Oak (city 9.25)
+CB,21.9962,5.4150,tacd row total,high,Branford (city 7.50)

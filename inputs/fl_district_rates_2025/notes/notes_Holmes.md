@@ -1,0 +1,3 @@
+- TACD rows are one line each but columns are reordered in the text layer; code is the digit glued to school disc 2.2480 (e.g. "2.24801" = 2.2480 + code 1). Took TOTAL and verified = county 9.4916 + NWFWMD 0.0207 + school 5.1340 (RLE 2.8860 + disc 2.2480) + city.
+- Table 1 matches: county 9.4916, Bonifay 3.5000, Esto 2.7730, Noma 0.8790, Ponce de Leon 2.0000. Westville has 0 city millage (not in Table 1).
+- Generic reader was wrong for codes 1, 3, 4 (and blank for 5, 6).
