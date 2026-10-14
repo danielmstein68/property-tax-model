@@ -31,7 +31,8 @@ What the model can't do, or does only approximately. Read this before citing res
 - **2025 tax rates on 2026 values.** 2026 district rates aren't published statewide yet; 2025 final rates are used until they are. Where values fell, 2026 rates are probably a little higher.
 - **Tax district is imputed.** Each household gets the district of a real parcel in its PUMA with similar value (guided by its reported tax), not its own. Right for areas, not for individual homes.
 - **A few counties' rates are reconstructed or incomplete:** Orange (district composition rebuilt from authority rates), Sarasota (2026 composition), Gadsden and Liberty (components only), Broward letter-suffix districts (missing small special-district levies).
-- **Flat fees aren't in modelled tax yet.** Non-ad valorem assessments (fire, solid waste, stormwater) appear on bills and likely in reported tax, but aren't rate × value; modelled tax runs below reported tax in counties with large fire assessments.
+- **Flat fees aren't in modelled tax.** Non-ad valorem assessments (fire, solid waste, stormwater) are on bills but aren't property tax (not rate × value) and are excluded. Modelled tax won't match what households report: survey-reported tax differs from official-rate modelled tax by county (South Florida reports less, parts of Central/Southwest Florida more); the model follows official levies, which it matches within ~5%.
+- **Levy classes are approximate below the county level.** Each district's millage is split into school, county and municipal from official rates; independent special districts and water management districts are lumped into "county" for now, so county-only senior exemptions are slightly over-applied (about $20/yr for affected seniors).
 
 ## Scope: what's not modelled
 

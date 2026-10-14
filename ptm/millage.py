@@ -54,6 +54,82 @@ def load_rates(year: int = 2025) -> pd.DataFrame:
     return r[["county", "county_fips", "code", "total_millage", "school_millage", "nonschool_millage", "confidence"]]
 
 
+def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
+    """Split each district's millage into the law spec's levy classes.
+
+    school    = countywide school millage (FLDOE)
+    municipal = the city's adopted millage (DOR Table 1) if the district is in a city, else 0.
+                A district's city = the most common PHY_CITY of its parcels, accepted only if it
+                matches a Table 1 city and the remainder (total - school - city) is at least the
+                county government's millage, which every district pays. This rejects
+                unincorporated areas with city mailing addresses (e.g. ORG37 with Orlando
+                addresses would leave 3.18 mills for the county vs Orange's 4.43).
+    county    = the rest (county levies, dependent districts and MSTUs, and — for now —
+                independent special districts and water management districts)
+    special   = 0 for now (independent districts aren't broken out per district in statewide data;
+                only senior exemptions treat county and special differently, a small effect).
+    """
+    import re as _re
+    from ptm.rates import parse_table1, pdf_text
+
+    rates = load_rates(year)
+    files = glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet"))
+    p = pd.concat([pd.read_parquet(f, columns=["CO_NO", "TAX_AUTH_CD", "PHY_CITY"]) for f in files], ignore_index=True)
+    p["county_fips"] = fl_dor_to_fips(p["CO_NO"])
+    p["code"] = p["TAX_AUTH_CD"].astype(str).str.strip()
+    p["city"] = p["PHY_CITY"].fillna("").str.upper().str.strip()
+    top = (p.groupby(["county_fips", "code", "city"]).size().rename("n").reset_index()
+            .sort_values("n", ascending=False).drop_duplicates(["county_fips", "code"]))
+
+    def norm(s: str) -> str:
+        s = s.upper()
+        s = _re.sub(r"^(CITY|TOWN|VILLAGE) OF\s+", "", s)
+        return _re.sub(r"[^A-Z ]", "", s).strip()
+
+    city_mills, county_gov = {}, {}
+    exact = {"Palm Beach": "Palm Beach County", "Volusia": "Volusia County General Fund"}
+    for county, fips in county_fips_by_name().items():
+        t1 = parse_table1(pdf_text(ROOT / "data" / "raw" / f"fl_rates_{year}" / "table1" / f"{county}.pdf"))
+        cities = t1[t1["authority"].str.match(r"(?i)^(city|town|village) of ")]
+        for _, r in cities.iterrows():
+            city_mills[(fips, norm(r["authority"]))] = r["millage_2025"]
+        if county in exact:
+            g = t1[t1["authority"] == exact[county]]
+        elif county == "Duval":  # consolidated: lowest general-government levy
+            g = t1[t1["authority"].str.contains("General G", case=False)].sort_values("millage_2025")
+        else:
+            g = t1[t1["authority"].str.contains(r"BCC|Board of County|County Commission", case=False)]
+        county_gov[fips] = float(g["millage_2025"].iloc[0]) if len(g) else 0.0
+
+    r = rates.merge(top[["county_fips", "code", "city"]], on=["county_fips", "code"], how="left")
+    # District names from the rate files' notes take priority over parcels' mailing city:
+    # "unincorporated" -> no city; "City/Town/Village of X" matching Table 1 -> that city.
+    notes = {}
+    for f in glob.glob(str(ROOT / "inputs" / f"fl_district_rates_{year}" / "*.csv")):
+        d = pd.read_csv(f, dtype={"code": str})
+        fips = county_fips_by_name().get(Path(f).stem)
+        for code, note in zip(d["code"].str.strip(), d["note"].fillna("")):
+            notes[(fips, code)] = note
+    note = pd.Series([notes.get((f, c), "") for f, c in zip(r["county_fips"], r["code"])], index=r.index)
+    uninc = note.str.contains("uninc", case=False)
+    named = note.str.extract(r"(?i)\b((?:city|town|village) of [A-Za-z .'-]+?)(?:\s*[\(;,|]|$)")[0]
+    named_mills = [city_mills.get((f, norm(n))) if isinstance(n, str) else None for f, n in zip(r["county_fips"], named)]
+    mail_mills = [city_mills.get((f, norm(c))) if isinstance(c, str) else None for f, c in zip(r["county_fips"], r["city"])]
+    r["city_millage"] = [nm if nm is not None else mm for nm, mm in zip(named_mills, mail_mills)]
+    r.loc[uninc, "city_millage"] = None
+    r["city"] = np.where(pd.notna(named) & pd.Series(named_mills, index=r.index).notna(), named.fillna(""), r["city"])
+    r["millage_school"] = r["school_millage"]
+    rest = r["total_millage"] - r["millage_school"]
+    # every district pays the county government's levy, so a city match must leave at least that
+    ok = r["city_millage"].notna() & (rest - r["city_millage"] >= r["county_fips"].map(county_gov) - 0.001)
+    r["millage_municipal"] = np.where(ok, r["city_millage"], 0.0)
+    r["millage_special"] = 0.0
+    r["millage_county"] = rest - r["millage_municipal"]
+    r["municipality"] = np.where(ok, r["city"], "")
+    return r[["county_fips", "code", "municipality", "total_millage", "millage_school", "millage_county",
+              "millage_municipal", "millage_special"]]
+
+
 def roll_districts(base_year: int) -> pd.DataFrame:
     """Residential roll parcels with PUMA (or county fallback), homestead, just value, district code."""
     files = glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet"))
@@ -120,9 +196,81 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
                        "donors": len(donors)})
 
     o = o.join(rates[["school_millage", "nonschool_millage"]], on=["county_fips_tax", "tax_district"])
-    for c in ["county_fips_tax", "tax_district", "school_millage", "nonschool_millage"]:
+    classes = district_classes(rate_year, base_year).set_index(["county_fips", "code"])
+    o = o.join(classes[["municipality", "millage_school", "millage_county", "millage_municipal", "millage_special"]],
+               on=["county_fips_tax", "tax_district"])
+    cols = ["county_fips_tax", "tax_district", "school_millage", "nonschool_millage", "municipality",
+            "millage_school", "millage_county", "millage_municipal", "millage_special"]
+    for c in cols:
         out.loc[o.index, c] = o[c]
-    out[f"tax_school_{base_year}"] = out[f"taxable_sd_{base_year}"] * out["school_millage"] / 1000
-    out[f"tax_nonschool_{base_year}"] = out[f"taxable_nsd_{base_year}"] * out["nonschool_millage"] / 1000
-    out[f"tax_model_{base_year}"] = out[f"tax_school_{base_year}"] + out[f"tax_nonschool_{base_year}"]
+    out = assign_city_senior_exemptions(out, base_year, rng)
+    out = engine_tax(out, base_year)
     return out, pd.DataFrame(report)
+
+
+def assign_city_senior_exemptions(h: pd.DataFrame, base_year: int, rng) -> pd.DataFrame:
+    """City versions of the senior exemptions (codes 04, 40), matched to roll counts by area.
+
+    Candidates: homesteads in a city district that already have the county version (the same
+    age/income test; cities adopt their own ordinance). Chosen at random within each county
+    group until the roll's count of parcels with the city exemption is reached. Amount: the roll's
+    median city exemption (code 04).
+    """
+    from ptm.exemptions import roll_exemption_counts  # noqa: F401  (kept for the county version)
+    from ptm.geo import county_groups
+    from ptm.link import _fill_by_priority
+
+    area = county_groups().drop_duplicates("county_fips").set_index("county_fips")["area"]
+    rows, amounts = [], []
+    for f in glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet")):
+        d = pd.read_parquet(f)
+        d = d[d["homestead"]]
+        a = area.get(fl_dor_to_fips(d["CO_NO"].iloc[:1]).iloc[0]) if len(d) else None
+        n04 = int((d["EXMPT_04"].fillna(0) > 0).sum()) if "EXMPT_04" in d else 0
+        n40 = int((d["EXMPT_40"].fillna(0) > 0).sum()) if "EXMPT_40" in d else 0
+        rows.append({"area": a, "lowinc_city": n04, "longterm_city": n40})
+        if "EXMPT_04" in d:
+            amounts.append(d.loc[d["EXMPT_04"] > 0, "EXMPT_04"])
+    counts = pd.DataFrame(rows).groupby("area").sum()
+    amount = float(pd.concat(amounts).median()) if amounts else 0.0
+
+    out = h.copy()
+    out["_rand"] = rng.random(len(out))
+    in_city = out["millage_municipal"].fillna(0) > 0
+    for flag, county_flag, target in [("ex_senior_lowinc_city", "ex_senior_lowinc", "lowinc_city"),
+                                      ("ex_senior_longterm_city", "ex_senior_longterm", "longterm_city")]:
+        elig = in_city & out[county_flag].fillna(False).astype(bool)
+        out[flag] = _fill_by_priority(out, elig, counts[target], priority=["_rand"], ascending=[True], group="value_area")
+    out["ex_senior_city_amount"] = np.where(out["ex_senior_lowinc_city"], amount, 0.0)
+    return out.drop(columns="_rand")
+
+
+def engine_tax(h: pd.DataFrame, base_year: int) -> pd.DataFrame:
+    """Taxable value by levy class from the rules engine (ptm.engine, law spec), then tax.
+
+    Assessed value: school = av_sd_<base>; county, municipal, special = av_nsd_<base> (the
+    non-homestead 10% cap applies to all non-school levies alike). Adds taxable_<class>_<base>
+    and tax_<class>_<base> for each class, and tax_model_<base> = their sum. Owners only (not
+    rented-lot mobile homes).
+    """
+    from ptm.engine import apply_exemptions
+    from ptm.law import load_law
+
+    law = load_law()
+    out = h.copy()
+    owner = (out["tenure"] == "owner") & ~out["mh_rented_lot"].fillna(False).astype(bool)
+    u = out[owner].copy()
+    u["homestead"] = (u["homestead"] == True)  # noqa: E712
+    u["av_school"] = u[f"av_sd_{base_year}"]
+    for c in ["county", "municipal", "special"]:
+        u[f"av_{c}"] = u[f"av_nsd_{base_year}"]
+    taxable = apply_exemptions(u, law, base_year)
+    total = 0
+    for c in law.levy_classes:
+        out.loc[u.index, f"taxable_{c}_{base_year}"] = taxable[f"taxable_{c}"].to_numpy()
+        tax = out[f"taxable_{c}_{base_year}"] * out[f"millage_{c}"] / 1000
+        out[f"tax_{c}_{base_year}"] = tax
+        total = total + tax.fillna(0)
+    out[f"tax_model_{base_year}"] = total.where(owner)
+    out.attrs["engine_missing_flags"] = sorted(getattr(taxable, "attrs", {}).get("missing", []))
+    return out
