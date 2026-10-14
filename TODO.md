@@ -13,7 +13,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 
 ## Where we left off (2026-10-13)
 Finishing the baseline = linking to parcels + calibration. Agreed order; decisions pending marked **?**:
-1. **Homestead status** — 6.35M PUMS owners vs 5.21M roll homesteads. Decided: after mobile homes (piece 2), match roll counts of non-homestead owner-like homes by PUMA × type × value band; within cells tilt toward recent movers (`MV`), non-citizens (`CIT`), condo owners 65+ in snowbird areas; tilt strength is a setting, report the random case too. Reasons for non-claiming (roll evidence) in CHALLENGES.
+1. [x] **Homestead status** — `assign_homestead` in `ptm/link.py`, in the baseline build. Targets: roll homesteads by PUMA × home type (multi-family 003/008 and co-op 005 homesteads count as condo). Households chosen by score = random + **implied-rate signal** (reported tax too high for a homestead, vs owners in the same PUMA with similar time in the home) + 0.25 × demographic signals (non-citizen, snowbird profile, moved < 1 yr). Result: 5.15M homesteads, 903k non-claimers; non-claimers pay 2.06× the tax per dollar of value (roll implies ~2×); demographic-only or random gave 1.00×. `non_claim_reason`: 214k likely ineligible, 689k possibly eligible.
+   - Why the implied rate: demographic signals alone shifted *who* was picked but not their tax; reported tax is the direct evidence. Comparing with similar-tenure neighbours fixed long-time owners being over-picked (from 27% to 21% for 30+ years) because the Save Our Homes gap estimate is too deep for them.
 2. [x] **Mobile homes on rented lots** — `assign_mobile_home_lots` in `ptm/link.py`, in the baseline build. Per PUMA: PUMS mobile-home owners − roll homestead mobile-home parcels (230k) = rented lot (294,747 assigned); priority lot < 1 acre, $0 tax, high `MHP` (includes site rent), low value. Flag `mh_rented_lot`: no real-estate tax, no homestead; their burden comes via lot rent (pass-through).
 3. **Assessment gap by donor draw** from similar nearby homesteads (replaces move-in-year estimate; county correlation only 0.40 now).
 4. [x] **Top-coded values** — `ptm/topcode.py` (`impute_topcoded_values`), tests in `tests/test_topcode.py`. Draws from the roll's real homesteads above the statewide cut-off ($3.09M, 2024 market), by region (11 counties + rest), matched by reported tax with noise. All 706 records replaced (min $3.09M, weighted mean $5.94M, max $263M). `valp_2024` holds the corrected value (VALP untouched); tax aging uses it.
@@ -59,6 +60,8 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 - [ ] **Metrics** — distribution tables by income decile etc., Suits index, replicate-weight SEs
 - [ ] **Current-law projection** — 2026 → 2036
 - [ ] **Amendment 3** (Florida, Nov 3 2026 ballot) — first policy
+  - **Take-up setting** (default off): "possibly eligible" non-claimers start claiming with probability rising in the benefit (bigger exemptions → more filers → bigger revenue loss). Show static and with-take-up results.
+  - **Snowbird residency switch** (default off): some likely-ineligible snowbirds move legal residency to Florida.
 - [ ] **Ohio** — HB 920 reduction factors; Ramaswamy rollback-then-cap (rollback year as a setting)
 - [ ] **Texas**
 

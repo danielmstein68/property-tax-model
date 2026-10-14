@@ -17,7 +17,8 @@ What the model can't do, or does only approximately. Read this before citing res
 
 ## Data: tax details
 
-- **No homestead flag in PUMS.** All owner-occupied homes are treated as homesteads.
+- **Homestead status is imputed.** PUMS has no homestead flag. Counts match the parcel roll by area and home type, and households are chosen mainly by whether their reported tax looks like a homestead's — but any individual household's status is a best guess. Reasons we can't see (LLC title, spouse claiming elsewhere) are assigned at random.
+- **Take-up response.** If exemptions grow, eligible owners who haven't filed may start claiming. The model handles this only through a setting (off by default), so static results understate the cost of larger exemptions.
 - **Imputed, not observed, tax details.** Assessed value (the Save Our Homes gap), exemptions and land value come from similar parcels in the same area and value band. They are right for groups (income deciles, age groups, regions) but not for any individual household.
 - **No exact location for households.** PUMS only gives the PUMA (~100,000 people). Local tax rates vary within PUMAs, so household tax rates are approximations calibrated to totals.
 - **"Just value" vs market value.** The roll's just value may be systematically below market value (Florida's cost-of-sale adjustment, to be confirmed), which affects comparisons with PUMS values.
