@@ -184,6 +184,7 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
   - **Gadsden's preliminary 2026 roll uses the 2025 second-band amount** ($25,722 instead of $26,411; 4,712 parcels off by $689). Recheck with the final roll.
   - **Broward condo common elements** (use 009) carry a nominal $10 value and $0 taxable; not homes.
 - **Out of scope:** 28k parcels carry exemptions the spec doesn't cover (charitable, affordable housing, etc.).
+- **Assessment rules, partly testable without a prior-year roll:** homes sold in 2025 must be reset to just value on the 2026 roll. Non-homesteads: 100% (school) and 99.8% (non-school) are. Homesteads: 74.7% are; for 99.8% of the rest, just − assessed equals the recorded **portability** amount (`ASS_DIF_TRNS`) exactly. So ~25% of 2025 homestead buyers ported Save Our Homes savings (median $104,957; 1.9% at the $500k cap) — needed when projecting movers. `ASS_TRNSFR_FG` is filled on every parcel, so use `ASS_DIF_TRNS > 0` to identify portability.
 
 ### Getting the parcel tax roll (NAL files)
 - **Source:** Florida DOR Data Portal → Tax Roll Data Files → NAL. One zip per county (67 counties).
