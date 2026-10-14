@@ -1,0 +1,432 @@
+# FL property tax law — rules spec
+
+_Generated from `inputs/fl_law.yaml` by `scripts/law_page.py`. **Do not edit this page** — edit the YAML (or ask Claude to). Every value below is what the model uses._
+
+- **Law as of:** 2026 Florida Statutes; tax years 2024-2026
+- **Levy classes:** school, county, municipal, special
+- **Scope:** Residential real property (single-family, condo, co-op, mobile home on owned land, multi-family up to 9 units). Current law only. Not covered: commercial, industrial, agricultural/classified use, tangible personal property, non-ad valorem assessments.
+
+
+## Needs review
+
+- **portability** (🟡 medium): Ch. 2026-239 changed "immediate prior homestead" to "prior homestead" from the 2027 roll; through 2026 the "immediate prior" wording governs (DOR bulletin PTO 26-07). Split ownership rules (8)(c)-(d) not modelled. PUMS can't see a mover's old homestead, so in the model portability mostly enters through the roll-based assessment gaps.
+- **disabled_total** (🟡 medium): Current indexed income limit not yet verified (no DOR table found). In the model this exemption is matched to roll counts, so the limit isn't used for assignment yet.
+- **senior_longterm_county** (🟡 medium): Local option: availability depends on each county's ordinance. "Unless otherwise specified ... this exemption will apply to all tax levies of the county ... including dependent special districts and municipal service taxing units" (196.075(4)(b)). The model's current assignment uses just value < $350k as a proxy — should switch to the statute's $250k-at-first-qualification test.
+- **senior_longterm_municipal** (🟡 medium): Not yet assigned separately from the county version.
+- **senior_lowinc_county** (🟡 medium): Amount varies by county (roll median $45,389). Model uses the roll median; should use each county's own amount from the roll.
+- **senior_lowinc_municipal** (🟡 medium): Not yet assigned separately from the county version.
+- **granny_flat** (🟡 medium): Rare; not assigned to households.
+- **exemption_order** (🟡 medium): Not stated whether the $5,000 exemptions (196.202, 196.24) count as "other homestead exemptions" — they apply to any property. With fixed-dollar exemptions the order only matters near a $0 floor, so this rarely changes results; the roll test will show it.
+
+## Assessment
+
+### soh_cap
+
+Save Our Homes: a homestead's assessed value changes each January 1 by at most the lower of 3% and the prior calendar year's CPI-U change, and never exceeds just value. Applies to all levies (school included).
+
+| Parameter | Value |
+|---|---|
+| applies_to | school, county, municipal, special |
+| max_rate | 3.0% |
+| cap | 2024: 3.0%; 2025: 2.9%; 2026: 2.7% |
+
+**Source:** [Fla. Const. Art. VII §4(d)(1)-(2); s. 193.155(1)-(2), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.155) · **Confidence:** ✅ high
+
+> "Any change resulting from such reassessment shall not exceed the lower of the following: (a) Three percent of the assessed value of the property for the prior year; or (b) The percentage change in the Consumer Price Index for All Urban Consumers ... for the preceding calendar year ..." (193.155(1)); "If the assessed value of the property as calculated under subsection (1) exceeds the just value, the assessed value of the property shall be lowered to the just value of the property." (193.155(2))
+
+_Note:_ Yearly caps 2025 (2.9%) and 2026 (2.7%) come from the CPI change in DOR's additional-exemption table and county appraiser pages; DOR doesn't publish the SOH cap figure itself. Earlier years in inputs/fl_soh_history.csv.
+
+### soh_recapture
+
+Recapture: when this year's just value exceeds last year's assessed value, the assessed value must rise by the cap (lower of 3% and CPI) — even if just value fell. If CPI is negative, assessed value falls by that percentage.
+
+| Parameter | Value |
+|---|---|
+| applies_to | school, county, municipal, special |
+
+**Source:** [Rule 12D-8.0062(5)-(6), F.A.C.](https://www.flrules.org/gateway/ruleNo.asp?id=12D-8.0062) · **Confidence:** ✅ high
+
+> "Where the current year just value of an individual property exceeds the prior year assessed value, the property appraiser is required to increase the prior year's assessed value by the lower of: (a) Three percent; or (b) The percentage change in the Consumer Price Index ..." (5); "If the percentage change in the Consumer Price Index (CPI) referenced in paragraph (5)(b) is negative, then the assessed value shall be the prior year's assessed value decreased by that percentage." (6)
+
+_Note:_ Comes from DOR's rule, not the statute text (193.155 only caps the change). Needs a second roll year to test against data.
+
+### soh_reset_on_sale
+
+After a change of ownership, a homestead is assessed at just value as of January 1 of the following year; the cap then applies again.
+
+| Parameter | Value |
+|---|---|
+| applies_to | school, county, municipal, special |
+
+**Source:** [Fla. Const. Art. VII §4(d)(3); s. 193.155(3)(a), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.155) · **Confidence:** ✅ high
+
+> "Except as provided in this subsection or subsection (8), property assessed under this section shall be assessed at just value as of January 1 of the year following a change of ownership."
+
+### improvements
+
+Changes, additions or improvements are added at just value as of the first January 1 after they are substantially completed (homestead and non-homestead residential).
+
+| Parameter | Value |
+|---|---|
+| applies_to | school, county, municipal, special |
+
+**Source:** [s. 193.155(4)(a); s. 193.1554(6)(a), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.155) · **Confidence:** ✅ high
+
+> "Except as provided in paragraph (b) and s. 193.624, changes, additions, or improvements to homestead property shall be assessed at just value as of the first January 1 after the changes, additions, or improvements are substantially completed." (193.155(4)(a))
+
+_Note:_ Rebuilding after a calamity (4)(b)-(c), common areas (4)(d) and destroyed property (5) are not modelled.
+
+### portability
+
+A person who held a homestead exemption on January 1 of any of the 3 preceding years can carry up to $500,000 of the old homestead's Save Our Homes difference (just − assessed) to a new homestead. Upsizing: new assessed = new just − min($500k, old difference). Downsizing: new assessed = new just × (old assessed / old just), with the difference capped at $500k.
+
+| Parameter | Value |
+|---|---|
+| applies_to | school, county, municipal, special |
+| max_transfer | 500,000 |
+| lookback_years | 3 |
+
+**Source:** [Fla. Const. Art. VII §4(d)(8); s. 193.155(8)(a)-(b), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.155) · **Confidence:** 🟡 medium
+
+> "...the assessed value of the new homestead shall be the just value of the new homestead minus an amount equal to the lesser of $500,000 or the difference between the just value and the assessed value of the prior homestead as of January 1 of the year in which the prior homestead was abandoned." (8)(a); "...the assessed value of the new homestead shall be equal to the just value of the new homestead divided by the just value of the prior homestead and multiplied by the assessed value of the prior homestead. However, if the difference ... is greater than $500,000, the assessed value of the new homestead shall be increased so that the difference between the just value and the assessed value equals $500,000." (8)(b)
+
+_Note:_ Ch. 2026-239 changed "immediate prior homestead" to "prior homestead" from the 2027 roll; through 2026 the "immediate prior" wording governs (DOR bulletin PTO 26-07). Split ownership rules (8)(c)-(d) not modelled. PUMS can't see a mover's old homestead, so in the model portability mostly enters through the roll-based assessment gaps.
+
+### nonhomestead_residential_cap
+
+Non-homestead residential property (9 or fewer units, incl. residential vacant land): for all levies except school, assessed value rises at most 10% a year and never above just value; resets to just value after a change of ownership or control. School levies use just value.
+
+| Parameter | Value |
+|---|---|
+| applies_to | county, municipal, special |
+| cap | 2024: 10.0% |
+| max_units | 9 |
+
+**Source:** [Fla. Const. Art. VII §4(g); s. 193.1554, F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.1554) · **Confidence:** ✅ high
+
+> "For all levies other than school district levies, assessments of residential real property, as defined by general law, which contains nine units or fewer and which is not subject to the assessment limitations set forth in subsections (a) through (d) ... shall not exceed ten percent (10%) of the assessment for the prior year." (Const. §4(g)); "...shall be assessed at just value as of January 1 of the year following a change of ownership or control." (193.1554(5))
+
+### school_assessed_just_value_nonhomestead
+
+For non-homestead property, school levies are assessed at just value (no cap).
+
+| Parameter | Value |
+|---|---|
+| applies_to | school |
+
+**Source:** [Fla. Const. Art. VII §4(g); s. 193.1554(2), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.1554) · **Confidence:** ✅ high
+
+> "For all levies other than school district levies, nonhomestead residential property shall be assessed at just value as of January 1 of the year that the property becomes eligible for assessment pursuant to this section."
+
+## Exemptions (in the order applied)
+
+### 1. homestead_first
+
+Homestead exemption on the first $25,000 of assessed value, all levies. Owner must hold title and make it their permanent residence on January 1, and apply by March 1.
+
+| Parameter | Value |
+|---|---|
+| kind | fixed |
+| order | 1 |
+| household_flag | homestead |
+| roll_code | EXMPT_01 |
+| applies_to | school, county, municipal, special |
+| amount | 2024: 25,000 |
+| indexed | False |
+
+**Source:** [Fla. Const. Art. VII §6(a)(1)a.; s. 196.031(1)(a), F.S.; s. 196.011(1)(a)](https://www.flsenate.gov/Laws/Statutes/2026/196.031) · **Confidence:** ✅ high
+
+> "...is entitled to an exemption from all taxation, except for assessments for special benefits, up to the assessed valuation of $25,000 on the residence and contiguous real property..."
+
+### 2. homestead_second
+
+Additional homestead exemption on assessed value above $50,000, up to an indexed amount ($26,411 in 2026), for all levies except school. Measured on assessed value before any other exemption.
+
+| Parameter | Value |
+|---|---|
+| kind | band |
+| order | 2 |
+| household_flag | homestead |
+| roll_code | EXMPT_02 |
+| applies_to | county, municipal, special |
+| band_start | 50,000 |
+| amount | 2024: 25,000; 2025: 25,722; 2026: 26,411 |
+| indexed | CPI-U, positive changes only, from 2025 (DOR cpi_homestead_exemption.pdf) |
+
+**Source:** [Fla. Const. Art. VII §6(a)(1)b. and (a)(2); s. 196.031(1)(b), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.031) · **Confidence:** ✅ high
+
+> "Every person who qualifies to receive the exemption provided in paragraph (a) is entitled to an additional exemption of up to $25,000 on the assessed valuation greater than $50,000 for all levies other than school district levies. The $25,000 value of the additional exemption ... shall be adjusted annually on January 1 of each year for inflation using the percentage change in the Consumer Price Index ... if such percent change is positive."
+
+_Note:_ Roll check: 4.55M parcels carry exactly $26,411 in 2026. The band therefore runs $50,000-$76,411 in 2026 although the Constitution's text still says "up to seventy-five thousand dollars" — the indexing clause (a)(2) governs.
+
+### 3. vet_total
+
+Total exemption for the homestead of an honorably discharged veteran with a service-connected total and permanent disability (VA letter), or of a veteran with a service-connected total disability requiring a wheelchair; carries over to the surviving spouse until remarriage or sale.
+
+| Parameter | Value |
+|---|---|
+| kind | total |
+| order | 3 |
+| household_flag | ex_vet_total |
+| roll_code | EXMPT_05, EXMPT_06 |
+| applies_to | school, county, municipal, special |
+
+**Source:** [s. 196.081(1),(3); s. 196.091, F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.081) · **Confidence:** ✅ high
+
+> "Any real estate that is owned and used as a homestead by a veteran who was honorably discharged with a service-connected total and permanent disability and for whom a letter ... has been issued certifying that the veteran is totally and permanently disabled is exempt from taxation..." (196.081(1)(a))
+
+### 4. disabled_total
+
+Total exemption for the homestead of a quadriplegic (no income test), or of a paraplegic, hemiplegic or other totally and permanently disabled person who must use a wheelchair or is legally blind, if household gross income (incl. Social Security and VA benefits) is under an indexed limit.
+
+| Parameter | Value |
+|---|---|
+| kind | total |
+| order | 4 |
+| household_flag | ex_disabled_total |
+| roll_code | EXMPT_08 |
+| applies_to | school, county, municipal, special |
+| income_limit_base | 14,500 |
+| income_limit_indexed | CPI annual average change, from 1990 |
+
+**Source:** [s. 196.101(1),(2),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.101) · **Confidence:** 🟡 medium
+
+> "Any real estate used and owned as a homestead by any quadriplegic is exempt from taxation." (1); "...the gross income of all persons residing in or upon the homestead for the prior year shall not exceed $14,500." (4)(a)
+
+_Note:_ Current indexed income limit not yet verified (no DOR table found). In the model this exemption is matched to roll counts, so the limit isn't used for assignment yet.
+
+### 5. first_responder_total
+
+Total exemption for the homestead of a first responder totally and permanently disabled by injuries in the line of duty; carries over to the surviving spouse.
+
+| Parameter | Value |
+|---|---|
+| kind | total |
+| order | 5 |
+| household_flag | ex_first_responder |
+| roll_code | EXMPT_41 |
+| applies_to | school, county, municipal, special |
+
+**Source:** [s. 196.102(2),(8), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.102) · **Confidence:** ✅ high
+
+> "Any real estate that is owned and used as a homestead by a person who has a total and permanent disability as a result of an injury or injuries sustained in the line of duty while serving as a first responder in this state ... is exempt from taxation..."
+
+_Note:_ Not yet assigned to households (692 roll homesteads).
+
+### 6. senior_longterm_county
+
+County option: total exemption on county levies for an owner 65+ with household income (federal AGI) under the indexed limit, who has lived there 25+ years, on a home whose just value was under $250,000 in the first year they applied and qualified.
+
+| Parameter | Value |
+|---|---|
+| kind | total |
+| order | 6 |
+| household_flag | ex_senior_longterm |
+| roll_code | EXMPT_39 |
+| applies_to | county |
+| income_limit | 2025: 37,694; 2026: 38,686 |
+| just_value_limit | 250,000 |
+| just_value_limit_when | first year applied and eligible (not re-tested later) |
+| residence_years | 25 |
+| min_age | 65 |
+
+**Source:** [Fla. Const. Art. VII §6(d)(2); s. 196.075(2)(b),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.075) · **Confidence:** 🟡 medium
+
+> "The amount of the assessed value of the property for a person who has the legal or equitable title to real estate with a just value less than $250,000, as determined in the first tax year that the owner applies and is eligible for the exemption, and who has maintained thereon the permanent residence of the owner for at least 25 years, who has attained age 65, and whose household income does not exceed the income limitation..."
+
+_Note:_ Local option: availability depends on each county's ordinance. "Unless otherwise specified ... this exemption will apply to all tax levies of the county ... including dependent special districts and municipal service taxing units" (196.075(4)(b)). The model's current assignment uses just value < $350k as a proxy — should switch to the statute's $250k-at-first-qualification test.
+
+### 7. senior_longterm_municipal
+
+City-option version of the long-term low-income senior exemption (city levies).
+
+| Parameter | Value |
+|---|---|
+| kind | total |
+| order | 7 |
+| household_flag | ex_senior_longterm_city |
+| roll_code | EXMPT_40 |
+| applies_to | municipal |
+| income_limit | 2025: 37,694; 2026: 38,686 |
+| just_value_limit | 250,000 |
+| residence_years | 25 |
+| min_age | 65 |
+
+**Source:** [Fla. Const. Art. VII §6(d)(2); s. 196.075(2)(b),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.075) · **Confidence:** 🟡 medium
+
+> "...must specify that the exemption applies only to taxes levied by the unit of government granting the exemption." (196.075(4)(b))
+
+_Note:_ Not yet assigned separately from the county version.
+
+### 8. senior_lowinc_county
+
+County option: up to $50,000 off county levies for an owner 65+ whose household income (federal AGI) is under the indexed limit. The amount is set by each county's ordinance.
+
+| Parameter | Value |
+|---|---|
+| kind | local_option |
+| order | 8 |
+| household_flag | ex_senior_lowinc |
+| roll_code | EXMPT_03 |
+| applies_to | county |
+| max_amount | 50,000 |
+| income_limit | 2025: 37,694; 2026: 38,686 |
+| min_age | 65 |
+
+**Source:** [Fla. Const. Art. VII §6(d)(1); s. 196.075(2)(a),(3),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.075) · **Confidence:** 🟡 medium
+
+> "Up to $50,000 for a person who has the legal or equitable title to real estate and maintains thereon the permanent residence of the owner, who has attained age 65, and whose household income does not exceed $20,000." (2)(a); "The $20,000 income limitation shall be adjusted annually, on January 1, by the percentage change in the average cost-of-living index..." (3)
+
+_Note:_ Amount varies by county (roll median $45,389). Model uses the roll median; should use each county's own amount from the roll.
+
+### 9. senior_lowinc_municipal
+
+City-option version of the low-income senior exemption (city levies).
+
+| Parameter | Value |
+|---|---|
+| kind | local_option |
+| order | 9 |
+| household_flag | ex_senior_lowinc_city |
+| roll_code | EXMPT_04 |
+| applies_to | municipal |
+| max_amount | 50,000 |
+| income_limit | 2025: 37,694; 2026: 38,686 |
+| min_age | 65 |
+
+**Source:** [Fla. Const. Art. VII §6(d)(1); s. 196.075(2)(a),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.075) · **Confidence:** 🟡 medium
+
+> "The ordinance must specify that the exemption applies only to taxes levied by the unit of government granting the exemption." (196.075(4)(b))
+
+_Note:_ Not yet assigned separately from the county version.
+
+### 10. widow_blind_disabled_5000
+
+$5,000 of property value exempt for each widow, widower, blind person, or totally and permanently disabled person who is a Florida resident. Any property (not homestead-only).
+
+| Parameter | Value |
+|---|---|
+| kind | fixed |
+| order | 10 |
+| household_flag | ex_widow_blind_disabled |
+| roll_code | EXMPT_31, EXMPT_32, EXMPT_33, EXMPT_34 |
+| applies_to | school, county, municipal, special |
+| amount | 2024: 5,000 |
+
+**Source:** [s. 196.202(1), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.202) · **Confidence:** ✅ high
+
+> "Property to the value of $5,000 of every widow, widower, blind person, or totally and permanently disabled person who is a bona fide resident of this state is exempt from taxation."
+
+_Note:_ Raised from $500 by ch. 2022-97; DOR's NAL user guide still says $500, but the 2026 roll shows $5,000 on 99% of these parcels ($10,000 where two qualify). Not yet assigned to households.
+
+### 11. disabled_exservice_5000
+
+$5,000 of property value exempt for an honorably discharged ex-servicemember with a wartime/misfortune disability of 10% or more; also the unremarried surviving spouse.
+
+| Parameter | Value |
+|---|---|
+| kind | fixed |
+| order | 11 |
+| household_flag | ex_disabled_exservice |
+| roll_code | EXMPT_35 |
+| applies_to | school, county, municipal, special |
+| amount | 2024: 5,000 |
+
+**Source:** [s. 196.24(1), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.24) · **Confidence:** ✅ high
+
+> "Property to the value of $5,000 of such a person is exempt from taxation. The unremarried surviving spouse of such a disabled ex-servicemember is also entitled to the exemption."
+
+_Note:_ Roll check: applies to school levies (83% of these parcels match; the rest need a look in the full roll test). Not yet assigned to households.
+
+### 12. granny_flat
+
+County option: assessed value reduced for construction that provides living quarters for a parent or grandparent (62+) of the owner or spouse — up to the lesser of the added assessed value and 20% of the total assessed value.
+
+| Parameter | Value |
+|---|---|
+| kind | reduction |
+| order | 12 |
+| household_flag | ex_granny_flat |
+| roll_code | EXMPT_81 |
+| applies_to | school, county, municipal, special |
+| max_share_of_assessed | 20.0% |
+
+**Source:** [s. 193.703(1),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.703) · **Confidence:** 🟡 medium
+
+> "The value excluded may not exceed the lesser of the following: (a) The increase in assessed value resulting from construction or reconstruction of the property; or (b) Twenty percent of the total assessed value of the property as improved."
+
+_Note:_ Rare; not assigned to households.
+
+### 13. deployed_military
+
+Additional exemption for a homesteaded servicemember deployed outside the continental US, Alaska or Hawaii in listed operations during the prior year: taxable value × days deployed ÷ days in the year.
+
+| Parameter | Value |
+|---|---|
+| kind | percent |
+| order | 13 |
+| household_flag | ex_deployed_military |
+| roll_code | EXMPT_38 |
+| applies_to | school, county, municipal, special |
+
+**Source:** [s. 196.173(1),(2),(5), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.173) · **Confidence:** ✅ high
+
+> "The amount of the exemption is equal to the taxable value of the homestead of the servicemember on January 1 multiplied by the number of days that the servicemember was on a qualifying deployment in the preceding calendar year and divided by the number of days in that year."
+
+_Note:_ Rare; not assigned to households.
+
+### 14. vet_discount
+
+Veterans 65+ with a combat-related, permanent service-connected disability get a percentage discount equal to their disability percentage, applied to the taxable value left after all other exemptions — separately for each levy.
+
+| Parameter | Value |
+|---|---|
+| kind | percent |
+| order | 14 |
+| household_flag | ex_vet_discount |
+| roll_code | EXMPT_80 |
+| applies_to | school, county, municipal, special |
+
+**Source:** [Fla. Const. Art. VII §6(e); s. 196.082(1),(2),(6), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.082) · **Confidence:** ✅ high
+
+> "(a) The property appraiser shall first ascertain all other applicable exemptions, including exemptions provided pursuant to local option, and deduct all other exemptions from the assessed value. (b) The percentage discount portion of the remaining value which is attributable to service-connected disabilities shall be subtracted to yield the discounted taxable value." (196.082(6))
+
+_Note:_ Roll check: the roll records the county dollar amount; applying the same percentage to the school base matches 91% of these parcels (subtracting the dollar figure: 26%).
+
+## Taxable value and tax
+
+### exemption_order
+
+Order of exemptions: the $25,000 and the second band are applied first, measured on the raw assessed value; other homestead exemptions then apply in whichever order gives the lowest taxable value; the veterans' discount comes last (s. 196.082(6)).
+
+**Source:** [s. 196.031(8); s. 196.082(6), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.031) · **Confidence:** 🟡 medium
+
+> "Unless the homestead property is totally exempt from ad valorem taxation, the exemptions provided in paragraphs (1)(a) and (b) shall be applied before other homestead exemptions, which shall then be applied in the order that results in the lowest taxable value."
+
+_Note:_ Not stated whether the $5,000 exemptions (196.202, 196.24) count as "other homestead exemptions" — they apply to any property. With fixed-dollar exemptions the order only matters near a $0 floor, so this rarely changes results; the roll test will show it.
+
+### taxable_value
+
+Taxable value = assessed value − applicable exemptions, separately for each levy class, never below zero.
+
+| Parameter | Value |
+|---|---|
+| floor | 0 |
+
+**Source:** [s. 192.001(2),(16), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/192.001) · **Confidence:** ✅ high
+
+> ""Taxable value" means the assessed value of property minus the amount of any applicable exemption provided under s. 3 or s. 6, Art. VII of the State Constitution and chapter 196."
+
+_Note:_ No source states the $0 floor explicitly; it follows from exemptions being "up to" the assessed value. Roll check: simple subtraction with a $0 floor matches 99.1% (school) and 99.8% (county) of residential parcels.
+
+### millage_caps
+
+Constitutional caps on operating millage (excluding voted debt and short-term voted levies): 10 mills each for county, municipal and school purposes; water management 1.0 mill (0.05 in the northwest district); other special districts as authorized by law and voters. Used later for rate-response rules.
+
+| Parameter | Value |
+|---|---|
+| caps_mills | county: 10.0; municipal: 10.0; school: 10.0; wmd_northwest: 5.0%; wmd_other: 1.0 |
+
+**Source:** [Fla. Const. Art. VII §9(b)](https://www.flsenate.gov/Laws/Constitution) · **Confidence:** ✅ high
+
+> "...shall not be levied in excess of the following millages upon the assessed value of real estate and tangible personal property: for all county purposes, ten mills; for all municipal purposes, ten mills; for all school purposes, ten mills; for water management purposes for the northwest portion of the state ... 0.05 mill; for water management purposes for the remaining portions of the state, 1.0 mill..."
