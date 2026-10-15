@@ -98,6 +98,9 @@ class Projection:
             u[f"millage_{c}_base"] = u[f"millage_{c}"]
         u["city_key"] = u["municipality"].fillna("").map(_city_key)
         u["city_idx"] = self.rates.city_index(u["county_fips_tax"], u["city_key"])
+        cpos = {k: i for i, k in enumerate(self.rates.counties.index)}
+        u["county_idx"] = u["county_fips_tax"].map(cpos).fillna(-1).astype(int)
+        self.taxable = {}   # year -> {class: array} for draw totals
         for c in ["school", "county"]:
             u[f"taxable_{c}_prior"] = u[f"taxable_{c}_{BASE_YEAR}"]
         u[f"av_school_{BASE_YEAR}"] = u["av_school_prior"]
@@ -154,6 +157,7 @@ class Projection:
         for c in LEVIES:
             res[f"tax_{c}"] = res[f"taxable_{c}"] * u[f"millage_{c}"].fillna(0) / 1000
         res["tax_total"] = res[[f"tax_{c}" for c in LEVIES]].sum(axis=1)
+        self.taxable[y] = {c: res[f"taxable_{c}"].fillna(0).to_numpy() for c in LEVIES}
         self.history[f"tax_{y}"] = res["tax_total"].to_numpy()
         self.history[f"av_school_{y}"] = res["av_school"].to_numpy()
         for c in LEVIES:
@@ -214,20 +218,71 @@ class Projection:
         return row
 
     def _needed_columns(self, b: pd.DataFrame) -> list[str]:
+        return Projection._needed_columns_for(b, self.econ, self.law_base)
+
+    @staticmethod
+    def _needed_columns_for(b: pd.DataFrame, econ: Economy | None = None, law: Law | None = None) -> list[str]:
         """Only what the loop uses: identifiers, values, incomes, exemption inputs, rates."""
-        cols = {"WGTP", "SERIALNO", "PUMA", "county_fips", "county_fips_tax", "municipality", "homestead",
+        econ, law = econ or Economy("central"), law or load_law()
+        cols = {"WGTP", "SERIALNO", "PUMA", "tenure", "mh_rented_lot", "county_fips", "county_fips_tax", "municipality", "homestead",
                 "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type",
                 f"av_sd_{BASE_YEAR}", f"av_nsd_{BASE_YEAR}", f"tax_model_{BASE_YEAR}",
                 "homestead_portion_share", "homestead_share"}
-        cols |= set(self.econ.spec["income_growth"])
+        cols |= set(econ.spec["income_growth"])
         cols |= {f"{x}_{c}" for x in ["millage", "taxable"] for c in LEVIES}
         cols |= {f"taxable_{c}_{BASE_YEAR}" for c in LEVIES} | {f"tax_{c}_{BASE_YEAR}" for c in LEVIES}
-        for r in self.law_base.exemptions():
+        for r in law.exemptions():
             for k in ["household_flag", "value_column"]:
                 if r.spec.get(k):
                     cols.add(r.spec[k])
         cols |= {c for c in b.columns if c.startswith("ex_")}   # replicate weights stay in the baseline (join by index)
         return [c for c in b.columns if c in cols]
+
+    def draw_totals(self, groups: pd.Series) -> dict:
+        """Tax totals for every rate draw: {year: array (n_groups + 1, n_draws)}, rows = the sorted
+        group labels, then the all-owner total. Exact: tax is taxable x rate, and taxable values
+        don't depend on rates, so each draw's tax is a weighted sum computed by matrix products."""
+        u = self.units
+        labels = sorted(groups.reindex(u.index).dropna().unique())
+        gpos = groups.reindex(u.index).map({g: i for i, g in enumerate(labels)}).to_numpy()
+        ng = len(labels) + 1
+        w = u["WGTP"].to_numpy()
+        ci = u["county_idx"].to_numpy()
+        yi = u["city_idx"].to_numpy()
+        nc, ny = len(self.rates.counties), len(self.rates.cities)
+
+        def by_group_and(j, v, n):  # (ng, n) sums of v by group and jurisdiction position j
+            m = np.zeros((ng, n))
+            ok = j >= 0
+            gp = np.where(np.isnan(gpos.astype(float)), -1, gpos).astype(int)
+            for rows in (gp, np.full(len(gp), ng - 1)):
+                sel = ok & (rows >= 0)
+                np.add.at(m, (rows[sel], j[sel]), v[sel])
+            return m
+
+        def by_group(v):
+            out = np.zeros(ng)
+            gp = np.where(np.isnan(gpos.astype(float)), -1, gpos).astype(int)
+            sel = gp >= 0
+            np.add.at(out, gp[sel], v[sel])
+            out[-1] = v.sum()
+            return out
+
+        out = {}
+        for y, tx in self.taxable.items():
+            pth = self.rates.paths[y]
+            t_cty = w * tx["county"] * u["millage_county_base"].fillna(0).to_numpy()
+            t_mun = w * tx["municipal"] * u["millage_municipal_base"].fillna(0).to_numpy()
+            t_sch = w * tx["school"]
+            fixed = by_group(t_sch * u["millage_school_fixed"].fillna(0).to_numpy()) \
+                + by_group(np.where(yi < 0, t_mun, 0)) + by_group(np.where(ci < 0, t_cty, 0))
+            total = (fixed[:, None]
+                     + by_group_and(ci, t_cty, nc) @ pth["county"].T
+                     + by_group_and(yi, t_mun, ny) @ pth["city"].T
+                     + by_group_and(ci, t_sch, nc) @ pth["rle"].T)
+            out[y] = total / 1000
+        out["labels"] = labels
+        return out
 
     @property
     def household_results(self) -> pd.DataFrame:

@@ -118,6 +118,19 @@ rate_setting:
     2026 law's 110% cap, exceeded 3% of the time (1 of 33 counties did in 2026). keep_capped,
     rolled_back and hold stay available."
 
+# Monte Carlo noise around a scenario's path (ptm/montecarlo.py): yearly normal shocks to growth
+# rates, with persistence (AR(1)) and home / non-residential correlation.
+uncertainty:
+  home_value_sd: 0.037
+  nonresidential_sd: 0.03
+  cpi_sd: 0.0057
+  persistence: 0.5
+  home_nonres_correlation: 0.7
+  note: Home value and CPI spreads from the UF Shimberg Center study for EDR (2007) - Florida real
+    house price growth sd 3.2-4.0 points a year across its regimes (3.7 used), CPI sd 0.57 points.
+    Non-residential spread, persistence and correlation are judgment, to be checked against
+    history.
+
 scenarios:
   central:
     description: Official Florida forecasts (REC adopted, EEC).

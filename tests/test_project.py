@@ -63,3 +63,11 @@ def test_history_draws_shape_and_cap():
     assert d.shape == (500, 3)
     assert (d[:, 1] > 0).mean() < 0.3                     # rate increases are uncommon in normal years
     assert np.median(d[:, 1]) == 0                         # typical county keeps its rate
+
+
+def test_shock_overrides_reproducible():
+    from ptm.montecarlo import shock_overrides
+    a, b = shock_overrides("central", 7, 2030), shock_overrides("central", 7, 2030)
+    assert a == b
+    assert set(a) == {"home_value", "nonresidential_value", "cpi"}
+    assert 2026 in a["cpi"]["set"] and 2030 in a["home_value"]["set"]
