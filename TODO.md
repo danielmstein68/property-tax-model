@@ -121,3 +121,11 @@ Florida's voter file (Division of Elections, on request; check use terms and exe
 ## Settings to keep in mind
 - Caps can limit **assessed value** (default) or the **tax bill**.
 - **Rollback year** (2019 / 2020 / 2021) is a separate setting from the 2026 base year.
+
+## Step 2: projection engine (started 2026-10-15)
+- [x] **Economy paths** — `ptm/economy.py`, `inputs/fl_projection_assumptions.yaml` (editable), `inputs/fl_economy_paths.csv` (`scripts/fl_economy_inputs.py`). Home values: REC Ad Valorem adopted forecast (Aug 2026), existing residential appreciation excl. new construction, 2027-32; eased over 2033-36 to the EEC median sale-price path (~2.2%). Wages, other income, households: Florida EEC (July 2026). Scenarios: central, low (EDR proposal), high (FEA proposal), stall, downturn (Fed 2026 severely adverse shape); custom overrides (`source`, `set`, `shift`).
+- [ ] **Inflation**: average CBO with Social Security Trustees and Philadelphia Fed SPF 10-year CPI (CBO 2.3% only for now); expose an inflation control to users.
+- [ ] Regional/type variation in appreciation (condos, Southwest Florida) — first years from recent trends.
+- [ ] Projection loop: assessment caps by year (SOH cap = min(3%, CPI)), exemption indexing, sales and resets (sale probability depending on SOH savings; estimate from rolls), portability, deaths of older owners (CDC life tables), reweighting to households by age (BEBR / Demographic Estimating Conference), new construction, rate-setting (keep rate capped at 110% rolled-back; track maximum millage; alternatives: hold rates, rolled-back), non-residential base.
+- [ ] Check first projected years against REC taxable value forecasts.
+

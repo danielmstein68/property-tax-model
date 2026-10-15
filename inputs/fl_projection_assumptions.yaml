@@ -1,0 +1,104 @@
+# Projection assumptions (economy) — editable, like the law spec.
+#
+# Each variable is a yearly growth rate: the change from the previous year to `year`.
+# Paths come from inputs/fl_economy_paths.csv (built by scripts/fl_economy_inputs.py from the
+# official Florida forecasts) unless a scenario overrides them.
+#
+# Scenario overrides, per variable:
+#   source: <name>          use another forecast from the paths file (e.g. rec_edr, rec_fea)
+#   set: {year: rate}       replace specific years
+#   shift: rate             add to every year (e.g. -0.01 = one point lower)
+# Years past a forecast's end follow `after_forecast`.
+
+meta:
+  state: FL
+  base_year: 2026
+  end_year: 2036
+  decided: "2026-10-15 (Daniel): central home values = REC adopted forecast; 2033-36 ease to the
+    EEC median sale-price path; Florida-specific forecasts where available; inflation national CPI
+    (the statutes use the national CPI) and adjustable later."
+
+variables:
+  home_value:
+    description: Market value growth of existing homes (all residential, homestead and not;
+      new construction excluded).
+    paths_variable: appreciation_residential
+    source: rec_adopted
+    source_note: Revenue Estimating Conference, Ad Valorem, July 31 / Aug 3, 2026 (adopted forecast, 2027-2032)
+    after_forecast: {method: ease_to, target_variable: median_price_single_family,
+                     target_source: fl_eec_2026_07, years: 4}
+
+  nonresidential_value:
+    description: Market value growth of existing non-residential property (needed for rolled-back rates).
+    paths_variable: appreciation_nonresidential
+    source: rec_adopted
+    source_note: Revenue Estimating Conference, Ad Valorem, Aug 2026 (adopted forecast, 2027-2032)
+    after_forecast: {method: hold}
+
+  wage:
+    description: Wage and self-employment income growth (Florida average annual wage).
+    paths_variable: average_wage
+    source: fl_eec_2026_07
+    source_note: Florida Economic Estimating Conference, July 17, 2026, long-run tables (fiscal years)
+
+  other_income:
+    description: Interest, dividends and other income (Florida personal income per household).
+    paths_variable: personal_income_per_household
+    source: fl_eec_2026_07
+    source_note: Florida Economic Estimating Conference, July 17, 2026 (personal income / households)
+
+  households:
+    description: Number of Florida households.
+    paths_variable: households
+    source: fl_eec_2026_07
+    source_note: Florida Demographic Estimating Conference, June 2026 (in the EEC long-run tables)
+
+  cpi:
+    description: National CPI-U inflation. Drives the Save Our Homes cap (lesser of 3% or CPI),
+      exemption indexing, and Social Security, SSI, public assistance and pension growth.
+    values: {2027: 0.023, 2028: 0.023, 2029: 0.023, 2030: 0.023, 2031: 0.023, 2032: 0.023,
+             2033: 0.023, 2034: 0.023, 2035: 0.023, 2036: 0.023}
+    source_note: CBO, Budget and Economic Outlook 2026 to 2036 (Feb 2026), CPI-U averages 2.3% a year.
+      To do - average with the Social Security Trustees and the Philadelphia Fed SPF 10-year CPI.
+
+# Income components and the variable each grows with.
+income_growth:
+  wagp_aged: wage
+  semp_aged: wage
+  intp_aged: other_income
+  oip_aged: other_income
+  ssp_aged: cpi
+  ssip_aged: cpi
+  pap_aged: cpi
+  retp_aged: cpi
+
+scenarios:
+  central:
+    description: Official Florida forecasts (REC adopted, EEC).
+
+  low:
+    description: Slower home prices - the Legislature's economists' (EDR) proposal to the conference.
+    home_value: {source: rec_edr}
+    nonresidential_value: {source: rec_edr}
+
+  high:
+    description: Faster home prices - the Governor's office (FEA) proposal to the conference.
+    home_value: {source: rec_fea}
+    nonresidential_value: {source: rec_fea}
+
+  stall:
+    description: The economy stalls for three years - flat home values, slow wages - then official
+      growth rates resume (levels stay lower).
+    home_value: {set: {2027: 0.0, 2028: 0.0, 2029: 0.0}}
+    nonresidential_value: {set: {2027: 0.0, 2028: 0.0, 2029: 0.0}}
+    wage: {set: {2027: 0.02, 2028: 0.02, 2029: 0.02}}
+    other_income: {set: {2027: 0.01, 2028: 0.01, 2029: 0.01}}
+
+  downturn:
+    description: A housing downturn shaped like the Federal Reserve's 2026 severely adverse stress
+      scenario (home prices about 30% lower over two years), then official growth rates resume.
+      The Fed path is national; Florida's could be deeper or shallower.
+    home_value: {set: {2027: -0.163, 2028: -0.163}}
+    nonresidential_value: {set: {2027: -0.10, 2028: -0.10}}
+    wage: {set: {2027: 0.01, 2028: 0.01}}
+    other_income: {set: {2027: -0.02, 2028: 0.0}}
