@@ -135,3 +135,11 @@ Florida's voter file (Division of Elections, on request; check use terms and exe
 - [ ] **Step 3**: projections and bands on the results page.
 - [ ] Check first projected years against REC taxable value forecasts.
 
+## Municipality engine (revenue-neutral rates) — requested 2026-10-15
+Modelled on the Maine property tax model's "Municipality Engine" (it re-solves each town's mill rate from the 2024 Municipal Valuation Return so municipal funding stays unchanged, accounting for state reimbursement of relief programs, e.g. Maine's homestead exemption and BETE reimbursements, and feeds the new rates back into the household engine). Florida version:
+- [ ] **Revenue-neutral response mode**, alongside (not replacing) "governments respond" (history) and "no response": each county, city and school district's rate under a policy = its current-law levy (net of state reimbursement) / its policy taxable base, every year. Bases already tracked by jurisdiction in `ptm/rate_setting.py` (2026 rolls + DOR Data Book).
+- [ ] **State reimbursement as a policy lever**: share of each government's lost revenue the state pays (all, or by government type); include Florida's existing reimbursement for fiscally constrained counties (s. 218.12/218.125, EDR distributions) where relevant.
+- [ ] **Legal limits**: flag or cap governments whose re-solved rate would exceed the 10-mill caps or need a supermajority/referendum under s. 200.065.
+- [ ] **Per-government results**: rate change for each county, city and school district (also the geography view).
+- [ ] **Page**: third column "Revenue-neutral" in Policy comparisons; table/map of rate changes by government; add the mode to `scripts/policy_grid.py`.
+- Estimate: 3-4 hours. Check Maine's model documentation for definitions to match (MVR fields, reimbursement rules).
