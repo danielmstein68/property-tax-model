@@ -270,9 +270,13 @@ class RateSetter:
             newy = {"hs": newy["hs"] * (1 + nc_rates[0]), "nh": newy["nh"] * (1 + nc_rates[1]),
                     "nr": newy["nr"] * (1 + nc_rates[2])}
         self._y = newy
+        c2 = self._c   # taxable value this year by jurisdiction (existing + new construction)
+        self.tv = {"county": c2["hs_county"] + c2["nh_county"] + c2["nr_county"],
+                   "school": c2["hs_school"] + c2["nh_school"] + c2["nr_school"],
+                   "city": newy["hs"] + newy["nh"] + newy["nr"]}
         self.last_growth = {"school": pd.Series(g_school, index=self.counties.index),
                             "county": pd.Series(g_county, index=self.counties.index),
                             "city": pd.Series(g_city, index=self.cities.index)}
         if year is not None:
             self.paths[year] = {"county": self.county_draws.copy(), "city": self.city_draws.copy(),
-                                "rle": self.rle_draws.copy()}
+                                "rle": self.rle_draws.copy(), "tv": {k: v.copy() for k, v in self.tv.items()}}

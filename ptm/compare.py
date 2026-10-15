@@ -16,7 +16,9 @@ respond as they have historically, within the legal limits). A policy may set `r
 policy run only - "what if governments don't respond".
 
 response="none": local rates follow exactly the current-law path (the policy's direct effect
-only); "history" (default): governments respond as in the rate rule.
+only); "history" (default): governments respond as in the rate rule; "revenue_neutral": each
+county, city and school district re-solves its rate every year to raise the same revenue as under
+current law (less `reimbursement`, the share of lost revenue the state pays).
 
 "Pays about the same" = within `threshold` dollars a year (default $10).
 """
@@ -35,14 +37,15 @@ ROOT = Path(__file__).resolve().parents[1]
 GROUPS = ["income_decile", "age_group", "homestead", "years_in_home", "home_type", "region"]
 
 
-def _run(baseline, scenario, seed, law, end_year, rate_setting=None, rate_replay=None) -> Projection:
-    return Projection(baseline, scenario, seed=seed, law=law, rate_setting=rate_setting,
-                      rate_replay=rate_replay).run(end_year)
+def _run(baseline, scenario, seed, law, end_year, rate_setting=None, rate_replay=None,
+         revenue_neutral=None, reimbursement=0.0) -> Projection:
+    return Projection(baseline, scenario, seed=seed, law=law, rate_setting=rate_setting, rate_replay=rate_replay,
+                      revenue_neutral=revenue_neutral, reimbursement=reimbursement).run(end_year)
 
 
 def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int = 2026,
             baseline: pd.DataFrame | None = None, threshold: float = 10.0, years: list[int] | None = None,
-            response: str = "history") -> dict:
+            response: str = "history", reimbursement: float = 0.0) -> dict:
     from ptm.montecarlo import _baseline, slim_baseline
     if baseline is None:
         slim_baseline()
@@ -53,6 +56,9 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
     base = _run(baseline, scenario, seed, law0, end_year)
     if response == "none":   # rates follow current law's path exactly
         new = _run(baseline, scenario, seed, law1, end_year, rate_replay=base.rates.paths)
+    elif response == "revenue_neutral":   # each government re-solves its rate to keep its revenue
+        new = _run(baseline, scenario, seed, law1, end_year, revenue_neutral=base.rates.paths,
+                   reimbursement=reimbursement)
     else:
         new = _run(baseline, scenario, seed, law1, end_year, pol.get("rate_response"))
     out = compare_runs(base, new, end_year, threshold, years)

@@ -4,8 +4,9 @@ Usage:
     python scripts/policy_grid.py [workers]
 
 Reads inputs/policy_menu.yaml (sliders: one number at a time; presets). Each entry is compared
-with current law (central economic scenario) twice: with governments' rate responses (history
-rule) and with none (rates follow current law's path). Current law runs once per worker.
+with current law (central economic scenario) three ways: with governments' rate responses (history
+rule), with none (rates follow current law's path), and revenue-neutral (each county, city and
+school district re-solves its rate to raise the same revenue as under current law). Current law runs once per worker.
 Output per entry: yearly changes (total and by levy), and for the reporting years: changes and
 winners/losers by income decile and by age, homestead and region.
 """
@@ -107,9 +108,10 @@ def run_entry(e: dict) -> dict:
     t = time.time()
     law1 = apply_policy(B["law"], {"name": e["id"], "changes": e["changes"]})
     out = {"id": e["id"]}
-    for resp in ["respond", "none"]:
+    for resp in ["respond", "none", "neutral"]:
         new = _run(B["b"], SCENARIO, SEED, law1, END,
-                   rate_replay=B["run"].rates.paths if resp == "none" else None)
+                   rate_replay=B["run"].rates.paths if resp == "none" else None,
+                   revenue_neutral=B["run"].rates.paths if resp == "neutral" else None)
         out[resp] = summarize(compare_runs(B["run"], new, END, years=YEARS))
     out["seconds"] = time.time() - t
     return out
@@ -132,13 +134,13 @@ def main(workers: int = 4) -> None:
         _run_path((SCENARIO, SEED, 2027, None, False))
     menu = yaml.safe_load((ROOT / "inputs" / "policy_menu.yaml").read_text(encoding="utf-8"))
     es = entries(menu)
-    print(f"{len(es)} policies x 2 responses, {workers} workers")
+    print(f"{len(es)} policies x 3 responses, {workers} workers")
     t = time.time()
     with ProcessPoolExecutor(max_workers=workers) as ex:
         res = list(ex.map(run_entry, es))
     out = {"scenario": SCENARIO, "years": YEARS, "from": menu["from"], "generated": pd.Timestamp.now().strftime("%Y-%m-%d"),
            "current_law": base_levels(), "sliders": menu["sliders"], "presets": menu["presets"],
-           "runs": {r["id"]: {"respond": r["respond"], "none": r["none"]} for r in res}}
+           "runs": {r["id"]: {"respond": r["respond"], "none": r["none"], "neutral": r["neutral"]} for r in res}}
     dest = ROOT / "data" / "processed" / "results" / "fl_policy_grid.json"
 
     def clean(o):

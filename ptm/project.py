@@ -170,8 +170,12 @@ class Projection:
 
     def __init__(self, baseline: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
                  seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None,
-                 end_year: int = 2036, demography: dict | None = None, rate_replay: dict | None = None):
+                 end_year: int = 2036, demography: dict | None = None, rate_replay: dict | None = None,
+                 revenue_neutral: dict | None = None, reimbursement: float = 0.0):
         self.rate_replay = rate_replay    # {year: rate draws} from another run: rates don't respond
+        # {year: rate draws and taxable bases} from the current-law run: each government re-solves its
+        # rate to raise the same revenue (less any state reimbursement of the lost revenue)
+        self.revenue_neutral, self.reimbursement = revenue_neutral, float(reimbursement)
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
@@ -493,7 +497,20 @@ class Projection:
             with np.errstate(divide="ignore", invalid="ignore"):
                 g = np.where((before > 0) & self.min_count_ok, now / before, np.nan)
             growth[c] = g                                  # thin counties use the median
-        if self.rate_replay is not None:          # "no response": the other run's rate decisions
+        if self.revenue_neutral is not None:      # localities replace lost revenue
+            self._step_rates(growth, y)           # updates this run's taxable bases (draws discarded)
+            bp, tv, r = self.revenue_neutral[y], self.rates.tv, self.reimbursement
+
+            def ratio(b, p):  # keep levy b x rate, less the reimbursed share of the lost base
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    return np.where(p > 0, (b - r * (b - p)) / p, 1.0)
+            fixed = self.rates.school_fixed[None, :]
+            self.rates.county_draws = bp["county"] * ratio(bp["tv"]["county"], tv["county"])[None, :]
+            self.rates.city_draws = bp["city"] * ratio(bp["tv"]["city"], tv["city"])[None, :]
+            self.rates.rle_draws = np.maximum((fixed + bp["rle"]) * ratio(bp["tv"]["school"], tv["school"])[None, :] - fixed, 0)
+            self.rates.paths[y] = {"county": self.rates.county_draws, "city": self.rates.city_draws,
+                                   "rle": self.rates.rle_draws, "tv": {k: v.copy() for k, v in tv.items()}}
+        elif self.rate_replay is not None:          # "no response": the other run's rate decisions
             rp = self.rate_replay[y]
             self.rates.county_draws, self.rates.city_draws, self.rates.rle_draws = rp["county"], rp["city"], rp["rle"]
             self.rates.paths[y] = rp
