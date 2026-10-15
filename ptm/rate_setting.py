@@ -37,6 +37,14 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 RULES = {"history", "keep_capped", "rolled_back", "hold"}
+_CACHE: dict = {}
+
+
+def _cached(key, make):
+    """Read-only inputs reused across RateSetters in one process (composition, rate history)."""
+    if key not in _CACHE:
+        _CACHE[key] = make()
+    return _CACHE[key]
 
 
 def _city_key(name) -> str:
@@ -154,8 +162,13 @@ class RateSetter:
         uses_history = any(settings[k] == "history" for k in HISTORY_KIND)
         self.n_draws = int(settings.get("draws", 200)) if uses_history else 1
         self.rng = np.random.default_rng(int(settings.get("seed", 2026)))
-        self.history = RateHistory(neighbors=int(settings.get("history_neighbors", 60))) if uses_history else None
-        self.counties, self.cities = composition(base_year)
+        nb = int(settings.get("history_neighbors", 60))
+        self.history = _cached(("history", nb), lambda: RateHistory(neighbors=nb)) if uses_history else None
+        self.counties, self.cities = _cached(("composition", base_year), lambda: composition(base_year))
+        self._c = {k: self.counties[k].to_numpy(dtype=float) for k in self.counties.columns}
+        self._y = {k: self.cities[k].to_numpy(dtype=float) for k in self.cities.columns}
+        self._city_county = self.cities.index.get_level_values(0).map(
+            {k: i for i, k in enumerate(self.counties.index)}).fillna(-1).astype(int).to_numpy()
         nc, ny = len(self.counties), len(self.cities)
         self.county_draws = np.ones((self.n_draws, nc))
         self.city_draws = np.ones((self.n_draws, ny))
@@ -198,37 +211,45 @@ class RateSetter:
 
     def step(self, hs_growth_school: pd.Series, hs_growth_county: pd.Series,
              home_value_growth: float, nonres_growth: float, year: int | None = None) -> None:
-        """Advance one year. hs_growth_* = homestead taxable growth by county FIPS (model)."""
-        c = self.counties
-        gs = hs_growth_school.reindex(c.index).fillna(hs_growth_school.median())
-        gc = hs_growth_county.reindex(c.index).fillna(hs_growth_county.median())
-        new = pd.DataFrame({
-            "hs_school": c["hs_school"] * gs, "nh_school": c["nh_school"] * (1 + home_value_growth),
-            "nr_school": c["nr_school"] * (1 + nonres_growth),
-            "hs_county": c["hs_county"] * gc, "nh_county": c["nh_county"] * (1 + home_value_growth),
-            "nr_county": c["nr_county"] * (1 + nonres_growth)}, index=c.index)
-        sch, cty = ["hs_school", "nh_school", "nr_school"], ["hs_county", "nh_county", "nr_county"]
-        g_school = new[sch].sum(axis=1) / c[sch].sum(axis=1)
-        g_county = new[cty].sum(axis=1) / c[cty].sum(axis=1)
-        # school: a drawn change applies to the whole operating rate, in mills, and lands on RLE
-        rs = self._ratio("school_rle", g_school.to_numpy())
+        """Advance one year. hs_growth_* = homestead taxable growth by county FIPS (model; NaN or
+        missing counties use the median)."""
+        idx = self.counties.index
+        self.step_arrays(hs_growth_school.reindex(idx).to_numpy(dtype=float),
+                         hs_growth_county.reindex(idx).to_numpy(dtype=float),
+                         home_value_growth, nonres_growth, year)
+
+    def step_arrays(self, gs: np.ndarray, gc: np.ndarray, home_value_growth: float, nonres_growth: float,
+                    year: int | None = None) -> None:
+        """step() on arrays aligned to self.counties (NaN = use the median)."""
+        gs = np.where(np.isnan(gs), np.nanmedian(gs), gs)
+        gc = np.where(np.isnan(gc), np.nanmedian(gc), gc)
+        c, hv, nr = self._c, 1 + home_value_growth, 1 + nonres_growth
+        new = {"hs_school": c["hs_school"] * gs, "nh_school": c["nh_school"] * hv, "nr_school": c["nr_school"] * nr,
+               "hs_county": c["hs_county"] * gc, "nh_county": c["nh_county"] * hv, "nr_county": c["nr_county"] * nr}
+        g_school = (new["hs_school"] + new["nh_school"] + new["nr_school"]) / (c["hs_school"] + c["nh_school"] + c["nr_school"])
+        g_county = (new["hs_county"] + new["nh_county"] + new["nr_county"]) / (c["hs_county"] + c["nh_county"] + c["nr_county"])
+        g_school = np.where(np.isfinite(g_school), g_school, 1.0)
+        g_county = np.where(np.isfinite(g_county), g_county, 1.0)
+        rs = self._ratio("school_rle", g_school)
         if self.settings["school_rle"] == "history":
             total_prev = self.school_fixed[None, :] + self.rle_draws
             self.rle_draws = np.maximum(self.rle_draws + total_prev * (rs - 1), 0)
         else:
             self.rle_draws = self.rle_draws * rs
-        self.county_draws = self.county_draws * self._ratio("county", g_county.to_numpy())
-        self.counties = new
+        self.county_draws = self.county_draws * self._ratio("county", g_county)
+        self._c = new
 
-        ct = self.cities
-        cfips = ct.index.get_level_values(0)
-        newc = pd.DataFrame({"hs": ct["hs"] * gc.reindex(cfips).fillna(gc.median()).to_numpy(),
-                             "nh": ct["nh"] * (1 + home_value_growth),
-                             "nr": ct["nr"] * (1 + nonres_growth)}, index=ct.index)
-        g_city = (newc.sum(axis=1) / ct.sum(axis=1).replace(0, np.nan)).fillna(1)
-        self.city_draws = self.city_draws * self._ratio("municipal", g_city.to_numpy())
-        self.cities = newc
-        self.last_growth = {"school": g_school, "county": g_county, "city": g_city}
+        yv, cc = self._y, self._city_county
+        gcy = np.where(cc >= 0, gc[np.maximum(cc, 0)], np.nanmedian(gc))
+        newy = {"hs": yv["hs"] * gcy, "nh": yv["nh"] * hv, "nr": yv["nr"] * nr}
+        before = yv["hs"] + yv["nh"] + yv["nr"]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            g_city = np.where(before > 0, (newy["hs"] + newy["nh"] + newy["nr"]) / before, 1.0)
+        self.city_draws = self.city_draws * self._ratio("municipal", g_city)
+        self._y = newy
+        self.last_growth = {"school": pd.Series(g_school, index=self.counties.index),
+                            "county": pd.Series(g_county, index=self.counties.index),
+                            "city": pd.Series(g_city, index=self.cities.index)}
         if year is not None:
             self.paths[year] = {"county": self.county_draws.copy(), "city": self.city_draws.copy(),
                                 "rle": self.rle_draws.copy()}

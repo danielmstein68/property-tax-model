@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from ptm.economy import Economy
-from ptm.engine.step import carry_forward, step
+from ptm.engine.step import step
 from ptm.law import Law, load_law
 from ptm.rate_setting import RateSetter, _city_key, school_rle_2026
 from ptm.results import owner_mask
@@ -67,127 +67,186 @@ def lock_in_factor(savings: np.ndarray, per_100k: float, floor: float) -> np.nda
     return np.maximum(1 + per_100k * np.maximum(savings, 0) / 100_000, floor)
 
 
+_CACHE: dict = {}
+
+
+def _cached(key, make):
+    if key not in _CACHE:
+        _CACHE[key] = make()
+    return _CACHE[key]
+
+
+def _school_tables() -> pd.DataFrame:
+    from ptm.millage import county_fips_by_name
+    from ptm.ratemodel import norm, school_rates_2026
+    sr = school_rates_2026()
+    fips = {norm(k): v for k, v in county_fips_by_name().items()}
+    sr["county_fips"] = sr["key"].map({**fips, "dade": fips.get("miamidade")})
+    return sr.dropna(subset=["county_fips"]).set_index("county_fips")
+
+
+DYNAMIC = ["jv", "valp_market_cal", "av_school_prior", "av_nonschool_prior", "taxable_school_prior",
+           "taxable_county_prior"]
+
+
 class Projection:
+    """Owners projected year by year. Static inputs (exemption flags, jurisdiction positions, 2026
+    rates) are prepared once per baseline and reused by later Projections in the same process;
+    each year only updates numeric arrays (values, assessed values, rates, tax)."""
+
     def __init__(self, baseline: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
-                 seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None):
+                 seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None,
+                 end_year: int = 2036):
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
-        self.law_base = law or load_law()
-        from ptm.millage import county_fips_by_name
-        from ptm.ratemodel import norm, school_rates_2026
-        sr = school_rates_2026()
-        fips = {norm(k): v for k, v in county_fips_by_name().items()}
-        sr["county_fips"] = sr["key"].map({**fips, "dade": fips.get("miamidade")})
-        sr = sr.dropna(subset=["county_fips"]).set_index("county_fips")
+        self.law_base = law or _cached("law", load_law)
+        self.end_year = end_year
+        self.law = project_law(self.law_base, self.econ, end_year)
+        sr = _cached("school", _school_tables)
         self.rates = RateSetter(self.rate_settings, BASE_YEAR, sr["rle_millage_2026"], sr["school_2026"])
         self.rng = np.random.default_rng(seed)
+
+        prep = _cached(("prep", id(baseline), len(baseline)), lambda: self._prepare(baseline))
+        self.units = prep["static"]                      # shared, read-only
+        self.a = {k: v.copy() for k, v in prep["dynamic"].items()}
+        self.income = {k: v.copy() for k, v in prep["income"].items()}
+        self.hs = prep["hs"]
+        self.w = prep["w"]
+        self.ci = prep["ci"]
+        self.ci_ok = prep["ci_ok"]
+        self.yi = prep["yi"]
+        self.min_count_ok = prep["min_count_ok"]
+        self.mill = {c: prep[f"mill_{c}"].copy() for c in LEVIES}
+        self.taxable = {}   # year -> {class: array} for draw totals
+        self.history = {f"tax_{BASE_YEAR}": prep["tax_2026"], f"av_school_{BASE_YEAR}": self.a["av_school_prior"].copy()}
+        for c in LEVIES:
+            self.history[f"tax_{c}_{BASE_YEAR}"] = prep[f"tax_{c}_2026"]
+        self.year = BASE_YEAR
+        self._base_rates = self._calibrate_sale_rates()
+        self.rows = [self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
+                               self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES})]
+
+    def _prepare(self, baseline: pd.DataFrame) -> dict:
         u = baseline.loc[owner_mask(baseline), self._needed_columns(baseline)].copy()
         u["homestead"] = (u["homestead"] == True)  # noqa: E712
-        u["homestead_prior"] = u["homestead"]
-        u["jv"] = u["valp_jv_cal"]
-        u["av_school_prior"] = u[f"av_sd_{BASE_YEAR}"]
-        u["av_nonschool_prior"] = u[f"av_nsd_{BASE_YEAR}"]
-        u["changed_ownership"] = False
-        u["improvements"] = 0.0
-        u[f"tax_{BASE_YEAR}"] = u[f"tax_model_{BASE_YEAR}"]
-        # rates: 2026 levels by jurisdiction; school = statutory part + required local effort
-        u["rle_2026"] = u["county_fips_tax"].map(school_rle_2026()).fillna(0)
-        u["millage_school_fixed"] = u["millage_school"] - u["rle_2026"]
+        rle = u["county_fips_tax"].map(school_rle_2026()).fillna(0)
+        u["rle_2026"] = rle
+        u["millage_school_fixed"] = u["millage_school"] - rle
         for c in ["county", "municipal"]:
             u[f"millage_{c}_base"] = u[f"millage_{c}"]
-        u["city_key"] = u["municipality"].fillna("").map(_city_key)
-        u["city_idx"] = self.rates.city_index(u["county_fips_tax"], u["city_key"])
+        keys = u["municipality"].fillna("")
+        key_map = {k: _city_key(k) for k in keys.unique()}
+        u["city_key"] = keys.map(key_map)
+        pairs = pd.Series(list(zip(u["county_fips_tax"], u["city_key"])), index=u.index)
+        upos = {p: self.rates.city_pos.get(p, -1) for p in pairs.unique()}
+        u["city_idx"] = pairs.map(upos).astype(int)
         cpos = {k: i for i, k in enumerate(self.rates.counties.index)}
         u["county_idx"] = u["county_fips_tax"].map(cpos).fillna(-1).astype(int)
-        self.taxable = {}   # year -> {class: array} for draw totals
-        for c in ["school", "county"]:
-            u[f"taxable_{c}_prior"] = u[f"taxable_{c}_{BASE_YEAR}"]
-        u[f"av_school_{BASE_YEAR}"] = u["av_school_prior"]
-        self.history = {f"tax_{BASE_YEAR}": u[f"tax_{BASE_YEAR}"].to_numpy(),
-                        f"av_school_{BASE_YEAR}": u["av_school_prior"].to_numpy()}
-        for c in LEVIES:
-            self.history[f"tax_{c}_{BASE_YEAR}"] = u[f"tax_{c}_{BASE_YEAR}"].to_numpy()
-        self.units = u
-        self.year = BASE_YEAR
-        self._base_rates = self._calibrate_sale_rates(u)
-        self.rows = [self._row(u, BASE_YEAR, sold=pd.Series(False, index=u.index),
-                               tax=u[f"tax_{BASE_YEAR}"], av=u["av_school_prior"],
-                               classes={c: u[f"tax_{c}_{BASE_YEAR}"] for c in LEVIES})]
-
-    # --- sales -----------------------------------------------------------------------------------
-    def _savings(self, u: pd.DataFrame) -> np.ndarray:
-        """Assessment savings carried into the year: just value minus last year's assessed value
-        (school for homesteads, non-school for others)."""
-        prior = np.where(u["homestead"], u["av_school_prior"], u["av_nonschool_prior"])
-        return np.maximum(u["jv"].to_numpy() - prior, 0)
-
-    def _calibrate_sale_rates(self, u: pd.DataFrame) -> dict:
-        li = self.turnover["lock_in"]
-        f = lock_in_factor(self._savings(u), li["per_100k_savings"], li["floor"])
-        w = u["WGTP"].to_numpy()
         hs = u["homestead"].to_numpy()
+        ci = u["county_idx"].to_numpy()
+        counts = np.bincount(ci[hs & (ci >= 0)], minlength=len(cpos))
+        f = lambda c: u[c].astype(float).to_numpy()  # noqa: E731
+        # static frame for the engine: exemption flags and values, shares; plus reporting columns
+        static_cols = [c for c in u.columns if c not in set(DYNAMIC)]
         return {
-            True: self.turnover["homestead_sale_rate"] / np.average(f[hs], weights=w[hs]),
-            False: self.turnover["nonhomestead_sale_rate"] / np.average(f[~hs], weights=w[~hs]),
+            "static": u[static_cols],
+            "dynamic": {"jv": f("valp_jv_cal"), "valp_market_cal": f("valp_market_cal"),
+                        "av_school_prior": f(f"av_sd_{BASE_YEAR}"), "av_nonschool_prior": f(f"av_nsd_{BASE_YEAR}"),
+                        "taxable_school_prior": f(f"taxable_school_{BASE_YEAR}"),
+                        "taxable_county_prior": f(f"taxable_county_{BASE_YEAR}")},
+            "income": {c: f(c) for c in self.econ.spec["income_growth"] if c in u},
+            "hs": hs, "w": f("WGTP"), "ci": ci, "ci_ok": ci >= 0, "yi": u["city_idx"].to_numpy(),
+            "min_count_ok": counts >= 30,
+            **{f"mill_{c}": np.nan_to_num(f(f"millage_{c}")) for c in LEVIES},
+            "tax_2026": np.nan_to_num(f(f"tax_model_{BASE_YEAR}")),
+            **{f"tax_{c}_2026": np.nan_to_num(f(f"tax_{c}_{BASE_YEAR}")) for c in LEVIES},
         }
 
-    def _draw_sales(self, u: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    # --- sales -----------------------------------------------------------------------------------
+    def _savings(self) -> np.ndarray:
+        """Assessment savings carried into the year: just value minus last year's assessed value
+        (school for homesteads, non-school for others)."""
+        prior = np.where(self.hs, self.a["av_school_prior"], self.a["av_nonschool_prior"])
+        return np.maximum(self.a["jv"] - prior, 0)
+
+    def _calibrate_sale_rates(self) -> dict:
+        li = self.turnover["lock_in"]
+        f = lock_in_factor(self._savings(), li["per_100k_savings"], li["floor"])
+        hs, w = self.hs, self.w
+        return {True: self.turnover["homestead_sale_rate"] / np.average(f[hs], weights=w[hs]),
+                False: self.turnover["nonhomestead_sale_rate"] / np.average(f[~hs], weights=w[~hs])}
+
+    def _draw_sales(self) -> tuple[np.ndarray, np.ndarray]:
         li, port = self.turnover["lock_in"], self.turnover["portability"]
-        savings = self._savings(u)
-        hs = u["homestead"].to_numpy()
-        base = np.where(hs, self._base_rates[True], self._base_rates[False])
+        savings = self._savings()
+        n = len(self.w)
+        base = np.where(self.hs, self._base_rates[True], self._base_rates[False])
         p = np.clip(base * lock_in_factor(savings, li["per_100k_savings"], li["floor"]), 0, 1)
-        sold = self.rng.random(len(u)) < p
-        ports = sold & hs & (self.rng.random(len(u)) < port["share_of_homestead_sales"])
-        transfer = np.where(ports, np.minimum(savings, port["max_transfer"]), 0.0)
-        return pd.Series(sold, index=u.index), pd.Series(transfer, index=u.index)
+        sold = self.rng.random(n) < p
+        ports = sold & self.hs & (self.rng.random(n) < port["share_of_homestead_sales"])
+        return sold, np.where(ports, np.minimum(savings, port["max_transfer"]), 0.0)
 
     # --- one year --------------------------------------------------------------------------------
     def step_year(self) -> None:
         y = self.year + 1
-        law = project_law(self.law_base, self.econ, y)
-        u = self.econ.grow(self.units, self.year, y)
-        u["jv"] = u["valp_jv_cal"]
-        sold, transfer = self._draw_sales(u)
-        u["changed_ownership"] = sold
-        u["portability_transfer"] = transfer
-        res = step(u, law, y)
-        self._set_rates(u, res, y)
+        if y > self.end_year:
+            self.end_year = y
+            self.law = project_law(self.law_base, self.econ, y)
+        a, e = self.a, self.econ
+        hv = 1 + e.rate("home_value", y)
+        a["jv"] *= hv
+        a["valp_market_cal"] *= hv
+        for col, var in e.spec["income_growth"].items():
+            if col in self.income:
+                self.income[col] *= 1 + e.rate(var, y)
+        sold, transfer = self._draw_sales()
+        df = self.units.assign(jv=a["jv"], av_school_prior=a["av_school_prior"],
+                               av_nonschool_prior=a["av_nonschool_prior"], homestead_prior=self.hs,
+                               changed_ownership=sold, improvements=0.0, portability_transfer=transfer)
+        res = step(df, self.law, y)
+        taxable = {c: res[f"taxable_{c}"].fillna(0).to_numpy() for c in LEVIES}
+        self._set_rates(taxable, y)
+        tax = {c: taxable[c] * self.mill[c] / 1000 for c in LEVIES}
+        total = sum(tax.values())
+        av_school = res["av_school"].to_numpy()
+        self.taxable[y] = taxable
+        self.history[f"tax_{y}"] = total
+        self.history[f"av_school_{y}"] = av_school
         for c in LEVIES:
-            res[f"tax_{c}"] = res[f"taxable_{c}"] * u[f"millage_{c}"].fillna(0) / 1000
-        res["tax_total"] = res[[f"tax_{c}" for c in LEVIES]].sum(axis=1)
-        self.taxable[y] = {c: res[f"taxable_{c}"].fillna(0).to_numpy() for c in LEVIES}
-        self.history[f"tax_{y}"] = res["tax_total"].to_numpy()
-        self.history[f"av_school_{y}"] = res["av_school"].to_numpy()
-        for c in LEVIES:
-            self.history[f"tax_{c}_{y}"] = res[f"tax_{c}"].to_numpy()
-        self.rows.append(self._row(u, y, sold, res["tax_total"], res["av_school"],
-                                   {c: res[f"tax_{c}"] for c in LEVIES}, law))
-        nxt = carry_forward(u, res).drop(columns=["portability_transfer"])
-        for c in ["school", "county"]:
-            nxt[f"taxable_{c}_prior"] = res[f"taxable_{c}"]
-        self.units = nxt
+            self.history[f"tax_{c}_{y}"] = tax[c]
+        self.rows.append(self._row(y, sold, total, av_school, tax))
+        a["av_school_prior"] = av_school
+        a["av_nonschool_prior"] = res["av_county"].to_numpy()
+        a["taxable_school_prior"] = taxable["school"]
+        a["taxable_county_prior"] = taxable["county"]
         self.year = y
 
-    def _set_rates(self, u: pd.DataFrame, res: pd.DataFrame, y: int) -> None:
+    def _set_rates(self, taxable: dict, y: int) -> None:
         """Rates for year y from each jurisdiction's taxable growth (homestead part from the model)."""
-        hs, w = u["homestead"], u["WGTP"]
+        hs, w, ci = self.hs, self.w, self.ci
+        sel = hs & self.ci_ok
+        nc = len(self.rates.counties)
         growth = {}
         for c in ["school", "county"]:
-            now = (res[f"taxable_{c}"] * w)[hs].groupby(u["county_fips_tax"][hs]).sum()
-            before = (u[f"taxable_{c}_prior"] * w)[hs].groupby(u["county_fips_tax"][hs]).sum()
-            n = hs.groupby(u["county_fips_tax"]).sum()
-            g = (now / before.replace(0, np.nan))
-            growth[c] = g[n.reindex(g.index) >= 30]          # thin counties use the median
-        self.rates.step(growth["school"], growth["county"],
-                        self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y)
-        county = u["county_fips_tax"]
-        u["millage_county"] = u["millage_county_base"] * county.map(self.rates.ratio_county).fillna(1)
-        idx = u["city_idx"].to_numpy()
-        city_ratio = np.where(idx >= 0, self.rates.ratio_city.to_numpy()[np.maximum(idx, 0)], 1.0)
-        u["millage_municipal"] = u["millage_municipal_base"] * city_ratio
-        u["millage_school"] = u["millage_school_fixed"] + u["rle_2026"] * county.map(self.rates.ratio_school).fillna(1)
+            now = np.bincount(ci[sel], weights=(taxable[c] * w)[sel], minlength=nc)
+            before = np.bincount(ci[sel], weights=(self.a[f"taxable_{c}_prior"] * w)[sel], minlength=nc)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                g = np.where((before > 0) & self.min_count_ok, now / before, np.nan)
+            growth[c] = g                                  # thin counties use the median
+        self.rates.step_arrays(growth["school"], growth["county"],
+                               self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y)
+        rc = self.rates.county_draws.mean(axis=0)
+        rcity = self.rates.city_draws.mean(axis=0)
+        rle = self.rates.rle_draws.mean(axis=0)
+        u = self.units
+        cty = np.where(self.ci_ok, rc[np.maximum(ci, 0)], 1.0)
+        self.mill["county"] = np.nan_to_num(u["millage_county_base"].to_numpy(dtype=float)) * cty
+        yi = self.yi
+        city = np.where(yi >= 0, rcity[np.maximum(yi, 0)], 1.0)
+        self.mill["municipal"] = np.nan_to_num(u["millage_municipal_base"].to_numpy(dtype=float)) * city
+        rle_now = np.where(self.ci_ok, rle[np.maximum(ci, 0)], u["rle_2026"].to_numpy(dtype=float))
+        self.mill["school"] = np.nan_to_num(u["millage_school_fixed"].to_numpy(dtype=float)) + rle_now
 
     def run(self, end_year: int = 2036) -> "Projection":
         while self.year < end_year:
@@ -195,26 +254,23 @@ class Projection:
         return self
 
     # --- reporting -------------------------------------------------------------------------------
-    def _row(self, u, y, sold, tax, av, classes, law: Law | None = None) -> dict:
-        w = u["WGTP"]
-        hs = u["homestead"]
-        jv = u["jv"]
-        row = {"year": y, "owners": w.sum(), "tax_total": (tax * w).sum(),
-               "avg_tax": (tax * w).sum() / w.sum(),
+    def _row(self, y, sold, tax, av, classes) -> dict:
+        w, hs, jv = self.w, self.hs, self.a["jv"]
+        wsum, whs = w.sum(), w[hs].sum()
+        row = {"year": y, "owners": wsum, "tax_total": (tax * w).sum(), "avg_tax": (tax * w).sum() / wsum,
                "just_value": (jv * w).sum(),
-               "homestead_assessed_to_just": (av[hs] * w[hs]).sum() / (jv[hs] * w[hs]).sum(),
-               "homestead_soh_savings_avg": ((jv - av).clip(lower=0)[hs] * w[hs]).sum() / w[hs].sum(),
-               "share_sold": (sold * w).sum() / w.sum(),
-               "homestead_share_sold": (sold[hs] * w[hs]).sum() / w[hs].sum()}
+               "homestead_assessed_to_just": (av * w)[hs].sum() / (jv * w)[hs].sum(),
+               "homestead_soh_savings_avg": (np.maximum(jv - av, 0) * w)[hs].sum() / whs,
+               "share_sold": (sold * w).sum() / wsum, "homestead_share_sold": (sold * w)[hs].sum() / whs}
         for c, t in classes.items():
-            row[f"tax_{c}"] = (t.fillna(0) * w).sum()
+            row[f"tax_{c}"] = (np.nan_to_num(t) * w).sum()
         for c in ["school", "county", "municipal"]:
-            m = u[f"millage_{c}"]
-            has = m.fillna(0) > 0
+            m = self.mill[c]
+            has = m > 0
             row[f"millage_{c}_avg"] = np.average(m[has], weights=w[has]) if has.any() else np.nan
-        if law is not None:
-            row["soh_cap"] = float(law.rule("soh_cap").get("cap", y))
-            row["homestead_second_amount"] = float(law.rule("homestead_second").get("amount", y))
+        if y > BASE_YEAR:
+            row["soh_cap"] = float(self.law.rule("soh_cap").get("cap", y))
+            row["homestead_second_amount"] = float(self.law.rule("homestead_second").get("amount", y))
         return row
 
     def _needed_columns(self, b: pd.DataFrame) -> list[str]:
