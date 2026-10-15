@@ -39,8 +39,20 @@ def _city_key(name) -> str:
     return norm(re.sub(r"(?i)^(city|town|village) of\s+", "", str(name)))
 
 
-def composition(base_year: int = 2026) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Taxable value parts per county (school and non-school) and per city (non-school)."""
+def composition(base_year: int = 2026, refresh: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Taxable value parts per county (school and non-school) and per city (non-school).
+    Cached in data/processed/ (reading 9.8M parcels takes over a minute); refresh=True rebuilds."""
+    cache = ROOT / "data" / "processed" / f"rate_composition_{base_year}"
+    if not refresh and (cache / "counties.parquet").exists():
+        return pd.read_parquet(cache / "counties.parquet"), pd.read_parquet(cache / "cities.parquet")
+    c, cities = _composition(base_year)
+    cache.mkdir(parents=True, exist_ok=True)
+    c.to_parquet(cache / "counties.parquet")
+    cities.to_parquet(cache / "cities.parquet")
+    return c, cities
+
+
+def _composition(base_year: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     from ptm.geo import fl_dor_to_fips
     from ptm.millage import county_fips_by_name, district_classes
     from ptm.ratemodel import load_databook, norm
@@ -109,6 +121,11 @@ class RateSetter:
         self.ratio_county = pd.Series(1.0, index=self.counties.index)
         self.ratio_school = pd.Series(1.0, index=self.counties.index)
         self.ratio_city = pd.Series(1.0, index=self.cities.index)
+        self.city_pos = {k: i for i, k in enumerate(self.cities.index)}   # (county, city) -> position
+
+    def city_index(self, county: pd.Series, city: pd.Series) -> np.ndarray:
+        """Position of each household's city in ratio_city (-1 if none)."""
+        return np.array([self.city_pos.get(k, -1) for k in zip(county, city)])
 
     def step(self, hs_growth_school: pd.Series, hs_growth_county: pd.Series,
              home_value_growth: float, nonres_growth: float) -> None:

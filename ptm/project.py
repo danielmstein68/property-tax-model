@@ -4,7 +4,7 @@
     p = Projection(baseline, scenario="central")      # or "stall", "downturn", ... ; overrides=...
     p.run(2036)
     p.summary            # one row per year: tax by levy, sales, Save Our Homes savings, ...
-    p.units              # owner households with tax_<year> and av_school_<year> columns
+    p.household_results  # per owner: tax_<year>, tax_<class>_<year>, av_school_<year>
 
 Each year (owners only; renters come with pass-through):
   1. economy: just and market values and income components grow (ptm.economy)
@@ -73,11 +73,10 @@ class Projection:
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
-        self.rates = RateSetter(self.rate_settings, BASE_YEAR)
         self.law_base = law or load_law()
+        self.rates = RateSetter(self.rate_settings, BASE_YEAR)
         self.rng = np.random.default_rng(seed)
-        h = baseline[owner_mask(baseline)].copy()
-        u = h.copy()
+        u = baseline.loc[owner_mask(baseline), self._needed_columns(baseline)].copy()
         u["homestead"] = (u["homestead"] == True)  # noqa: E712
         u["homestead_prior"] = u["homestead"]
         u["jv"] = u["valp_jv_cal"]
@@ -92,9 +91,14 @@ class Projection:
         for c in ["county", "municipal"]:
             u[f"millage_{c}_base"] = u[f"millage_{c}"]
         u["city_key"] = u["municipality"].fillna("").map(_city_key)
+        u["city_idx"] = self.rates.city_index(u["county_fips_tax"], u["city_key"])
         for c in ["school", "county"]:
             u[f"taxable_{c}_prior"] = u[f"taxable_{c}_{BASE_YEAR}"]
         u[f"av_school_{BASE_YEAR}"] = u["av_school_prior"]
+        self.history = {f"tax_{BASE_YEAR}": u[f"tax_{BASE_YEAR}"].to_numpy(),
+                        f"av_school_{BASE_YEAR}": u["av_school_prior"].to_numpy()}
+        for c in LEVIES:
+            self.history[f"tax_{c}_{BASE_YEAR}"] = u[f"tax_{c}_{BASE_YEAR}"].to_numpy()
         self.units = u
         self.year = BASE_YEAR
         self._base_rates = self._calibrate_sale_rates(u)
@@ -144,10 +148,10 @@ class Projection:
         for c in LEVIES:
             res[f"tax_{c}"] = res[f"taxable_{c}"] * u[f"millage_{c}"].fillna(0) / 1000
         res["tax_total"] = res[[f"tax_{c}" for c in LEVIES]].sum(axis=1)
-        u[f"tax_{y}"] = res["tax_total"]
-        u[f"av_school_{y}"] = res["av_school"]
+        self.history[f"tax_{y}"] = res["tax_total"].to_numpy()
+        self.history[f"av_school_{y}"] = res["av_school"].to_numpy()
         for c in LEVIES:
-            u[f"tax_{c}_{y}"] = res[f"tax_{c}"]
+            self.history[f"tax_{c}_{y}"] = res[f"tax_{c}"].to_numpy()
         self.rows.append(self._row(u, y, sold, res["tax_total"], res["av_school"],
                                    {c: res[f"tax_{c}"] for c in LEVIES}, law))
         nxt = carry_forward(u, res).drop(columns=["portability_transfer"])
@@ -170,8 +174,9 @@ class Projection:
                         self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y))
         county = u["county_fips_tax"]
         u["millage_county"] = u["millage_county_base"] * county.map(self.rates.ratio_county).fillna(1)
-        city_ratio = pd.Series(list(zip(county, u["city_key"])), index=u.index).map(self.rates.ratio_city)
-        u["millage_municipal"] = u["millage_municipal_base"] * city_ratio.fillna(1).where(u["millage_municipal_base"] > 0, 1)
+        idx = u["city_idx"].to_numpy()
+        city_ratio = np.where(idx >= 0, self.rates.ratio_city.to_numpy()[np.maximum(idx, 0)], 1.0)
+        u["millage_municipal"] = u["millage_municipal_base"] * city_ratio
         u["millage_school"] = u["millage_school_fixed"] + u["rle_2026"] * county.map(self.rates.ratio_school).fillna(1)
 
     def run(self, end_year: int = 2036) -> "Projection":
@@ -201,6 +206,27 @@ class Projection:
             row["soh_cap"] = float(law.rule("soh_cap").get("cap", y))
             row["homestead_second_amount"] = float(law.rule("homestead_second").get("amount", y))
         return row
+
+    def _needed_columns(self, b: pd.DataFrame) -> list[str]:
+        """Only what the loop uses: identifiers, values, incomes, exemption inputs, rates."""
+        cols = {"WGTP", "SERIALNO", "PUMA", "county_fips", "county_fips_tax", "municipality", "homestead",
+                "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type",
+                f"av_sd_{BASE_YEAR}", f"av_nsd_{BASE_YEAR}", f"tax_model_{BASE_YEAR}",
+                "homestead_portion_share", "homestead_share"}
+        cols |= set(self.econ.spec["income_growth"])
+        cols |= {f"{x}_{c}" for x in ["millage", "taxable"] for c in LEVIES}
+        cols |= {f"taxable_{c}_{BASE_YEAR}" for c in LEVIES} | {f"tax_{c}_{BASE_YEAR}" for c in LEVIES}
+        for r in self.law_base.exemptions():
+            for k in ["household_flag", "value_column"]:
+                if r.spec.get(k):
+                    cols.add(r.spec[k])
+        cols |= {c for c in b.columns if c.startswith("ex_")}   # replicate weights stay in the baseline (join by index)
+        return [c for c in b.columns if c in cols]
+
+    @property
+    def household_results(self) -> pd.DataFrame:
+        """Per-owner yearly tax and school assessed value (columns tax_<year>, tax_<class>_<year>, ...)."""
+        return pd.DataFrame(self.history, index=self.units.index)
 
     @property
     def summary(self) -> pd.DataFrame:
