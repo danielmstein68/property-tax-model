@@ -3,6 +3,7 @@
 Usage:
     python scripts/build_display.py     # display/template.html + data/processed/results/fl_2026_status_quo.json
                                         #   + fl_projections.json (scripts/results_projections.py)
+                                        #   + fl_policy_grid.json (scripts/policy_grid.py)
                                         # -> display/fl_2026_status_quo.html (published as a private artifact)
 """
 
@@ -16,7 +17,8 @@ def main() -> None:
     data = (res / "fl_2026_status_quo.json").read_text(encoding="utf-8")
     proj = (res / "fl_projections.json").read_text(encoding="utf-8")
     page = (ROOT / "display" / "template.html").read_text(encoding="utf-8")
-    page = page.replace("__DATA__", data).replace("__PROJ__", proj)
+    grid = (res / "fl_policy_grid.json").read_text(encoding="utf-8")
+    page = page.replace("__DATA__", data).replace("__PROJ__", proj).replace("__GRID__", grid)
     dest = ROOT / "display" / "fl_2026_status_quo.html"
     dest.write_text(page, encoding="utf-8")
     print(f"wrote {dest}")

@@ -1,0 +1,189 @@
+# Policy menu for the results page (scripts/policy_grid.py pre-computes every entry).
+#
+# sliders: one number at a time (everything else stays current law), changed from `from`.
+#   settings: the values offered on the slider ("none" = no limit, for caps and limits;
+#             "current" = the current-law value in `from`, filled in from the law spec)
+#   current: the current-law value (shown as the default; "current" = filled in)
+#   changes: the law spec numbers the slider sets (several rules can move together)
+# presets: named policies (any changes, schedules allowed).
+# Edit freely; re-run scripts/policy_grid.py and scripts/build_display.py.
+
+from: 2027
+
+sliders:
+  - id: homestead_first
+    label: First homestead exemption (all levies)
+    unit: dollars
+    current: 25000
+    settings: [0, 25000, 50000, 75000, 100000, 150000]
+    changes: [{rule: homestead_first, key: amount}]
+
+  - id: homestead_second
+    label: Second homestead exemption (non-school levies)
+    unit: dollars
+    current: current
+    note: 2027 current-law amount (indexed to inflation); new values are indexed from 2028.
+    settings: [0, current, 50000, 75000, 100000, 150000]
+    changes: [{rule: homestead_second, key: amount}]
+
+  - id: homestead_second_start
+    label: Home value where the second exemption starts
+    unit: dollars
+    current: 50000
+    settings: [0, 25000, 50000, 75000, 100000]
+    changes: [{rule: homestead_second, key: band_start}]
+
+  - id: soh_cap
+    label: Save Our Homes cap on homestead assessment increases
+    unit: percent
+    current: 0.03
+    note: The cap is this rate or inflation, whichever is lower, so with inflation near 2.3-2.9% a higher ceiling than 3% changes little until inflation rises; "none" removes the cap.
+    settings: [0.0, 0.01, 0.02, 0.03, 0.05, 0.10, none]
+    changes: [{rule: soh_cap, key: max_rate}]
+
+  - id: nonhomestead_cap
+    label: Cap on non-homestead assessment increases (non-school levies)
+    unit: percent
+    current: 0.10
+    settings: [0.03, 0.05, 0.10, 0.15, none]
+    changes: [{rule: nonhomestead_residential_cap, key: cap}]
+
+  - id: portability
+    label: Most Save Our Homes savings a mover can carry over
+    unit: dollars
+    current: 500000
+    settings: [0, 250000, 500000, 750000, 1000000, none]
+    changes: [{rule: portability, key: max_transfer}]
+
+  - id: homestead_share_all
+    label: Share of homestead value exempt from all levies
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: homestead_share_all_levies, key: share}]
+
+  - id: homestead_share_nonschool
+    label: Share of homestead value exempt from non-school levies
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: homestead_share_nonschool, key: share}]
+
+  - id: senior_nonschool_share
+    label: Senior homesteaders (65+) exempt share, non-school levies
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: senior_nonschool, key: share}]
+
+  - id: senior_nonschool_age
+    label: Age for a full senior non-school exemption
+    unit: years
+    current: none
+    note: Shows a full (100%) senior non-school exemption starting at each age; "none" = no such exemption (current law).
+    settings: [none, 55, 60, 65, 70, 75]
+    changes: [{rule: senior_nonschool, key: min_age}]
+    with: [{rule: senior_nonschool, key: share, value: 1.0}]
+
+  - id: senior_lowinc_income
+    label: Income limit, low-income senior exemption (county and city)
+    unit: dollars
+    current: current
+    note: 2027 current-law limit (indexed). Income excludes Social Security.
+    settings: [20000, 30000, current, 50000, 60000, 80000]
+    changes: [{rule: senior_lowinc_county, key: income_limit}, {rule: senior_lowinc_municipal, key: income_limit}]
+
+  - id: senior_lowinc_age
+    label: Minimum age, low-income senior exemption
+    unit: years
+    current: 65
+    settings: [55, 60, 65, 70]
+    changes: [{rule: senior_lowinc_county, key: min_age}, {rule: senior_lowinc_municipal, key: min_age}]
+
+  - id: senior_lowinc_max
+    label: Most a county or city may grant, low-income senior exemption
+    unit: dollars
+    current: 50000
+    settings: [0, 10000, 25000, 50000]
+    changes: [{rule: senior_lowinc_county, key: max_amount}, {rule: senior_lowinc_municipal, key: max_amount}]
+
+  - id: senior_longterm_income
+    label: Income limit, long-term senior exemption
+    unit: dollars
+    current: current
+    settings: [20000, 30000, current, 50000, 60000, 80000]
+    changes: [{rule: senior_longterm_county, key: income_limit}, {rule: senior_longterm_municipal, key: income_limit}]
+
+  - id: senior_longterm_years
+    label: Years in the home needed, long-term senior exemption
+    unit: years
+    current: 25
+    settings: [5, 10, 15, 20, 25, 30]
+    changes: [{rule: senior_longterm_county, key: residence_years}, {rule: senior_longterm_municipal, key: residence_years}]
+
+  - id: senior_longterm_value
+    label: Home value limit (when first qualifying), long-term senior exemption
+    unit: dollars
+    current: 250000
+    settings: [150000, 250000, 350000, 500000, none]
+    changes: [{rule: senior_longterm_county, key: just_value_limit}, {rule: senior_longterm_municipal, key: just_value_limit}]
+
+  - id: disabled_income
+    label: Household income limit, total exemption for disabled homeowners
+    unit: dollars
+    current: current
+    settings: [20000, current, 50000, 75000, 100000]
+    changes: [{rule: disabled_total, key: income_limit}]
+
+  - id: widow_blind_disabled
+    label: Widow(er), blind and disabled exemption
+    unit: dollars
+    current: 5000
+    settings: [0, 5000, 10000, 25000, 50000]
+    changes: [{rule: widow_blind_disabled_5000, key: amount}]
+
+  - id: disabled_exservice
+    label: Disabled ex-servicemember exemption
+    unit: dollars
+    current: 5000
+    settings: [0, 5000, 10000, 25000, 50000]
+    changes: [{rule: disabled_exservice_5000, key: amount}]
+
+  - id: rate_limit
+    label: Highest tax rate with a two-thirds vote (multiple of the rolled-back rate)
+    unit: multiple
+    current: 1.10
+    settings: [1.0, 1.05, 1.10, 1.25, 1.5]
+    changes: [{rule: maximum_millage_vote, key: two_thirds_vote_max_of_rolled_back}]
+
+presets:
+  - id: no_homestead_tax
+    label: No homestead property tax
+    description: Homesteads pay no property tax to any government from 2027.
+    changes: [{rule: homestead_share_all_levies, key: share, value: 1.0, from: 2027}]
+
+  - id: no_nonschool_homestead_tax
+    label: No non-school homestead tax
+    description: Homesteads pay no county, city or special district tax from 2027; school taxes stay.
+    changes: [{rule: homestead_share_nonschool, key: share, value: 1.0, from: 2027}]
+
+  - id: senior_nonschool
+    label: Senior non-school exemption
+    description: Homesteaders aged 65 and over pay no non-school property tax from 2027.
+    changes: [{rule: senior_nonschool, key: share, value: 1.0, from: 2027}]
+
+  - id: exemption_over_time
+    label: Raise the homestead exemption over time
+    description: The second homestead exemption rises by $10,000 a year from 2027 to 2036 (about $37,000 to $127,000).
+    changes:
+      - rule: homestead_second
+        key: amount
+        values: {2027: 37177, 2028: 47177, 2029: 57177, 2030: 67177, 2031: 77177, 2032: 87177,
+                 2033: 97177, 2034: 107177, 2035: 117177, 2036: 127177}
+
+  - id: limit_value_increases
+    label: Limit assessment increases
+    description: Homestead assessments rise at most 2% a year (or inflation if lower) and non-homestead assessments at most 5% a year (non-school levies), from 2027.
+    changes:
+      - {rule: soh_cap, key: max_rate, value: 0.02, from: 2027}
+      - {rule: nonhomestead_residential_cap, key: cap, value: 0.05, from: 2027}

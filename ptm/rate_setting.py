@@ -233,8 +233,11 @@ class RateSetter:
         non-residential): excluded from this year's rolled-back rates, added to the base after."""
         if cap_multiple is not None:
             self.settings = {**self.settings, "cap_multiple": cap_multiple}
-        gs = np.where(np.isnan(gs), np.nanmedian(gs), gs)
-        gc = np.where(np.isnan(gc), np.nanmedian(gc), gc)
+        def fill(g):   # thin or empty homestead bases: the median, or no change if none is known
+            g = np.asarray(g, dtype=float)
+            med = np.nanmedian(g) if np.isfinite(g).any() else 1.0
+            return np.where(np.isfinite(g), g, med)
+        gs, gc = fill(gs), fill(gc)
         c, hv, nr = self._c, 1 + home_value_growth, 1 + nonres_growth
         new = {"hs_school": c["hs_school"] * gs, "nh_school": c["nh_school"] * hv, "nr_school": c["nr_school"] * nr,
                "hs_county": c["hs_county"] * gc, "nh_county": c["nh_county"] * hv, "nr_county": c["nr_county"] * nr}

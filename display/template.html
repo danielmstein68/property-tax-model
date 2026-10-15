@@ -10,6 +10,7 @@
   --accent: #342877; --accent-2: #3d358a; --accent-soft: #e6e4f3; --teal: #b7e3e0;
   --school: #342877; --county: #3f9c95; --city: #9f95d6; --income: #c6c2e0;
   --warn: #342877; --warn-soft: #e6e4f3; --band-fill: rgba(52, 40, 119, 0.14);
+  --gain2: #2f7f78; --gain1: #9dd3cd; --same: #d9d8e4; --lose1: #f0b9a8; --lose2: #c4573a; --bar-ink: #1b1540;
   --display: "DM Sans", "dmSans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --body: "DM Sans", "dmSans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --mono: "DM Mono", ui-monospace, Consolas, monospace;
@@ -19,13 +20,15 @@
   --rule: #2f2a58; --rule-strong: #d6d3ea;
   --accent: #b9b0f2; --accent-2: #cfc8ff; --accent-soft: #29235a; --teal: #7fd0c9;
   --school: #9d92ea; --county: #62c2b9; --city: #d6d3ea; --income: #4a4478;
-  --warn: #d6d3ea; --warn-soft: #29235a; --band-fill: rgba(185, 176, 242, 0.22); color-scheme: dark } }
+  --warn: #d6d3ea; --warn-soft: #29235a; --band-fill: rgba(185, 176, 242, 0.22);
+  --gain2: #4fb3a9; --gain1: #2b6e68; --same: #3a3566; --lose1: #8e4a38; --lose2: #e07a5c; --bar-ink: #eeedf6; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #120f2a; --band: #1e1a42; --surface: #1a1638; --surface-2: #231e4a; --ink: #eeedf6; --text: #d7d5e8; --muted: #a29fc0;
   --rule: #2f2a58; --rule-strong: #d6d3ea;
   --accent: #b9b0f2; --accent-2: #cfc8ff; --accent-soft: #29235a; --teal: #7fd0c9;
   --school: #9d92ea; --county: #62c2b9; --city: #d6d3ea; --income: #4a4478;
-  --warn: #d6d3ea; --warn-soft: #29235a; --band-fill: rgba(185, 176, 242, 0.22); color-scheme: dark }
+  --warn: #d6d3ea; --warn-soft: #29235a; --band-fill: rgba(185, 176, 242, 0.22);
+  --gain2: #4fb3a9; --gain1: #2b6e68; --same: #3a3566; --lose1: #8e4a38; --lose2: #e07a5c; --bar-ink: #eeedf6; color-scheme: dark }
 
 body { background: var(--bg); color: var(--text); font: 500 16px/1.6 var(--body); }
 .hero { background: var(--band); padding-inline: 20px; padding-block: 28px 44px; }
@@ -48,6 +51,18 @@ section { display: grid; gap: 18px; min-width: 0; }
 .tabs button[aria-checked="true"] { background: var(--accent); color: var(--bg); }
 .wrap-inner { display: grid; gap: 56px; }
 .muted-p { color: var(--muted); font-size: 15px; }
+.builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 860px) { .builder { grid-template-columns: 1fr; } }
+.builder-col { background: var(--surface); border-radius: 16px; padding: 20px 22px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.field-label { font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+.builder select { font: 500 15px var(--body); padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 10px;
+  background: var(--bg); color: var(--ink); max-width: 100%; }
+.builder input[type=range] { width: 100%; accent-color: var(--accent); }
+.slider-scale { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.slider-scale .cur { color: var(--accent); font-weight: 700; }
+.pol-chosen { border-left: 4px solid var(--accent); padding: 4px 0 4px 16px; display: grid; gap: 4px; }
+.chosen-title { font: 700 20px/1.3 var(--display); color: var(--ink); letter-spacing: -0.02em; }
+svg .bar-label { fill: var(--bar-ink); font: 600 11px var(--body); }
 .outlook { border-top: 1.5px solid var(--rule-strong); padding-top: 18px; }
 .outlook > summary { list-style: none; cursor: pointer; display: grid; gap: 6px; padding: 18px 22px; border-radius: 16px;
   background: var(--surface); }
@@ -117,7 +132,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <div class="hero">
   <div class="hero-in">
     <nav class="views" aria-label="Views" id="views">
-      <button data-v="today" id="view-btn-today">2026 today</button><span class="soon">Policy comparisons</span>
+      <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button>
     </nav>
     <div class="eyebrow" id="eyebrow">Florida · Tax year 2026 · Current law</div>
     <h1 id="h1">Who pays Florida's property tax on owner-occupied homes</h1>
@@ -269,6 +284,98 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       </section>
     </div>
   </details>
+  </div>
+  <div id="view-policy" class="wrap-inner" hidden>
+    <section>
+      <div class="eyebrow">Choose a policy</div>
+      <h2>Pick a policy, or change one number in current law</h2>
+      <div class="builder">
+        <div class="builder-col">
+          <h3>Policies</h3>
+          <div class="tabs" role="radiogroup" aria-label="Policies" id="pol-presets"></div>
+        </div>
+        <div class="builder-col">
+          <h3>Or change one number</h3>
+          <label class="field-label" for="pol-lever">Number to change</label>
+          <select id="pol-lever"></select>
+          <label class="field-label" for="pol-slider" id="pol-slider-label">Setting</label>
+          <input type="range" id="pol-slider" min="0" max="1" step="1" value="0">
+          <div class="slider-scale" id="pol-scale"></div>
+          <p class="muted-p" id="pol-lever-note"></p>
+        </div>
+      </div>
+      <div class="pol-chosen" id="pol-chosen"></div>
+      <div class="tabs" role="radiogroup" aria-label="Year" id="pol-years"></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">1 · The new situation</div>
+      <h2 id="pol-s1-title">Owner property tax under the policy</h2>
+      <div class="figures" id="pol-figures"></div>
+      <div class="tablebox"><table id="pol-t-levels"></table></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">2 · Changes from current law</div>
+      <h2>How much changes, and for whom</h2>
+      <div class="charts">
+        <div class="chart">
+          <h3>Change in owner property tax by year</h3>
+          <p>Billions of dollars; below zero = owners pay less.</p>
+          <div id="pol-c-years"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Governments respond</span><span><i style="background:var(--county)"></i>No response</span></div>
+        </div>
+        <div class="chart">
+          <h3>Average change per owner by income decile</h3>
+          <p id="pol-c-dec-sub">Dollars a year in the selected year.</p>
+          <div id="pol-c-dec"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Governments respond</span><span><i style="background:var(--county)"></i>No response</span></div>
+        </div>
+      </div>
+      <div class="tabs" role="tablist" id="pol-group-tabs"></div>
+      <div class="tabletools"><button class="copy" data-table="pol-t-groups" id="copy-pol-groups">Copy table</button></div>
+      <div class="tablebox"><table id="pol-t-groups"></table></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">3 · Winners and losers</div>
+      <h2 id="pol-s3-title">Who pays less and who pays more</h2>
+      <p id="pol-s3-intro"></p>
+      <div class="charts">
+        <div class="chart">
+          <h3>Governments respond</h3>
+          <p>Share of owners in each income decile, by change in their tax bill.</p>
+          <div id="pol-w-respond"></div>
+        </div>
+        <div class="chart">
+          <h3>No response</h3>
+          <p>Local tax rates stay on their current-law path.</p>
+          <div id="pol-w-none"></div>
+        </div>
+      </div>
+      <div class="legend" id="pol-w-legend"></div>
+    </section>
+
+    <section class="notes">
+      <div>
+        <h3>How to read this</h3>
+        <ul>
+          <li><b>Two versions of every result.</b> "Governments respond": counties, cities and school districts set rates the way Florida governments have in comparable years since the 1990s, within the 2026 limit of 110% of the rolled-back rate; when a policy shrinks their tax base, some raise rates, so owners who don't benefit can pay more. "No response": rates follow exactly the path they would under current law, showing the policy's direct effect.</li>
+          <li><b>One change at a time.</b> Each slider changes one number (or a set that moves together), with everything else at current law. The listed policies combine changes. Free combinations need a live engine, planned for later.</li>
+          <li><b>Big policies are outside history.</b> Rate responses are drawn from ordinary years; for policies that remove most of a government's homestead base, treat the "respond" figures as indicative only.</li>
+          <li><b>Owners only.</b> Renters' share through rent isn't modelled yet. "About the same" means within $10 a year.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Method</h3>
+        <ul>
+          <li>Both runs use the same households, economy (central forecast) and random draws, so differences come from the policy.</li>
+          <li>Changes start in tax year 2027. Indexed amounts keep growing with inflation from the new value.</li>
+          <li>Income-tested exemptions are re-tested each year; newly eligible households claim at today's rates where their county or city offers the exemption.</li>
+          <li>Income deciles are 2026 groups of all Florida households.</li>
+        </ul>
+      </div>
+    </section>
   </div>
 
   <footer id="foot"></footer>
@@ -601,5 +708,182 @@ function openOutlook() {
 }
 $("view-proj").addEventListener("toggle", () => { if ($("view-proj").open) openOutlook(); });
 if (location.hash === "#baseline" || location.hash === "#projections") { $("view-proj").open = true; }
-document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === "today"));
+// ---------------- Policy comparisons ----------------
+const G = __GRID__;
+const POL = { kind: "preset", id: G.presets[0].id, lever: G.sliders[0].id, idx: 0, year: G.years[0], group: "age_group" };
+const fmtSetting = (sl, v) => {
+  if (v === "none") return sl.id === "senior_nonschool_age" ? "None (current law)" : "No limit";
+  if (sl.unit === "dollars") return usd(v);
+  if (sl.unit === "percent" || sl.unit === "share") return (100 * v).toFixed(v * 100 % 1 ? 1 : 0) + "%";
+  if (sl.unit === "multiple") return (+v).toFixed(2) + "×";
+  return String(v);
+};
+const signed = (v, f) => (v > 0 ? "+" : v < 0 ? "−" : "") + f(Math.abs(v));
+const bnS = v => signed(v, x => "$" + (x / 1e9).toFixed(x >= 1e10 ? 1 : 2) + "B");
+const usdS = v => signed(v, x => "$" + Math.round(x).toLocaleString("en-US"));
+const pctS = (v, d = 1) => signed(v, x => (100 * x).toFixed(d) + "%");
+
+function currentRun() {
+  if (POL.kind === "preset") return { run: G.runs[POL.id], label: G.presets.find(p => p.id === POL.id).label,
+    desc: G.presets.find(p => p.id === POL.id).description };
+  const sl = G.sliders.find(s => s.id === POL.lever), v = sl.settings[POL.idx];
+  const isCur = v === sl.current || (v === "none" && sl.current === "none");
+  return { run: isCur ? null : G.runs[`${sl.id}=${v}`], label: `${sl.label}: ${fmtSetting(sl, v)}`,
+    desc: isCur ? "This is current law. Move the slider to compare another value." : `Current law: ${fmtSetting(sl, sl.current)}. ${sl.note || ""}` };
+}
+
+function grp(run, mode, y, grouping) { return run[mode].groups.filter(r => r.year === y && r.grouping === grouping); }
+function allRow(run, mode, y) { return run[mode].groups.find(r => r.year === y && r.grouping === "all"); }
+function yrow(run, mode, y) { return run[mode].yearly.find(r => r.year === y); }
+
+function renderPolicy() {
+  const { run, label, desc } = currentRun(), y = POL.year;
+  $("pol-chosen").innerHTML = `<div class="chosen-title">${label}</div><div class="muted-p">${desc}</div>`;
+  document.querySelectorAll("#pol-presets button").forEach(b => b.setAttribute("aria-checked", POL.kind === "preset" && b.dataset.id === POL.id));
+  document.querySelectorAll("#pol-years button").forEach(b => b.setAttribute("aria-checked", +b.dataset.y === y));
+  const base = G.current_law.yearly.find(r => r.year === y);
+  const zero = { tax: 0, avg_tax: 0, mill_county: 0, mill_school: 0, school: 0, county: 0, city: 0, pct: 0 };
+  const R = run ? yrow(run, "respond", y) : zero, N = run ? yrow(run, "none", y) : zero;
+  const aR = run ? allRow(run, "respond", y) : null, aN = run ? allRow(run, "none", y) : null;
+
+  // 1. new situation
+  $("pol-s1-title").textContent = `Owner property tax under the policy, ${y}`;
+  $("pol-figures").innerHTML = [
+    [bnS(R.tax), `Change in owner tax in ${y} if governments respond (${pctS(R.pct)})`],
+    [bnS(N.tax), `Change with no response (${pctS(N.pct)})`],
+    [aR ? pct(aR.share_pay_less, 0) : "0%", "Owners paying less (governments respond)"],
+    [aR ? pct(aR.share_pay_more, 0) : "0%", "Owners paying more (governments respond)"],
+  ].map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const lv = (b, d) => b + d;
+  $("pol-t-levels").innerHTML = `<thead><tr><th>${y}</th><th>Current law</th><th>Policy, governments respond</th><th>Policy, no response</th></tr></thead><tbody>` +
+    [["Owner property tax", base.tax_total, R.tax, N.tax, bn], ["School district", base.school, R.school, N.school, bn],
+     ["County and special districts", base.county, R.county, N.county, bn], ["City", base.city, R.city, N.city, bn],
+     ["Average owner bill", base.avg_tax, R.avg_tax, N.avg_tax, usd],
+     ["Average county rate (mills)", base.mill_county, R.mill_county, N.mill_county, v => v.toFixed(3)],
+     ["Average school rate (mills)", base.mill_school, R.mill_school, N.mill_school, v => v.toFixed(3)]]
+      .map(([l, b, dr, dn, f]) => `<tr><td>${l}</td><td>${f(b)}</td><td>${f(lv(b, dr))}</td><td>${f(lv(b, dn))}</td></tr>`).join("") + "</tbody>";
+
+  // 2a. change by year
+  (function () {
+    if (!run) { $("pol-c-years").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; return; }
+    const ok = r => r.tax !== null && r.tax !== undefined && isFinite(r.tax);
+    const ptsR = run.respond.yearly.filter(ok).map(r => ({ year: r.year, v: r.tax / 1e9 })), ptsN = run.none.yearly.filter(ok).map(r => ({ year: r.year, v: r.tax / 1e9 }));
+    const vals = ptsR.concat(ptsN).map(p => p.v).concat([0]);
+    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.1 || 0.1; lo -= pad; hi += pad;
+    const W = 520, H = 280, L = 56, R_ = 12, T = 14, B = 30, years = ptsR.map(p => p.year);
+    const s = svg(W, H), x = yv => L + (W - L - R_) * (yv - years[0]) / (years[years.length - 1] - years[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    s.setAttribute("aria-label", "Change in owner tax by year, with and without government responses");
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, (v >= 0 ? "" : "−") + "$" + Math.abs(v).toFixed(Math.abs(hi - lo) < 2 ? 2 : 1) + "B"); }
+    el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+    years.forEach((yv, i) => { if (i % 3 === 0) el(s, "text", { x: x(yv), y: H - 8, "text-anchor": "middle" }, String(yv)); });
+    [[ptsN, "var(--county)", "6 4"], [ptsR, "var(--accent)", ""]].forEach(([pts, c, dash]) =>
+      el(s, "polyline", { points: pts.map(p => `${x(p.year)},${yy(p.v)}`).join(" "), fill: "none", stroke: c, "stroke-width": 2.5, "stroke-dasharray": dash }));
+    el(s, "line", { x1: x(y), x2: x(y), y1: T, y2: H - B, stroke: "var(--muted)", "stroke-dasharray": "2 3" });
+    $("pol-c-years").innerHTML = ""; $("pol-c-years").appendChild(s);
+  })();
+
+  // 2b. by decile
+  (function () {
+    $("pol-c-dec-sub").textContent = `Dollars a year in ${y}.`;
+    if (!run) { $("pol-c-dec").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; return; }
+    const sortD = rows => rows.slice().sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
+    const dr = sortD(grp(run, "respond", y, "income_decile")), dn = sortD(grp(run, "none", y, "income_decile"));
+    const vals = dr.concat(dn).map(r => r.avg_change).concat([0]);
+    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.12 || 1; lo = Math.min(lo - pad, 0); hi = Math.max(hi + pad, 0);
+    const W = 520, H = 280, L = 56, R_ = 10, T = 14, B = 36, bw = (W - L - R_) / 10;
+    const s = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    s.setAttribute("aria-label", "Average change per owner by income decile");
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
+    el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+    dr.forEach((r, i) => {
+      const x0 = L + i * bw + bw * 0.14, w = bw * 0.34;
+      [[r.avg_change, "var(--accent)", 0], [dn[i].avg_change, "var(--county)", w + 2]].forEach(([v, c, dx]) =>
+        el(s, "rect", { x: x0 + dx, y: Math.min(yy(v), yy(0)), width: w, height: Math.abs(yy(v) - yy(0)), fill: c, rx: 2 }));
+      el(s, "text", { x: x0 + w + 1, y: H - B + 16, "text-anchor": "middle" }, String(i + 1));
+    });
+    el(s, "text", { x: L + (W - L - R_) / 2, y: H - 4, "text-anchor": "middle" }, "Household income decile (1 = lowest)");
+    $("pol-c-dec").innerHTML = ""; $("pol-c-dec").appendChild(s);
+  })();
+
+  // 2c. group table
+  (function () {
+    const g = POL.group;
+    document.querySelectorAll("#pol-group-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === g));
+    if (!run) { $("pol-t-groups").innerHTML = ""; return; }
+    let rr = grp(run, "respond", y, g), nn = grp(run, "none", y, g);
+    if (g === "income_decile") { const k = r => +r.group.replace(/\D/g, ""); rr = rr.sort((a, b) => k(a) - k(b)); nn = nn.sort((a, b) => k(a) - k(b)); }
+    const head = `<thead><tr><th>Group</th><th>Owners</th><th>Average change (respond)</th><th>% change (respond)</th><th>Pay less (respond)</th><th>Pay more (respond)</th><th>Average change (no response)</th><th>% change (no response)</th></tr></thead>`;
+    const body = rr.map(r => { const n = nn.find(x => x.group === r.group) || {};
+      return `<tr><td>${r.group}</td><td>${Math.round(r.owners).toLocaleString("en-US")}</td><td>${usdS(r.avg_change)}</td><td>${pctS(r.pct_change)}</td><td>${pct(r.share_pay_less, 0)}</td><td>${pct(r.share_pay_more, 0)}</td><td>${usdS(n.avg_change)}</td><td>${pctS(n.pct_change)}</td></tr>`; }).join("");
+    const a = allRow(run, "respond", y), an = allRow(run, "none", y);
+    const tot = `<tr class="total"><td>All owners</td><td>${Math.round(a.owners).toLocaleString("en-US")}</td><td>${usdS(a.avg_change)}</td><td>${pctS(a.pct_change)}</td><td>${pct(a.share_pay_less, 0)}</td><td>${pct(a.share_pay_more, 0)}</td><td>${usdS(an.avg_change)}</td><td>${pctS(an.pct_change)}</td></tr>`;
+    $("pol-t-groups").innerHTML = head + "<tbody>" + body + tot + "</tbody>";
+  })();
+
+  // 3. winners and losers
+  const CATS = [["gain_more_5pct", "Pay over 5% less", "var(--gain2)"], ["gain_less_5pct", "Pay up to 5% less", "var(--gain1)"],
+    ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Pay up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Pay over 5% more", "var(--lose2)"]];
+  $("pol-w-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
+  $("pol-s3-title").textContent = `Who pays less and who pays more, ${y}`;
+  $("pol-s3-intro").textContent = run ? `If governments respond, ${pct(aR.share_pay_less, 0)} of owners pay less (on average ${usd(aR.avg_gain_if_less)} a year) and ${pct(aR.share_pay_more, 0)} pay more (on average ${usd(aR.avg_loss_if_more)}). With no response, ${pct(aN.share_pay_less, 0)} pay less and ${pct(aN.share_pay_more, 0)} pay more.` : "Current law: nobody's bill changes.";
+  ["respond", "none"].forEach(mode => {
+    const target = $(`pol-w-${mode}`);
+    if (!run) { target.innerHTML = '<p class="muted-p">No change.</p>'; return; }
+    const rows = grp(run, mode, y, "income_decile").sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
+    rows.push(allRow(run, mode, y));
+    const W = 520, rowH = 22, gap = 6, L = 70, R_ = 8, T = 6, H = T + rows.length * (rowH + gap) + 18;
+    const s = svg(W, H);
+    s.setAttribute("aria-label", `Winners and losers by income decile, ${mode === "none" ? "no response" : "governments respond"}`);
+    rows.forEach((r, i) => {
+      const yy = T + i * (rowH + gap); let acc = 0;
+      el(s, "text", { x: L - 8, y: yy + rowH / 2 + 4, "text-anchor": "end" }, i === rows.length - 1 ? "All owners" : "Decile " + (i + 1));
+      CATS.forEach(([k, , c]) => { const v = r[k] || 0, w = (W - L - R_) * v;
+        if (w > 0.3) el(s, "rect", { x: L + (W - L - R_) * acc, y: yy, width: w, height: rowH, fill: c });
+        if (v >= 0.12) el(s, "text", { x: L + (W - L - R_) * (acc + v / 2), y: yy + rowH / 2 + 4, "text-anchor": "middle", class: "bar-label" }, pct(v, 0));
+        acc += v; });
+    });
+    [0, 0.25, 0.5, 0.75, 1].forEach(t => el(s, "text", { x: L + (W - L - R_) * t, y: H - 2, "text-anchor": "middle" }, Math.round(t * 100) + "%"));
+    target.innerHTML = ""; target.appendChild(s);
+  });
+}
+
+// builder controls
+$("pol-presets").innerHTML = G.presets.map(p => `<button role="radio" data-id="${p.id}" id="pres-${p.id}">${p.label}</button>`).join("");
+$("pol-presets").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.kind = "preset"; POL.id = b.dataset.id; renderPolicy(); });
+$("pol-lever").innerHTML = G.sliders.map(s => `<option value="${s.id}">${s.label}</option>`).join("");
+function setLever(id, keepIdx) {
+  const sl = G.sliders.find(s => s.id === id);
+  POL.lever = id;
+  const cur = sl.settings.findIndex(v => v === sl.current);
+  if (!keepIdx) POL.idx = cur >= 0 ? cur : 0;
+  const r = $("pol-slider"); r.max = sl.settings.length - 1; r.value = POL.idx;
+  $("pol-slider-label").textContent = `Setting: ${fmtSetting(sl, sl.settings[POL.idx])}`;
+  $("pol-scale").innerHTML = sl.settings.map((v, i) => `<span class="${i === cur ? "cur" : ""}">${fmtSetting(sl, v)}${i === cur ? " (current law)" : ""}</span>`).join("");
+  $("pol-lever-note").textContent = sl.note || "";
+}
+$("pol-lever").addEventListener("change", e => { setLever(e.target.value); POL.kind = "slider"; renderPolicy(); });
+$("pol-slider").addEventListener("input", e => { POL.idx = +e.target.value; POL.kind = "slider"; setLever(POL.lever, true); renderPolicy(); });
+$("pol-years").innerHTML = G.years.map(y => `<button role="radio" data-y="${y}" id="pyear-${y}">${y}</button>`).join("");
+$("pol-years").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.year = +b.dataset.y; renderPolicy(); });
+const GROUP_TABS = [["age_group", "Age"], ["homestead", "Homestead"], ["region", "Region"], ["income_decile", "Income decile"]];
+$("pol-group-tabs").innerHTML = GROUP_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgroup-${g}">${l}</button>`).join("");
+$("pol-group-tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.group = b.dataset.g; renderPolicy(); });
+setLever(POL.lever);
+
+// views: 2026 today / policy comparisons
+const VIEWS = {
+  today: { eyebrow: "Florida · Tax year 2026 · Current law", h1: "Who pays Florida's property tax on owner-occupied homes" },
+  policy: { eyebrow: "Florida · Policy comparisons · From 2027", h1: "What a property tax policy would change, and for whom" },
+};
+const LEDE_TODAY = $("lede").textContent;
+function showView(v) {
+  $("view-today").hidden = v !== "today";
+  $("view-policy").hidden = v !== "policy";
+  document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
+  $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1;
+  $("lede").textContent = v === "today" ? LEDE_TODAY : "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
+  if (v === "policy") renderPolicy();
+}
+$("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
+showView(location.hash === "#policy" ? "policy" : "today");
 </script>

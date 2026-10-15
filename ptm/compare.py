@@ -5,7 +5,8 @@
     r["levels"]        # 1. the new situation: policy and current law side by side, by year
     r["changes"]       # 2. changes from current law, by year (revenue, by levy, rates, average bill)
     r["by_group"]      #    changes by income decile, age, homestead, years in home, home type, region
-    r["winners"]       # 3. who wins and loses: shares paying less / more / about the same, by group
+    r["winners"]       # 3. who wins and loses: shares paying less / more / about the same, and
+                       #    PolicyEngine-style bands (gain >5%, gain <5%, no change, lose <5%, lose >5%)
 
 Both runs use the same Projection seed, so home sales, deaths and local rate decisions are drawn
 from the same random numbers; differences come from the policy (and governments' responses to
@@ -54,6 +55,14 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
         new = _run(baseline, scenario, seed, law1, end_year, rate_replay=base.rates.paths)
     else:
         new = _run(baseline, scenario, seed, law1, end_year, pol.get("rate_response"))
+    out = compare_runs(base, new, end_year, threshold, years)
+    out.update({"policy": dict(pol), "scenario": scenario, "response": response})
+    return out
+
+
+def compare_runs(base: Projection, new: Projection, end_year: int, threshold: float = 10.0,
+                 years: list[int] | None = None) -> dict:
+    """Levels, changes, changes by group and winners/losers from two finished runs."""
 
     keep = ["owners", "tax_total", "avg_tax", "tax_school", "tax_county", "tax_municipal",
             "millage_school_avg", "millage_county_avg", "millage_municipal_avg", "homestead_assessed_to_just"]
@@ -74,6 +83,9 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
         inc = hb[f"income_{y}"].to_numpy()
         d = tp - tb
         win, lose = d < -threshold, d > threshold
+        rel = np.where(tb > 0, d / np.maximum(tb, 1e-9), np.where(d > 0, np.inf, np.where(d < 0, -np.inf, 0)))
+        cats = {"gain_more_5pct": win & (rel < -0.05), "gain_less_5pct": win & (rel >= -0.05),
+                "no_change": ~win & ~lose, "lose_less_5pct": lose & (rel <= 0.05), "lose_more_5pct": lose & (rel > 0.05)}
         for gname in ["all"] + GROUPS:
             labels = pd.Series("All owners", index=base.units.index) if gname == "all" else groups[gname]
             for lab, idx in labels[live].groupby(labels[live]).groups.items():
@@ -92,6 +104,7 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
                                "share_pay_less": ww[win[m]].sum() / W, "share_pay_more": ww[lose[m]].sum() / W,
                                "share_about_same": 1 - (ww[win[m]].sum() + ww[lose[m]].sum()) / W,
                                "avg_gain_if_less": -(d[m][win[m]] * ww[win[m]]).sum() / max(ww[win[m]].sum(), 1e-9),
-                               "avg_loss_if_more": (d[m][lose[m]] * ww[lose[m]]).sum() / max(ww[lose[m]].sum(), 1e-9)})
-    return {"policy": {k: v for k, v in pol.items()}, "scenario": scenario, "response": response, "years": years, "threshold": threshold,
+                               "avg_loss_if_more": (d[m][lose[m]] * ww[lose[m]]).sum() / max(ww[lose[m]].sum(), 1e-9),
+                               **{k: ww[v[m]].sum() / W for k, v in cats.items()}})
+    return {"years": years, "threshold": threshold,
             "levels": levels, "changes": changes, "by_group": pd.DataFrame(rows_g), "winners": pd.DataFrame(rows_w)}
