@@ -2,6 +2,7 @@
 
 Usage:
     python scripts/build_display.py     # display/template.html + data/processed/results/fl_2026_status_quo.json
+                                        #   + fl_projections.json (scripts/results_projections.py)
                                         # -> display/fl_2026_status_quo.html (published as a private artifact)
 """
 
@@ -11,8 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    data = (ROOT / "data" / "processed" / "results" / "fl_2026_status_quo.json").read_text(encoding="utf-8")
-    page = (ROOT / "display" / "template.html").read_text(encoding="utf-8").replace("__DATA__", data)
+    res = ROOT / "data" / "processed" / "results"
+    data = (res / "fl_2026_status_quo.json").read_text(encoding="utf-8")
+    proj = (res / "fl_projections.json").read_text(encoding="utf-8")
+    page = (ROOT / "display" / "template.html").read_text(encoding="utf-8")
+    page = page.replace("__DATA__", data).replace("__PROJ__", proj)
     dest = ROOT / "display" / "fl_2026_status_quo.html"
     dest.write_text(page, encoding="utf-8")
     print(f"wrote {dest}")

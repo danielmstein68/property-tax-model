@@ -209,6 +209,7 @@ class Projection:
         for c in LEVIES:
             self.history[f"tax_{c}_{BASE_YEAR}"] = prep[f"tax_{c}_2026"]
         self.year = BASE_YEAR
+        self.history[f"income_{BASE_YEAR}"] = self._income()
         self._base_rates = self._calibrate_sale_rates()
         self.rows = [self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES})]
@@ -303,6 +304,10 @@ class Projection:
                for c in LEVIES},
         }
 
+    def _income(self) -> np.ndarray:
+        """Household income this year: sum of the grown income components (floored at 0)."""
+        return np.maximum(sum(np.nan_to_num(v) for v in self.income.values()), 0)
+
     # --- sales -----------------------------------------------------------------------------------
     def _savings(self) -> np.ndarray:
         """Assessment savings carried into the year: just value minus last year's assessed value
@@ -366,6 +371,7 @@ class Projection:
         for k in ["taxable_school_prior", "taxable_county_prior"]:
             a[k] = np.where(entering, 0.0, a[k])
         self._existing = self.orig | ((self.cohort_year > 0) & (self.cohort_year < y))
+        self.history[f"income_{y}"] = self._income()
         sold, transfer = self._draw_sales()
         df = self.units.assign(jv=a["jv"], av_school_prior=a["av_school_prior"],
                                av_nonschool_prior=a["av_nonschool_prior"],
