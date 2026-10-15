@@ -48,6 +48,17 @@ section { display: grid; gap: 18px; min-width: 0; }
 .tabs button[aria-checked="true"] { background: var(--accent); color: var(--bg); }
 .wrap-inner { display: grid; gap: 56px; }
 .muted-p { color: var(--muted); font-size: 15px; }
+.outlook { border-top: 1.5px solid var(--rule-strong); padding-top: 18px; }
+.outlook > summary { list-style: none; cursor: pointer; display: grid; gap: 6px; padding: 18px 22px; border-radius: 16px;
+  background: var(--surface); }
+.outlook > summary::-webkit-details-marker { display: none; }
+.outlook > summary:hover { background: var(--surface-2); }
+.outlook > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.outlook-title { font: 700 20px/1.25 var(--display); color: var(--ink); letter-spacing: -0.02em; }
+.outlook-title::after { content: " ↓"; color: var(--accent); }
+.outlook[open] .outlook-title::after { content: " ↑"; }
+.outlook-sub { color: var(--muted); font-size: 15px; }
+.outlook-body { padding-top: 32px; }
 .views span { padding: 7px 16px; font-size: 14px; font-weight: 700; border-radius: 999px; border: 1.5px solid var(--accent); color: var(--accent); }
 .views .on { background: var(--accent); color: var(--bg); }
 .views .soon { border-color: transparent; color: var(--muted); font-weight: 500; padding-inline: 8px; }
@@ -106,7 +117,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <div class="hero">
   <div class="hero-in">
     <nav class="views" aria-label="Views" id="views">
-      <button data-v="today" id="view-btn-today">2026 today</button><button data-v="proj" id="view-btn-proj">Projections to 2036</button><span class="soon">Policy comparisons</span>
+      <button data-v="today" id="view-btn-today">2026 today</button><span class="soon">Policy comparisons</span>
     </nav>
     <div class="eyebrow" id="eyebrow">Florida · Tax year 2026 · Current law</div>
     <h1 id="h1">Who pays Florida's property tax on owner-occupied homes</h1>
@@ -176,9 +187,13 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     </div>
   </section>
 
-  </div>
-  <div id="view-proj" hidden>
-    <div class="wrap-inner">
+  <details id="view-proj" class="outlook">
+    <summary>
+      <span class="eyebrow">Baseline outlook</span>
+      <span class="outlook-title">Current law to 2036: the baseline policies are compared against</span>
+      <span class="outlook-sub">Owner tax under today's rules with the state's forecasts, five economic scenarios and a range. Open to see the details.</span>
+    </summary>
+    <div class="wrap-inner outlook-body">
       <div class="figures" id="p-figures"></div>
 
       <section>
@@ -253,6 +268,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
       </section>
     </div>
+  </details>
   </div>
 
   <footer id="foot"></footer>
@@ -578,21 +594,12 @@ $("p-reliability").innerHTML = [
   `Owners only: renters' share of property tax through rent is not modelled yet. Tax is ad valorem tax on homes; fees (fire, waste, stormwater) are not included.`,
 ].map(t => `<li>${t}</li>`).join("");
 
-// ---------------- View switching ----------------
-const VIEW_TEXT = {
-  today: { eyebrow: "Florida · Tax year 2026 · Current law", h1: "Who pays Florida's property tax on owner-occupied homes" },
-  proj: { eyebrow: `Florida · ${P.base_year} to ${P.end_year} · Current law`, h1: "Florida's property tax on owner-occupied homes over the next ten years" },
-};
-const todayLede = $("lede").textContent;
-function showView(v) {
-  $("view-today").hidden = v !== "today";
-  $("view-proj").hidden = v !== "proj";
-  document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
-  $("eyebrow").textContent = VIEW_TEXT[v].eyebrow;
-  $("h1").textContent = VIEW_TEXT[v].h1;
-  $("lede").textContent = v === "today" ? todayLede : `Projected under current law with the state's own forecasts of home values, incomes and households, and with local tax rates set the way Florida governments have set them in the past. Pick a scenario to see a different path.`;
-  if (v === "proj") { let s = "central"; try { s = localStorage.getItem("ptm-scen") || s; } catch (e) {} renderProjection(P.scenarios[s] ? s : "central"); }
+// ---------------- Baseline outlook (collapsible) ----------------
+function openOutlook() {
+  let sc = "central"; try { sc = localStorage.getItem("ptm-scen") || sc; } catch (e) {}
+  renderProjection(P.scenarios[sc] ? sc : "central");
 }
-$("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
-showView(location.hash === "#projections" ? "proj" : "today");
+$("view-proj").addEventListener("toggle", () => { if ($("view-proj").open) openOutlook(); });
+if (location.hash === "#baseline" || location.hash === "#projections") { $("view-proj").open = true; }
+document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === "today"));
 </script>
