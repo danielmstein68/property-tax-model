@@ -71,3 +71,12 @@ def test_shock_overrides_reproducible():
     assert a == b
     assert set(a) == {"home_value", "nonresidential_value", "cpi"}
     assert 2026 in a["cpi"]["set"] and 2030 in a["home_value"]["set"]
+
+
+def test_age_band_factors():
+    from ptm.project import _demography, age_band_factors
+    pop, life = _demography()
+    f = age_band_factors(pop, range(2026, 2041))
+    assert f.loc[2026].round(12).eq(1).all()                # base year = 1
+    assert f.loc[2036, "85_plus"] > f.loc[2036, "45_64"]     # Florida ages
+    assert 0 < life[50] < life[85] < 1

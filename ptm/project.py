@@ -11,16 +11,20 @@ Each year (owners only; renters come with pass-through):
   2. law: future-year values from the spec's `projection` rules - Save Our Homes cap = lesser of
      3% and the prior year's CPI change; the second homestead exemption and income limits indexed
      to CPI (project_law)
-  3. sales: each home changes hands with a probability that falls with its Save Our Homes savings
-     (lock-in), set so the 2026 average matches the 2025 sale rates in the rolls; a homestead sale
-     resets the assessment to just value unless the owner ports their savings (turnover settings in
-     inputs/fl_projection_assumptions.yaml). The household stays in the data (its home resets).
+  3. sales and deaths: each home changes hands with a probability that falls with its Save Our
+     Homes savings (lock-in); and when the owner dies with no spouse in the household, the home
+     passes on (Florida life table by householder age). Either resets the assessment to just value
+     (a homestead seller may port savings). Sale rates are set so total resets match the calibrated
+     rates (turnover settings, inputs/fl_projection_assumptions.yaml). Records stand for household
+     types and keep their age; the home resets, the type stays.
+  3b. ages: owner weights shift each year with Florida's projected population by age (Demographic
+     Estimating Conference), total owners held fixed (growth in households = new homes, next piece).
   4. engine: assessment caps, exemptions and taxable value (ptm.engine.step)
   5. rates: each county, city and school district sets its millage from Florida's rolled-back rate
      rules, given how its whole taxable base grew (ptm.rate_setting); then tax
 
-Not yet (next pieces): deaths of older owners, reweighting to household projections by age, new
-construction, homestead status changes, re-testing income-limited exemptions.
+Not yet (next pieces): new construction and growth in the number of owners, homestead status
+changes, re-testing income-limited exemptions.
 """
 
 import copy
@@ -85,6 +89,28 @@ def _school_tables() -> pd.DataFrame:
     return sr.dropna(subset=["county_fips"]).set_index("county_fips")
 
 
+AGE_BANDS = [(18, 24, "18_24"), (25, 44, "25_44"), (45, 64, "45_64"), (65, 69, "65_69"), (70, 74, "70_74"),
+             (75, 79, "75_79"), (80, 84, "80_84"), (85, 200, "85_plus")]
+
+
+def _demography() -> tuple[pd.DataFrame, pd.Series]:
+    from ptm.economy import ROOT as EROOT
+    pop = pd.read_csv(EROOT / "inputs" / "fl_population_by_age.csv")
+    life = pd.read_csv(EROOT / "inputs" / "fl_life_table_2021.csv").set_index("age")["qx"]
+    return pop, life
+
+
+def age_band_factors(pop: pd.DataFrame, years: range) -> pd.DataFrame:
+    """Population by age band relative to the base year, interpolated geometrically between the
+    projection years (2020, 2030, 2040)."""
+    out = {}
+    for band, g in pop.groupby("age_band"):
+        s = g.set_index("year")["population"].sort_index()
+        logv = np.interp(list(years), s.index, np.log(s.to_numpy()))
+        out[band] = np.exp(logv - np.interp(BASE_YEAR, s.index, np.log(s.to_numpy())))
+    return pd.DataFrame(out, index=list(years))
+
+
 DYNAMIC = ["jv", "valp_market_cal", "av_school_prior", "av_nonschool_prior", "taxable_school_prior",
            "taxable_county_prior"]
 
@@ -96,7 +122,7 @@ class Projection:
 
     def __init__(self, baseline: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
                  seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None,
-                 end_year: int = 2036):
+                 end_year: int = 2036, demography: dict | None = None):
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
@@ -112,7 +138,14 @@ class Projection:
         self.a = {k: v.copy() for k, v in prep["dynamic"].items()}
         self.income = {k: v.copy() for k, v in prep["income"].items()}
         self.hs = prep["hs"]
-        self.w = prep["w"]
+        self.w0 = prep["w"]
+        self.w = prep["w"].copy()
+        self.demo = {**self.econ.spec.get("demography", {}), **(demography or {})}
+        self.p_death = prep["p_death_reset"] if self.demo.get("deaths", True) else np.zeros(len(self.w0))
+        self.age_band = prep["age_band"]
+        self.band_factors = age_band_factors(_cached("demography", _demography)[0], range(BASE_YEAR, 2051)) \
+            if self.demo.get("reweight_by_age", True) else None
+        self.weights = {BASE_YEAR: self.w.copy()}
         self.ci = prep["ci"]
         self.ci_ok = prep["ci_ok"]
         self.yi = prep["yi"]
@@ -147,6 +180,13 @@ class Projection:
         ci = u["county_idx"].to_numpy()
         counts = np.bincount(ci[hs & (ci >= 0)], minlength=len(cpos))
         f = lambda c: u[c].astype(float).to_numpy()  # noqa: E731
+        pop, life = _cached("demography", _demography)
+        age = np.clip(u["HHLDRAGEP"].fillna(45).astype(int).to_numpy(), 18, life.index.max())
+        q = life.reindex(age).fillna(1.0).to_numpy()
+        spouse = (u["HHT"] == 1).to_numpy() if "HHT" in u else np.zeros(len(u), bool)
+        band = np.full(len(u), "", dtype=object)
+        for lo, hi, name in AGE_BANDS:
+            band[(age >= lo) & (age <= hi)] = name
         # static frame for the engine: exemption flags and values, shares; plus reporting columns
         static_cols = [c for c in u.columns if c not in set(DYNAMIC)]
         return {
@@ -158,6 +198,9 @@ class Projection:
             "income": {c: f(c) for c in self.econ.spec["income_growth"] if c in u},
             "hs": hs, "w": f("WGTP"), "ci": ci, "ci_ok": ci >= 0, "yi": u["city_idx"].to_numpy(),
             "min_count_ok": counts >= 30,
+            # death of the owner with no spouse present passes the home on (transfer to a surviving
+            # spouse isn't a change of ownership, s. 193.155(3)(a)); married couples: both die
+            "p_death_reset": np.where(spouse, q * q, q), "age_band": band,
             **{f"mill_{c}": np.nan_to_num(f(f"millage_{c}")) for c in LEVIES},
             "tax_2026": np.nan_to_num(f(f"tax_model_{BASE_YEAR}")),
             **{f"tax_{c}_2026": np.nan_to_num(f(f"tax_{c}_{BASE_YEAR}")) for c in LEVIES},
@@ -171,11 +214,19 @@ class Projection:
         return np.maximum(self.a["jv"] - prior, 0)
 
     def _calibrate_sale_rates(self) -> dict:
+        """Base sale rates such that sales plus death transfers reset the calibrated share of homes
+        in 2026: base x mean(lock-in x (1 - death)) + mean(death) = target."""
         li = self.turnover["lock_in"]
         f = lock_in_factor(self._savings(), li["per_100k_savings"], li["floor"])
-        hs, w = self.hs, self.w
-        return {True: self.turnover["homestead_sale_rate"] / np.average(f[hs], weights=w[hs]),
-                False: self.turnover["nonhomestead_sale_rate"] / np.average(f[~hs], weights=w[~hs])}
+        d, hs, w = self.p_death, self.hs, self.w
+        out = {}
+        for flag, key in [(True, "homestead_sale_rate"), (False, "nonhomestead_sale_rate")]:
+            m = hs if flag else ~hs
+            target = self.turnover[key]
+            out[flag] = max(target - np.average(d[m], weights=w[m]), 0) / np.average((f * (1 - d))[m], weights=w[m])
+        self.death_share_2026 = {flag: np.average(d[hs if flag else ~hs], weights=w[hs if flag else ~hs])
+                                 for flag in (True, False)}
+        return out
 
     def _draw_sales(self) -> tuple[np.ndarray, np.ndarray]:
         li, port = self.turnover["lock_in"], self.turnover["portability"]
@@ -185,7 +236,9 @@ class Projection:
         p = np.clip(base * lock_in_factor(savings, li["per_100k_savings"], li["floor"]), 0, 1)
         sold = self.rng.random(n) < p
         ports = sold & self.hs & (self.rng.random(n) < port["share_of_homestead_sales"])
-        return sold, np.where(ports, np.minimum(savings, port["max_transfer"]), 0.0)
+        died = self.rng.random(n) < self.p_death
+        self._died = died & ~sold
+        return sold | died, np.where(ports, np.minimum(savings, port["max_transfer"]), 0.0)
 
     # --- one year --------------------------------------------------------------------------------
     def step_year(self) -> None:
@@ -200,6 +253,12 @@ class Projection:
         for col, var in e.spec["income_growth"].items():
             if col in self.income:
                 self.income[col] *= 1 + e.rate(var, y)
+        if self.band_factors is not None:
+            r = self.band_factors.loc[y]
+            fac = np.array([r.get(b, 1.0) if b else 1.0 for b in self.age_band], dtype=float)
+            w = self.w0 * fac
+            self.w = w * self.w0.sum() / w.sum()          # owners held fixed; composition shifts
+            self.weights[y] = self.w.copy()
         sold, transfer = self._draw_sales()
         df = self.units.assign(jv=a["jv"], av_school_prior=a["av_school_prior"],
                                av_nonschool_prior=a["av_nonschool_prior"], homestead_prior=self.hs,
@@ -261,7 +320,9 @@ class Projection:
                "just_value": (jv * w).sum(),
                "homestead_assessed_to_just": (av * w)[hs].sum() / (jv * w)[hs].sum(),
                "homestead_soh_savings_avg": (np.maximum(jv - av, 0) * w)[hs].sum() / whs,
-               "share_sold": (sold * w).sum() / wsum, "homestead_share_sold": (sold * w)[hs].sum() / whs}
+               "share_sold": (sold * w).sum() / wsum, "homestead_share_sold": (sold * w)[hs].sum() / whs,
+               "homestead_share_death_transfer": (getattr(self, "_died", np.zeros(len(w), bool)) * w)[hs].sum() / whs,
+               "share_owners_75_plus": w[np.isin(self.age_band, ["75_79", "80_84", "85_plus"])].sum() / wsum}
         for c, t in classes.items():
             row[f"tax_{c}"] = (np.nan_to_num(t) * w).sum()
         for c in ["school", "county", "municipal"]:
@@ -281,7 +342,7 @@ class Projection:
         """Only what the loop uses: identifiers, values, incomes, exemption inputs, rates."""
         econ, law = econ or Economy("central"), law or load_law()
         cols = {"WGTP", "SERIALNO", "PUMA", "tenure", "mh_rented_lot", "county_fips", "county_fips_tax", "municipality", "homestead",
-                "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type",
+                "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type", "HHT",
                 f"av_sd_{BASE_YEAR}", f"av_nsd_{BASE_YEAR}", f"tax_model_{BASE_YEAR}",
                 "homestead_portion_share", "homestead_share"}
         cols |= set(econ.spec["income_growth"])
@@ -327,6 +388,7 @@ class Projection:
         out = {}
         for y, tx in self.taxable.items():
             pth = self.rates.paths[y]
+            w = self.weights.get(y, u["WGTP"].to_numpy())
             t_cty = w * tx["county"] * u["millage_county_base"].fillna(0).to_numpy()
             t_mun = w * tx["municipal"] * u["millage_municipal_base"].fillna(0).to_numpy()
             t_sch = w * tx["school"]

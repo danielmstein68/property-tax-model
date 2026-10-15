@@ -131,3 +131,46 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# --- demographic inputs (run as part of main) ------------------------------------------------------
+AGE_TXT = ROOT / "data" / "raw" / "fl_demographic" / "census_day" / "Pop_Census_Day-2023.txt"
+LIFE = ROOT / "data" / "raw" / "life_tables" / "FL1_2021.xlsx"
+AGE_ROWS = {"18-24": "18_24", "25-44": "25_44", "45-64": "45_64", "65-69": "65_69", "70-74": "70_74",
+            "75-79": "75_79", "80-84": "80_84", "85 and up": "85_plus"}
+
+
+def population_by_age() -> pd.DataFrame:
+    """Florida population by age group: 2020 census, 2030 and 2040 projected (Florida Demographic
+    Estimating Conference, Nov 2023, with BEBR Bulletin 199; EDR Pop_Census_Day-2023.pdf)."""
+    t = AGE_TXT.read_text(encoding="utf-8")
+    rows = []
+    for label, band in AGE_ROWS.items():
+        m = re.search(rf"^{re.escape(label)} ((?:[\d,]+ ?){{10}})$", t, re.M)
+        vals = [_num(x) for x in m.group(1).split()]
+        for y, v in zip([1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050], vals):
+            rows.append({"age_band": band, "year": y, "population": v})
+    return pd.DataFrame(rows)
+
+
+def life_table() -> pd.DataFrame:
+    """Probability of dying within the year by single year of age (CDC NCHS, U.S. State Life
+    Tables 2021, Florida, total population; NVSR 73-7)."""
+    d = pd.read_excel(LIFE, header=None)
+    d = d[d[0].astype(str).str.match(r"^\d+")]
+    age = d[0].astype(str).str.extract(r"^(\d+)")[0].astype(int)
+    return pd.DataFrame({"age": age.to_numpy(), "qx": d[1].astype(float).to_numpy()})
+
+
+def demographic_main() -> None:
+    p = population_by_age()
+    p.to_csv(ROOT / "inputs" / "fl_population_by_age.csv", index=False)
+    lt = life_table()
+    lt.to_csv(ROOT / "inputs" / "fl_life_table_2021.csv", index=False)
+    print("wrote fl_population_by_age.csv and fl_life_table_2021.csv")
+    print(p[p.year.isin([2020, 2030, 2040])].pivot(index="age_band", columns="year", values="population"))
+    print(lt[lt.age.isin([50, 65, 75, 85, 95])])
+
+
+if __name__ == "__main__":
+    demographic_main()
