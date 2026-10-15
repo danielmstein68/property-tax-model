@@ -99,7 +99,8 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 - [ ] **Ohio** — HB 920 reduction factors; Ramaswamy rollback-then-cap (rollback year as a setting)
 - [ ] **Texas**
 
-## Deferred: pass-through to renters
+## Dropped: pass-through to renters
+**Decided 2026-10-15 (Daniel): not doing rental pass-through.** Results stay owners only (the page says so); the settings switch keeps raising an error. Earlier notes kept for reference:
 Decided 2026-10-14: model the status quo for **owners only** first; renters stay in the data labelled "not yet modelled"; income deciles defined over **all households**. The switch `Settings(include_rental_pass_through=True)` (`ptm/settings.py`) exists but raises an error until pass-through is built.
 
 For now the model looks at nominal property tax only. Later we need to decide how landlords' tax reaches renters. Options discussed:
@@ -143,3 +144,7 @@ Modelled on the Maine property tax model's "Municipality Engine" (it re-solves e
 - [ ] **Per-government results**: rate change for each county, city and school district (also the geography view).
 - [ ] **Page**: third column "Revenue-neutral" in Policy comparisons; table/map of rate changes by government; add the mode to `scripts/policy_grid.py`.
 - Estimate: 3-4 hours. Check Maine's model documentation for definitions to match (MVR fields, reimbursement rules).
+
+## Amendment 3 page — requested 2026-10-15
+- [ ] A separate page (or view) with every change Amendment 3 makes, modelled against current law: read the amendment and implementing bill text, encode each provision as policy changes/levers, show the three outputs (new situation, changes, winners/losers) per provision and combined. Revenue-neutral mode (above) is relevant: local governments would need to replace lost revenue.
+
