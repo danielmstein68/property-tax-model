@@ -499,6 +499,52 @@ exemptions:
       Roll check: the roll records the county dollar amount; applying the same percentage to
       the school base matches 91% of these parcels (subtracting the dollar figure: 26%).
 
+  # --- Policy levers: not current Florida law. Share = 0 under current law (no effect); policies
+  # --- raise it. Applied as a share of the taxable value left after other exemptions.
+  homestead_share_all_levies:
+    description: >
+      Policy lever: exempt this share of a homestead's remaining taxable value from all levies
+      (1 = no property tax on homesteads). Not in current law.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Florida law; 0 under current law."
+    source_url: https://www.flsenate.gov/Laws/Constitution#A7S6
+    confidence: high
+    kind: percent
+    order: 15
+    household_flag: homestead
+    share: {2024: 0.0}
+    applies_to: [school, county, municipal, special]
+
+  homestead_share_nonschool:
+    description: >
+      Policy lever: exempt this share of a homestead's remaining taxable value from non-school
+      levies (county, city, special districts); school taxes unchanged. Not in current law.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Florida law; 0 under current law."
+    source_url: https://www.flsenate.gov/Laws/Constitution#A7S6
+    confidence: high
+    kind: percent
+    order: 16
+    household_flag: homestead
+    share: {2024: 0.0}
+    applies_to: [county, municipal, special]
+
+  senior_nonschool:
+    description: >
+      Policy lever: homesteaders at or above min_age are exempt from this share of their remaining
+      taxable value for non-school levies. Not in current law (the existing senior exemptions are
+      local options with income limits).
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Florida law; 0 under current law."
+    source_url: https://www.flsenate.gov/Laws/Constitution#A7S6
+    confidence: high
+    kind: percent
+    order: 17
+    household_flag: homestead
+    min_age: 65
+    share: {2024: 0.0}
+    applies_to: [county, municipal, special]
+
 taxable:
 
   exemption_order:

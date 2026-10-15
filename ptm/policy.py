@@ -12,7 +12,8 @@ A policy file (YAML):
       - {rule: homestead_second, key: amount, value: 52822, from: 2027}
       - {rule: soh_cap, key: max_rate, value: 0.02, from: 2027}
 
-`from` is the first tax year the new value applies. Year-keyed values keep earlier years and
+`from` is the first tax year the new value applies; or give a schedule, `values: {2027: 40000,
+2029: 60000}` (each value holds until the next listed year). Year-keyed values keep earlier years and
 replace everything from `from` on; if the rule is indexed (a `projection` entry, e.g. CPI), later
 years are indexed from the new value. Plain numbers become year-keyed (old value before `from`).
 
@@ -44,6 +45,23 @@ LIVE = {
     ("senior_lowinc_municipal", "max_amount"): "Most a city may grant as the low-income senior exemption (binds only if set below a city's amount)",
     ("widow_blind_disabled_5000", "amount"): "Widow(er), blind and disabled exemption",
     ("disabled_exservice_5000", "amount"): "Disabled ex-servicemember exemption",
+    ("homestead_share_all_levies", "share"): "Share of homestead taxable value exempt from all levies (policy lever)",
+    ("homestead_share_nonschool", "share"): "Share of homestead taxable value exempt from non-school levies (policy lever)",
+    ("senior_nonschool", "share"): "Share of senior homesteaders' taxable value exempt from non-school levies (policy lever)",
+    ("senior_nonschool", "min_age"): "Age from which the senior non-school exemption applies (policy lever)",
+    ("senior_lowinc_county", "income_limit"): "Income limit, county low-income senior exemption (income excl. Social Security)",
+    ("senior_lowinc_municipal", "income_limit"): "Income limit, city low-income senior exemption",
+    ("senior_lowinc_county", "min_age"): "Minimum age, county low-income senior exemption",
+    ("senior_lowinc_municipal", "min_age"): "Minimum age, city low-income senior exemption",
+    ("senior_longterm_county", "income_limit"): "Income limit, county long-term senior exemption",
+    ("senior_longterm_municipal", "income_limit"): "Income limit, city long-term senior exemption",
+    ("senior_longterm_county", "min_age"): "Minimum age, county long-term senior exemption",
+    ("senior_longterm_municipal", "min_age"): "Minimum age, city long-term senior exemption",
+    ("senior_longterm_county", "residence_years"): "Years in the home needed, county long-term senior exemption",
+    ("senior_longterm_municipal", "residence_years"): "Years in the home needed, city long-term senior exemption",
+    ("senior_longterm_county", "just_value_limit"): "Home value limit when first qualifying, county long-term senior exemption",
+    ("senior_longterm_municipal", "just_value_limit"): "Home value limit when first qualifying, city long-term senior exemption",
+    ("disabled_total", "income_limit"): "Household income limit, total exemption for disabled homeowners (those with no income test keep it)",
     ("maximum_millage_vote", "two_thirds_vote_max_of_rolled_back"):
         "Highest rate allowed with a two-thirds vote, as a multiple of the rolled-back rate",
 }
@@ -98,18 +116,20 @@ def apply_policy(law: Law, policy: dict) -> Law:
             problems.append(f"{rid}.{key} isn't live yet: it decided eligibility when the 2026 baseline was built "
                             "or isn't read by the yearly projection; changing it would do nothing")
             continue
-        if "value" not in ch or "from" not in ch:
-            problems.append(f"{rid}.{key}: a change needs 'value' and 'from' (first tax year)")
+        if "values" in ch:                       # a schedule: {year: value, ...}
+            sched = {int(y): v for y, v in ch["values"].items()}
+        elif "value" in ch and "from" in ch:
+            sched = {int(ch["from"]): ch["value"]}
+        else:
+            problems.append(f"{rid}.{key}: a change needs 'value' and 'from' (first tax year), or 'values' by year")
             continue
-        value, start = ch["value"], int(ch["from"])
+        start = min(sched)
         old = spec[key]
         if isinstance(old, dict):
             vals = {int(y): v for y, v in old.items() if int(y) < start}
-            if not vals:   # keep a value for years before `from` if the rule starts later
-                vals = {}
         else:
             vals = {min(start - 1, 2024): old}
-        vals[start] = value
+        vals.update(sched)
         spec[key] = vals
     if problems:
         raise LawError(f"policy '{policy.get('name')}' can't be applied:\n  - " + "\n  - ".join(problems))

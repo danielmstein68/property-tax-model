@@ -14,6 +14,9 @@ respond as they have historically, within the legal limits). A policy may set `r
 (a rate_setting dict, e.g. {county: hold, municipal: hold, school_rle: hold}) applied to the
 policy run only - "what if governments don't respond".
 
+response="none": local rates follow exactly the current-law path (the policy's direct effect
+only); "history" (default): governments respond as in the rate rule.
+
 "Pays about the same" = within `threshold` dollars a year (default $10).
 """
 
@@ -31,12 +34,14 @@ ROOT = Path(__file__).resolve().parents[1]
 GROUPS = ["income_decile", "age_group", "homestead", "years_in_home", "home_type", "region"]
 
 
-def _run(baseline, scenario, seed, law, end_year, rate_setting=None) -> Projection:
-    return Projection(baseline, scenario, seed=seed, law=law, rate_setting=rate_setting).run(end_year)
+def _run(baseline, scenario, seed, law, end_year, rate_setting=None, rate_replay=None) -> Projection:
+    return Projection(baseline, scenario, seed=seed, law=law, rate_setting=rate_setting,
+                      rate_replay=rate_replay).run(end_year)
 
 
 def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int = 2026,
-            baseline: pd.DataFrame | None = None, threshold: float = 10.0, years: list[int] | None = None) -> dict:
+            baseline: pd.DataFrame | None = None, threshold: float = 10.0, years: list[int] | None = None,
+            response: str = "history") -> dict:
     from ptm.montecarlo import _baseline, slim_baseline
     if baseline is None:
         slim_baseline()
@@ -45,7 +50,10 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
     law0 = load_law()
     law1 = apply_policy(law0, pol)
     base = _run(baseline, scenario, seed, law0, end_year)
-    new = _run(baseline, scenario, seed, law1, end_year, pol.get("rate_response"))
+    if response == "none":   # rates follow current law's path exactly
+        new = _run(baseline, scenario, seed, law1, end_year, rate_replay=base.rates.paths)
+    else:
+        new = _run(baseline, scenario, seed, law1, end_year, pol.get("rate_response"))
 
     keep = ["owners", "tax_total", "avg_tax", "tax_school", "tax_county", "tax_municipal",
             "millage_school_avg", "millage_county_avg", "millage_municipal_avg", "homestead_assessed_to_just"]
@@ -85,5 +93,5 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
                                "share_about_same": 1 - (ww[win[m]].sum() + ww[lose[m]].sum()) / W,
                                "avg_gain_if_less": -(d[m][win[m]] * ww[win[m]]).sum() / max(ww[win[m]].sum(), 1e-9),
                                "avg_loss_if_more": (d[m][lose[m]] * ww[lose[m]]).sum() / max(ww[lose[m]].sum(), 1e-9)})
-    return {"policy": {k: v for k, v in pol.items()}, "scenario": scenario, "years": years, "threshold": threshold,
+    return {"policy": {k: v for k, v in pol.items()}, "scenario": scenario, "response": response, "years": years, "threshold": threshold,
             "levels": levels, "changes": changes, "by_group": pd.DataFrame(rows_g), "winners": pd.DataFrame(rows_w)}

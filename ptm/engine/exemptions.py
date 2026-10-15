@@ -20,7 +20,8 @@ Order (s. 196.031(8), s. 196.082(6), F.S. — rule `exemption_order` in the spec
   3. every other dollar exemption (fixed, local_option, reduction) — subtractive with a $0
      floor, so their order among themselves doesn't change the result;
   4. percentage exemptions in spec order (deployed military: share of the remaining taxable
-     value), with the veterans' discount last because it has the highest `order`;
+     value; policy levers with a fixed `share`, optionally from `min_age`), veterans' discount
+     among them (shares multiply, so their order doesn't change the result);
   5. floor at 0.
 """
 
@@ -114,8 +115,16 @@ def apply_exemptions(units: pd.DataFrame, law: Law, year: int, detail: bool = Fa
 
     # 4. Percentage exemptions, in spec order (veterans' discount last)
     for r in [r for r in rules if r.spec["kind"] == "percent"]:
+        if "share" in r.spec:          # a single share for everyone eligible (policy levers)
+            share = float(r.get("share", year, 0.0))
+            if share <= 0:
+                continue
+            share = np.full(n, min(share, 1.0))
+        else:
+            share = np.clip(_flag(units, r.spec["value_column"], missing), 0, 1)
         elig = _flag(units, r.spec["household_flag"], missing) > 0
-        share = np.clip(_flag(units, r.spec["value_column"], missing), 0, 1)
+        if "min_age" in r.spec:
+            elig = elig & (_flag(units, "HHLDRAGEP", missing) >= float(r.get("min_age", year)))
         for c in r.spec["applies_to"]:
             take = np.maximum(remaining[c], 0) * share * elig
             remaining[c] = remaining[c] - take

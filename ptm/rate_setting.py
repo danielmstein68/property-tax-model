@@ -124,12 +124,18 @@ class RateHistory:
             self.by[kind] = (g["x"].to_numpy(), g["dlm"].to_numpy())
 
     def draw(self, kind: str, x: np.ndarray, rng: np.random.Generator, n_draws: int) -> np.ndarray:
-        """(n_draws, len(x)) log rate changes: for each government, a random one of the `neighbors`
-        historical government-years of the same kind with the closest base growth."""
+        """(n_draws, len(x)) log rate changes: for each government, a random percentile of the
+        `neighbors` historical government-years of the same kind with the closest base growth."""
         xs, ys = self.by[kind]
         k = min(self.neighbors, len(xs))
         lo = np.clip(np.searchsorted(xs, x) - k // 2, 0, len(xs) - k)
-        return ys[lo[None, :] + rng.integers(0, k, size=(n_draws, len(x)))]
+        # each draw is a fixed percentile of the neighbours' rate changes (sorted), so a small
+        # change in growth moves a draw only slightly - comparisons of two runs aren't swamped by
+        # resampling noise (common random numbers)
+        window = np.sort(ys[lo[:, None] + np.arange(k)[None, :]], axis=1)          # (n, k)
+        q = rng.random((n_draws, len(x)))
+        pos = np.minimum((q * k).astype(int), k - 1)
+        return np.take_along_axis(window[None, :, :].repeat(n_draws, axis=0), pos[:, :, None], axis=2)[:, :, 0]
 
 
 HISTORY_KIND = {"county": "county", "municipal": "municipal", "school_rle": "school"}

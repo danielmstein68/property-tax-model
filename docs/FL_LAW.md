@@ -407,6 +407,55 @@ Veterans 65+ with a combat-related, permanent service-connected disability get a
 
 _Note:_ Roll check: the roll records the county dollar amount; applying the same percentage to the school base matches 91% of these parcels (subtracting the dollar figure: 26%).
 
+### 15. homestead_share_all_levies
+
+Policy lever: exempt this share of a homestead's remaining taxable value from all levies (1 = no property tax on homesteads). Not in current law.
+
+| Parameter | Value |
+|---|---|
+| kind | percent |
+| order | 15 |
+| household_flag | homestead |
+| share | 2024: 0.0% |
+| applies_to | school, county, municipal, special |
+
+**Source:** [Policy lever (not current law)](https://www.flsenate.gov/Laws/Constitution#A7S6) · **Confidence:** ✅ high
+
+> Not in current Florida law; 0 under current law.
+
+### 16. homestead_share_nonschool
+
+Policy lever: exempt this share of a homestead's remaining taxable value from non-school levies (county, city, special districts); school taxes unchanged. Not in current law.
+
+| Parameter | Value |
+|---|---|
+| kind | percent |
+| order | 16 |
+| household_flag | homestead |
+| share | 2024: 0.0% |
+| applies_to | county, municipal, special |
+
+**Source:** [Policy lever (not current law)](https://www.flsenate.gov/Laws/Constitution#A7S6) · **Confidence:** ✅ high
+
+> Not in current Florida law; 0 under current law.
+
+### 17. senior_nonschool
+
+Policy lever: homesteaders at or above min_age are exempt from this share of their remaining taxable value for non-school levies. Not in current law (the existing senior exemptions are local options with income limits).
+
+| Parameter | Value |
+|---|---|
+| kind | percent |
+| order | 17 |
+| household_flag | homestead |
+| min_age | 65 |
+| share | 2024: 0.0% |
+| applies_to | county, municipal, special |
+
+**Source:** [Policy lever (not current law)](https://www.flsenate.gov/Laws/Constitution#A7S6) · **Confidence:** ✅ high
+
+> Not in current Florida law; 0 under current law.
+
 ## Taxable value and tax
 
 ### exemption_order

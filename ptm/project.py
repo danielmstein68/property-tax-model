@@ -30,7 +30,13 @@ Each year (owners only; renters come with pass-through):
      weight until their year. New construction stays out of rolled-back rates in its first year
      and then joins each jurisdiction's base (REC new-construction rates by property type).
 
-Not yet: homestead status changes, re-testing income-limited exemptions.
+  4b. eligibility: income-, age- and residence-tested exemptions (senior low-income and long-term,
+     county and city; total disability) are re-tested every year against the law's limits for that
+     year (indexed, or changed by a policy) and households' grown incomes. Claimants keep the
+     exemption while eligible; newly eligible households claim at 2026 take-up rates, where their
+     county or city offers it.
+
+Not yet: homestead status changes.
 """
 
 import copy
@@ -117,6 +123,12 @@ def age_band_factors(pop: pd.DataFrame, years: range) -> pd.DataFrame:
     return pd.DataFrame(out, index=list(years))
 
 
+TESTED = {   # exemption rule -> household flag; eligibility re-tested every year
+    "senior_lowinc_county": "ex_senior_lowinc", "senior_lowinc_municipal": "ex_senior_lowinc_city",
+    "senior_longterm_county": "ex_senior_longterm", "senior_longterm_municipal": "ex_senior_longterm_city",
+    "disabled_total": "ex_disabled_total",
+}
+SURVEY_YEAR = 2024
 COHORT_YEARS = range(BASE_YEAR + 1, 2037)   # new-owner cohorts (one per year)
 COHORT_SIZE = 2500                           # records sampled per cohort
 
@@ -158,7 +170,8 @@ class Projection:
 
     def __init__(self, baseline: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
                  seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None,
-                 end_year: int = 2036, demography: dict | None = None):
+                 end_year: int = 2036, demography: dict | None = None, rate_replay: dict | None = None):
+        self.rate_replay = rate_replay    # {year: rate draws} from another run: rates don't respond
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
@@ -211,6 +224,20 @@ class Projection:
         self.year = BASE_YEAR
         self.history[f"income_{BASE_YEAR}"] = self._income()
         self._base_rates = self._calibrate_sale_rates()
+        self.age, self.tenure, self.jv_first = prep["age"], prep["tenure"], prep["jv_first"]
+        self.flags0, self.takeup_u = prep["flags0"], prep["takeup_u"]
+        self.flags = {k: v.copy() for k, v in self.flags0.items()}
+        base_law = project_law(_cached("law", load_law), self.econ, BASE_YEAR + 1)
+        self.takeup, self.offered, self.elig0 = {}, {}, {}
+        for rid, fl in TESTED.items():
+            elig = self._eligible(rid, BASE_YEAR, base_law)
+            self.elig0[rid] = elig
+            claim = self.flags0[fl]
+            w = self.w0
+            self.takeup[rid] = (w[claim & elig].sum() / max(w[elig].sum(), 1)) if elig.any() else 0.0
+            # offered where any 2026 claimant lives in the same county (county rules) or city (city rules)
+            j = self.yi if rid.endswith("municipal") else self.ci
+            self.offered[rid] = np.isin(j, np.unique(j[claim & (j >= 0)]))
         self.rows = [self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES})]
 
@@ -285,8 +312,27 @@ class Projection:
         # static frame for the engine: exemption flags and values, shares; plus reporting columns
         static_cols = [c for c in u.columns if c not in set(DYNAMIC)]
         tax26 = np.where(cohort_year == 0, np.nan_to_num(f(f"tax_model_{BASE_YEAR}")), 0.0)
+        from ptm.exemptions import first_qualifying_jv
+        jv_first = first_qualifying_jv(u, SURVEY_YEAR, BASE_YEAR).to_numpy(dtype=float) \
+            if "purchase_year" in u else np.full(len(u), np.inf)
+        tenure = (SURVEY_YEAR - u["purchase_year"].astype(float)).to_numpy() if "purchase_year" in u else np.zeros(len(u))
+        flags0 = {fl: u[fl].fillna(False).astype(bool).to_numpy() if fl in u else np.zeros(len(u), bool)
+                  for fl in TESTED.values()}
+        # local-option amounts for households that may start claiming: the typical amount granted
+        # by their county (city) in 2026, else the statewide median
+        for amt, fl, key in [("ex_senior_amount", "ex_senior_lowinc", "county_fips_tax"),
+                             ("ex_senior_city_amount", "ex_senior_lowinc_city", "city_idx")]:
+            if amt in u:
+                a_ = u[amt].astype(float)
+                claim = flags0[fl] & (a_ > 0).to_numpy()
+                med = a_[claim].groupby(u[key][claim]).median()
+                fill = u[key].map(med).fillna(a_[claim].median() if claim.any() else 0.0)
+                u[amt] = np.where(a_ > 0, a_, fill)
         return {
-            "static": u[static_cols], "cohort_year": cohort_year, "cohort_share": np.concatenate(
+            "static": u[static_cols], "cohort_year": cohort_year,
+            "age": u["HHLDRAGEP"].fillna(45).to_numpy(dtype=float), "tenure": np.nan_to_num(tenure),
+            "jv_first": np.nan_to_num(jv_first, nan=np.inf), "flags0": flags0,
+            "takeup_u": np.random.default_rng(7).random(len(u)), "cohort_share": np.concatenate(
                 [np.zeros(n0)] + [pw[np.searchsorted(donors, k)] for k in picks]),
             "dynamic": {"jv": f("valp_jv_cal"), "valp_market_cal": f("valp_market_cal"),
                         "av_school_prior": f(f"av_sd_{BASE_YEAR}"), "av_nonschool_prior": f(f"av_nsd_{BASE_YEAR}"),
@@ -303,6 +349,41 @@ class Projection:
             **{f"tax_{c}_2026": np.where(cohort_year == 0, np.nan_to_num(f(f"tax_{c}_{BASE_YEAR}")), 0.0)
                for c in LEVIES},
         }
+
+    def _eligible(self, rid: str, y: int, law) -> np.ndarray:
+        """Eligibility for a tested exemption in year y under `law` (homestead households)."""
+        r = law.rule(rid)
+        gross = self._income()
+        agi = gross - np.nan_to_num(self.income.get("ssp_aged", 0)) - np.nan_to_num(self.income.get("ssip_aged", 0))
+        ok = self.hs.copy()
+        if rid == "disabled_total":
+            return ok & (gross <= float(r.get("income_limit", y)))
+        ok &= self.age >= float(r.get("min_age", y, 65))
+        ok &= agi <= float(r.get("income_limit", y))
+        if "residence_years" in r.spec:
+            ok &= self.tenure >= float(r.get("residence_years", y))
+        if "just_value_limit" in r.spec:
+            ok &= self.jv_first < float(r.get("just_value_limit", y))
+        return ok
+
+    def _update_flags(self, y: int) -> dict:
+        """This year's tested exemption flags: keep while eligible; new claimants at 2026 take-up.
+        Total disability claimants above the income limit in 2026 are taken to have no income test
+        (e.g. quadriplegic) and keep it."""
+        out = {}
+        for rid, fl in TESTED.items():
+            elig = self._eligible(rid, y, self.law)
+            f0 = self.flags0[fl]
+            # only households that weren't eligible in 2026 can start claiming (eligible 2026
+            # non-claimers stay non-claimers, so current law keeps 2026 claim rates)
+            new = elig & ~self.elig0[rid] & self.offered[rid] & (self.takeup_u < self.takeup[rid])
+            if rid == "disabled_total":
+                no_test = f0 & ~self.elig0[rid]      # claimants above the limit in 2026: no income test
+                out[fl] = (f0 & (elig | no_test)) | new
+                continue
+            out[fl] = (f0 & elig) | new
+        self.flags = out
+        return out
 
     def _income(self) -> np.ndarray:
         """Household income this year: sum of the grown income components (floored at 0)."""
@@ -373,7 +454,8 @@ class Projection:
         self._existing = self.orig | ((self.cohort_year > 0) & (self.cohort_year < y))
         self.history[f"income_{y}"] = self._income()
         sold, transfer = self._draw_sales()
-        df = self.units.assign(jv=a["jv"], av_school_prior=a["av_school_prior"],
+        flags = self._update_flags(y)
+        df = self.units.assign(**flags, jv=a["jv"], av_school_prior=a["av_school_prior"],
                                av_nonschool_prior=a["av_nonschool_prior"],
                                homestead_prior=self.hs & ~entering,
                                changed_ownership=sold, improvements=0.0, portability_transfer=transfer)
@@ -411,6 +493,15 @@ class Projection:
             with np.errstate(divide="ignore", invalid="ignore"):
                 g = np.where((before > 0) & self.min_count_ok, now / before, np.nan)
             growth[c] = g                                  # thin counties use the median
+        if self.rate_replay is not None:          # "no response": the other run's rate decisions
+            rp = self.rate_replay[y]
+            self.rates.county_draws, self.rates.city_draws, self.rates.rle_draws = rp["county"], rp["city"], rp["rle"]
+            self.rates.paths[y] = rp
+        else:
+            self._step_rates(growth, y)
+        self._apply_rates()
+
+    def _step_rates(self, growth: dict, y: int) -> None:
         nc = self.nc.loc[y] if self.demo.get("household_growth", True) else None
         try:   # the law's two-thirds-vote limit (multiple of the rolled-back rate) for this year
             cap = float(self.law.rule("maximum_millage_vote").get("two_thirds_vote_max_of_rolled_back", y))
@@ -419,6 +510,9 @@ class Projection:
         self.rates.step_arrays(growth["school"], growth["county"],
                                self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y,
                                nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]), cap_multiple=cap)
+
+    def _apply_rates(self) -> None:
+        ci = self.ci
         rc = self.rates.county_draws.mean(axis=0)
         rcity = self.rates.city_draws.mean(axis=0)
         rle = self.rates.rle_draws.mean(axis=0)
@@ -467,7 +561,7 @@ class Projection:
         """Only what the loop uses: identifiers, values, incomes, exemption inputs, rates."""
         econ, law = econ or Economy("central"), law or load_law()
         cols = {"WGTP", "SERIALNO", "PUMA", "tenure", "mh_rented_lot", "county_fips", "county_fips_tax", "municipality", "homestead",
-                "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type", "HHT",
+                "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type", "HHT", "purchase_year",
                 f"av_sd_{BASE_YEAR}", f"av_nsd_{BASE_YEAR}", f"tax_model_{BASE_YEAR}",
                 "homestead_portion_share", "homestead_share"}
         cols |= set(econ.spec["income_growth"])

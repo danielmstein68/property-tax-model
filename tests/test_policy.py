@@ -9,7 +9,8 @@ def test_parameters_listing():
     d = parameters()
     assert {"rule", "key", "value", "live"} <= set(d.columns)
     assert d[(d.rule == "homestead_second") & (d.key == "amount")].live.iloc[0]
-    assert not d[(d.rule == "senior_lowinc_county") & (d.key == "income_limit")].live.iloc[0]
+    assert d[(d.rule == "senior_lowinc_county") & (d.key == "income_limit")].live.iloc[0]
+    assert not d[(d.rule == "portability") & (d.key == "lookback_years")].live.iloc[0]
 
 
 def test_apply_policy_values_and_indexing():
@@ -30,7 +31,7 @@ def test_apply_policy_refuses_bad_changes():
     with pytest.raises(LawError, match="unknown rule"):
         apply_policy(load_law(), {"changes": [{"rule": "nope", "key": "amount", "value": 1, "from": 2027}]})
     with pytest.raises(LawError, match="isn't live"):
-        apply_policy(load_law(), {"changes": [{"rule": "senior_lowinc_county", "key": "income_limit", "value": 1, "from": 2027}]})
+        apply_policy(load_law(), {"changes": [{"rule": "portability", "key": "lookback_years", "value": 1, "from": 2027}]})
     with pytest.raises(LawError, match="no number"):
         apply_policy(load_law(), {"changes": [{"rule": "homestead_first", "key": "amout", "value": 1, "from": 2027}]})
 
