@@ -61,3 +61,9 @@ The model is **static**: it applies the rules to households as they are. It does
 
 - Future house-price growth, income growth, new construction and inflation are **assumptions**, not forecasts. Results years out depend on them; show sensitivity to them.
 - Tax rules are applied as written. Future legislation, court rulings, or changes in how assessors apply the law aren't anticipated.
+
+## Revenue-neutral mode ("Localities replace lost revenue")
+- A check, not a forecast: assumes no government cuts spending and every one can raise its rate as needed. Ignores the 10-mill caps and the vote requirements of s. 200.065, which large policies would exceed in some places.
+- Only homestead value changes feed each government's tax base; non-homestead and non-residential bases follow the economy paths, so the rate response to a non-homestead cap change is understated.
+- School districts keep the state-set required local effort rate fixed relative to current law and adjust their local part to keep the total school levy.
+

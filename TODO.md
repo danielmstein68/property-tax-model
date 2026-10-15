@@ -138,11 +138,14 @@ Florida's voter file (Division of Elections, on request; check use terms and exe
 
 ## Municipality engine (revenue-neutral rates) — requested 2026-10-15
 Modelled on the Maine property tax model's "Municipality Engine" (it re-solves each town's mill rate from the 2024 Municipal Valuation Return so municipal funding stays unchanged, accounting for state reimbursement of relief programs, e.g. Maine's homestead exemption and BETE reimbursements, and feeds the new rates back into the household engine). Florida version:
-- [ ] **Revenue-neutral response mode**, alongside (not replacing) "governments respond" (history) and "no response": each county, city and school district's rate under a policy = its current-law levy (net of state reimbursement) / its policy taxable base, every year. Bases already tracked by jurisdiction in `ptm/rate_setting.py` (2026 rolls + DOR Data Book).
+- [x] **Revenue-neutral response mode** (done 2026-10-15: `compare(..., response="revenue_neutral", reimbursement=r)`; page checkbox "Localities replace lost revenue"; 2027 checks: no non-school homestead tax -$12.1B vs -$13.5B with history responses, county mills +4.8; senior non-school: 65% of owners pay more). Only homestead value changes feed jurisdiction bases (non-homestead/non-residential follow economy paths), alongside (not replacing) "governments respond" (history) and "no response": each county, city and school district's rate under a policy = its current-law levy (net of state reimbursement) / its policy taxable base, every year. Bases already tracked by jurisdiction in `ptm/rate_setting.py` (2026 rolls + DOR Data Book).
 - [ ] **State reimbursement as a policy lever**: share of each government's lost revenue the state pays (all, or by government type); include Florida's existing reimbursement for fiscally constrained counties (s. 218.12/218.125, EDR distributions) where relevant.
 - [ ] **Legal limits**: flag or cap governments whose re-solved rate would exceed the 10-mill caps or need a supermajority/referendum under s. 200.065.
 - [ ] **Per-government results**: rate change for each county, city and school district (also the geography view).
-- [ ] **Page**: third column "Revenue-neutral" in Policy comparisons; table/map of rate changes by government; add the mode to `scripts/policy_grid.py`.
+- [x] **Page**: third series via checkbox in Policy comparisons; mode added to `scripts/policy_grid.py` ("neutral").
+- [ ] Table/map of rate changes by government.
+- [ ] Reimbursement slider on the page (engine supports it; grid uses 0).
+- [ ] Feed non-homestead cap changes into jurisdiction bases.
 - Estimate: 3-4 hours. Check Maine's model documentation for definitions to match (MVR fields, reimbursement rules).
 
 ## Amendment 3 page — requested 2026-10-15
