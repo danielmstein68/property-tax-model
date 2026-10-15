@@ -56,9 +56,10 @@ variables:
   cpi:
     description: National CPI-U inflation. Drives the Save Our Homes cap (lesser of 3% or CPI),
       exemption indexing, and Social Security, SSI, public assistance and pension growth.
-    values: {2027: 0.023, 2028: 0.023, 2029: 0.023, 2030: 0.023, 2031: 0.023, 2032: 0.023,
+    values: {2026: 0.029, 2027: 0.023, 2028: 0.023, 2029: 0.023, 2030: 0.023, 2031: 0.023, 2032: 0.023,
              2033: 0.023, 2034: 0.023, 2035: 0.023, 2036: 0.023}
-    source_note: CBO, Budget and Economic Outlook 2026 to 2036 (Feb 2026), CPI-U averages 2.3% a year.
+    source_note: CBO, Budget and Economic Outlook 2026 to 2036 (Feb 2026) - CPI-U 2.9% in 2026 (sets the
+      2027 Save Our Homes cap), 2.3% a year on average after.
       To do - average with the Social Security Trustees and the Philadelphia Fed SPF 10-year CPI.
 
 # Income components and the variable each grows with.
@@ -71,6 +72,30 @@ income_growth:
   ssip_aged: cpi
   pap_aged: cpi
   retp_aged: cpi
+
+# Home sales (changes of ownership) and portability, per year.
+turnover:
+  homestead_sale_rate: 0.055
+  nonhomestead_sale_rate: 0.084
+  sale_rate_note: Yearly share of homes whose assessment resets on a change of ownership.
+    Calibrated (2026-10-15) so homestead Save Our Homes savings follow the Revenue Estimating
+    Conference's homestead differential forecast for 2027-2032 (mean gap -0.2 to -0.8 points a year
+    for 5-6%; 2032 assessed/just 0.64-0.66 vs REC 0.661). The rolls record transfers of 8.0% of
+    homesteads and 12.2% of other homes in 2025, but over a third of transfers are not
+    arm's-length sales and many (to a spouse, into a trust) don't reset the assessment; standard
+    sales are about 5.2% of residential parcels. Non-homestead rate scaled by the same ratio.
+  lock_in:
+    per_100k_savings: -0.0625
+    floor: 0.5
+    note: Each $100,000 of Save Our Homes savings lowers the chance of selling by 6.25% (relative),
+      not below half the base rate (UF Shimberg Center for EDR, 2007, Broward single-family).
+      The base rate is set so the 2026 average matches the sale rates above.
+  portability:
+    share_of_homestead_sales: 0.14
+    max_transfer: 500000
+    note: 14% of 2025 buyers who are 2026 homesteaders carried over a Save Our Homes benefit
+      (ASS_DIF_TRNS > 0); median $106,024. In the model a household that sells and ports keeps its
+      own savings (up to $500,000) on its next home.
 
 scenarios:
   central:

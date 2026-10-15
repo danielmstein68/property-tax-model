@@ -54,7 +54,7 @@ class Economy:
 
     def _build(self, var: str) -> pd.Series:
         v, ov = self.spec["variables"][var], self.overrides.get(var, {})
-        years = range(self.base_year + 1, self.end_year + 1)
+        years = range(self.base_year, self.end_year + 1)  # base year's own growth kept where known (CPI)
         if "values" in v:
             r = pd.Series({int(y): float(x) for y, x in v["values"].items()})
         else:
@@ -74,8 +74,9 @@ class Economy:
         for y, x in (ov.get("set") or {}).items():
             r[int(y)] = float(x)
         r = r + float(ov.get("shift", 0.0))
-        if r.isna().any():
-            raise ValueError(f"{var}: no rate for {list(r[r.isna()].index)}")
+        gaps = r[r.isna() & (r.index > self.base_year)]
+        if len(gaps):
+            raise ValueError(f"{var}: no rate for {list(gaps.index)}")
         return r
 
     def rate(self, variable: str, year: int) -> float:
@@ -89,7 +90,7 @@ class Economy:
 
     def table(self) -> pd.DataFrame:
         """All yearly rates for this scenario (years x variables)."""
-        return pd.DataFrame(self._rates)
+        return pd.DataFrame(self._rates).loc[self.base_year + 1:]
 
     def grow(self, h: pd.DataFrame, from_year: int, to_year: int) -> pd.DataFrame:
         """Move market and just values and income components forward. Assessed values, exemptions

@@ -28,6 +28,7 @@ Save Our Homes: a homestead's assessed value changes each January 1 by at most t
 | applies_to | school, county, municipal, special |
 | max_rate | 3.0% |
 | cap | 2024: 3.0%; 2025: 2.9%; 2026: 2.7% |
+| projection | {'key': 'cap', 'method': 'lesser_of_max_and_cpi', 'cpi_lag': 1} |
 
 **Source:** [Fla. Const. Art. VII §4(d)(1)-(2); s. 193.155(1)-(2), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.155) · **Confidence:** ✅ high
 
@@ -150,6 +151,7 @@ Additional homestead exemption on assessed value above $50,000, up to an indexed
 | applies_to | county, municipal, special |
 | band_start | 50,000 |
 | amount | 2024: 25,000; 2025: 25,722; 2026: 26,411 |
+| projection | {'key': 'amount', 'method': 'index_cpi', 'cpi_lag': 1, 'floor_zero': True, 'round': 1} |
 | indexed | CPI-U, positive changes only, from 2025 (DOR cpi_homestead_exemption.pdf) |
 
 **Source:** [Fla. Const. Art. VII §6(a)(1)b. and (a)(2); s. 196.031(1)(b), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.031) · **Confidence:** ✅ high
@@ -188,6 +190,7 @@ Total exemption for the homestead of a quadriplegic (no income test), or of a pa
 | income_limit_base | 14,500 |
 | income_limit_indexed | CPI annual average change, from 1990 |
 | income_limit | 2026: 37,712 |
+| projection | {'key': 'income_limit', 'method': 'index_cpi', 'cpi_lag': 1, 'round': 1} |
 | income_measure | Gross income of everyone living in the household, prior calendar year, including Social Security and VA benefits (no income test for quadriplegics).
  |
 
@@ -227,6 +230,7 @@ County option: total exemption on county levies for an owner 65+ with household 
 | roll_code | EXMPT_39 |
 | applies_to | county |
 | income_limit | 2025: 37,694; 2026: 38,686 |
+| projection | {'key': 'income_limit', 'method': 'index_cpi', 'cpi_lag': 1, 'round': 1} |
 | just_value_limit | 250,000 |
 | just_value_limit_when | first year applied and eligible (not re-tested later) |
 | residence_years | 25 |
@@ -250,6 +254,7 @@ City-option version of the long-term low-income senior exemption (city levies).
 | roll_code | EXMPT_40 |
 | applies_to | municipal |
 | income_limit | 2025: 37,694; 2026: 38,686 |
+| projection | {'key': 'income_limit', 'method': 'index_cpi', 'cpi_lag': 1, 'round': 1} |
 | just_value_limit | 250,000 |
 | residence_years | 25 |
 | min_age | 65 |
@@ -274,6 +279,7 @@ County option: up to $50,000 off county levies for an owner 65+ whose household 
 | applies_to | county |
 | max_amount | 50,000 |
 | income_limit | 2025: 37,694; 2026: 38,686 |
+| projection | {'key': 'income_limit', 'method': 'index_cpi', 'cpi_lag': 1, 'round': 1} |
 | min_age | 65 |
 
 **Source:** [Fla. Const. Art. VII §6(d)(1); s. 196.075(2)(a),(3),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.075) · **Confidence:** 🟡 medium
@@ -296,6 +302,7 @@ City-option version of the low-income senior exemption (city levies).
 | applies_to | municipal |
 | max_amount | 50,000 |
 | income_limit | 2025: 37,694; 2026: 38,686 |
+| projection | {'key': 'income_limit', 'method': 'index_cpi', 'cpi_lag': 1, 'round': 1} |
 | min_age | 65 |
 
 **Source:** [Fla. Const. Art. VII §6(d)(1); s. 196.075(2)(a),(4), F.S.](https://www.flsenate.gov/Laws/Statutes/2026/196.075) · **Confidence:** 🟡 medium

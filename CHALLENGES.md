@@ -239,6 +239,11 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 - **First attempt failed:** restricting donors to Florida-resident individuals left 177k owners with no district (non-homestead tax fell to 0.70 of reported, total −$1.2B). Cause: the roll's `own_out_of_state` flag (`ptm/parcels.py`) compared the owner state with "FL", but Broward, Palm Beach and two other counties spell out "FLORIDA", so every owner there looked out of state. The same flag fed the homestead imputation's out-of-state signal, which was therefore inflated in those counties.
 - **Solution (Solved):** `parcels.out_of_state()` normalises FL/FLORIDA/FLA; link and millage recompute the flag from `own_state`. District donors for non-homestead owners are non-homestead parcels owned by Florida-resident individuals (1.71M; every PUMA has 551+), falling back to all non-homestead parcels if a PUMA has too few. Result: no owner without a district; non-homestead owners 0.93 of reported tax (was 0.96), homesteads 0.97; homestead average $4,067 vs roll $4,056; owner tax $25.26B (was $25.38B); Marco Island non-homestead owners 20k (was 26k). The remaining Marco excess is a PUMA-level limit: the survey area's non-claimers are spread over its Florida-resident non-homestead parcels.
 
+### Projection: how often assessments reset (2026-10-15)
+- **Problem:** the rolls show 8.0% of homesteads (12.2% of other homes) transferred in 2025, but using that as the reset rate erased Save Our Homes savings far faster than the Revenue Estimating Conference forecasts (model -7.5% in 2027 vs REC homestead differential -1.4%).
+- **Cause:** over a third of recorded transfers are not arm's-length sales (qualification code 11 etc.), and many — to a spouse, into a trust — don't reset the assessment.
+- **Solution (Solved):** calibrate the reset rate to the REC homestead differential forecast 2027-2032, running the model with REC's homestead appreciation for a like-for-like test: 5% matches the yearly growth path (mean gap -0.2 points), 6% the 2032 level (assessed/just 0.656 vs 0.661). Set 5.5% for homesteads (close to the 5.2% standard-sale share) and 8.4% for other homes (same ratio). Lock-in curve from the 2007 UF/Shimberg study for EDR.
+
 ---
 
 ## Ohio

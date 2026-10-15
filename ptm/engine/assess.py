@@ -9,6 +9,9 @@ Input: a DataFrame of units with
   changed_ownership        sold / change of ownership or control since last January 1 (bool)
   improvements             just value of changes, additions or improvements substantially
                            completed since last January 1 (dollars; optional, default 0)
+  portability_transfer     Save Our Homes benefit transferred from a previous homestead (dollars;
+                           optional, default 0), subtracted from just value in the new homestead's
+                           first year, capped at the spec's max_transfer (s. 193.155(8))
 Output: av_school, av_nonschool (the latter applies to county, municipal and special levies),
 and `basis` explaining which rule set the value.
 
@@ -24,7 +27,8 @@ Rules (inputs/fl_law.yaml):
     - non-school: just value in the first non-homestead year (incl. a homestead that lost its
       exemption) or after a change of ownership or control; otherwise
       min(prior x 1.10 + improvements, just value)
-Portability is not applied here (see the spec's `portability` notes).
+Portability: applied when `portability_transfer` is given (the caller decides who ports and how
+much; the amount is capped here at max_transfer).
 """
 
 import numpy as np
@@ -51,7 +55,9 @@ def assess(units: pd.DataFrame, law: Law, year: int) -> pd.DataFrame:
     # Homestead (Save Our Homes): same assessed value for all levies
     hs_reset = hs & (~hs_prior | sold)
     hs_capped = np.minimum(prior_sd * (1 + soh) + impr, jv)
-    av_hs = np.where(hs_reset, jv, hs_capped)
+    max_port = float(law.rule("portability").get("max_transfer", year))
+    port = np.clip(col("portability_transfer").astype(float), 0, max_port)
+    av_hs = np.where(hs_reset, np.maximum(jv - port, 0), hs_capped)
 
     # Non-homestead residential: school at just value; non-school capped at 10%
     nh_reset = ~hs & (hs_prior | sold)

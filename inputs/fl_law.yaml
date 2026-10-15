@@ -47,6 +47,7 @@ assessment:
     applies_to: [school, county, municipal, special]
     max_rate: 0.03
     cap: {2024: 0.03, 2025: 0.029, 2026: 0.027}
+    projection: [{key: cap, method: lesser_of_max_and_cpi, cpi_lag: 1}]  # future years: lesser of max_rate and prior-year CPI change
     notes: >
       Yearly caps 2025 (2.9%) and 2026 (2.7%) come from the CPI change in DOR's
       additional-exemption table and county appraiser pages; DOR doesn't publish the SOH cap
@@ -206,6 +207,7 @@ exemptions:
     applies_to: [county, municipal, special]
     band_start: 50000
     amount: {2024: 25000, 2025: 25722, 2026: 26411}
+    projection: [{key: amount, method: index_cpi, cpi_lag: 1, floor_zero: true, round: 1}]  # future years: positive CPI changes only
     indexed: "CPI-U, positive changes only, from 2025 (DOR cpi_homestead_exemption.pdf)"
     notes: >
       Roll check: 4.55M parcels carry exactly $26,411 in 2026. The band therefore runs
@@ -253,6 +255,7 @@ exemptions:
     income_limit_base: 14500
     income_limit_indexed: "CPI annual average change, from 1990"
     income_limit: {2026: 37712}
+    projection: [{key: income_limit, method: index_cpi, cpi_lag: 1, round: 1}]  # future years: prior year's limit x (1 + CPI change)
     income_measure: >
       Gross income of everyone living in the household, prior calendar year, including Social
       Security and VA benefits (no income test for quadriplegics).
@@ -299,6 +302,7 @@ exemptions:
     roll_code: EXMPT_39
     applies_to: [county]
     income_limit: {2025: 37694, 2026: 38686}
+    projection: [{key: income_limit, method: index_cpi, cpi_lag: 1, round: 1}]  # future years: prior year's limit x (1 + CPI change)
     just_value_limit: 250000
     just_value_limit_when: first year applied and eligible (not re-tested later)
     residence_years: 25
@@ -325,6 +329,7 @@ exemptions:
     roll_code: EXMPT_40
     applies_to: [municipal]
     income_limit: {2025: 37694, 2026: 38686}
+    projection: [{key: income_limit, method: index_cpi, cpi_lag: 1, round: 1}]  # future years: prior year's limit x (1 + CPI change)
     just_value_limit: 250000
     residence_years: 25
     min_age: 65
@@ -353,6 +358,7 @@ exemptions:
     applies_to: [county]
     max_amount: 50000
     income_limit: {2025: 37694, 2026: 38686}
+    projection: [{key: income_limit, method: index_cpi, cpi_lag: 1, round: 1}]  # future years: prior year's limit x (1 + CPI change)
     min_age: 65
     notes: >
       Amount varies by county (roll median $45,389). Decided (2026-10-14): use each county's
@@ -374,6 +380,7 @@ exemptions:
     applies_to: [municipal]
     max_amount: 50000
     income_limit: {2025: 37694, 2026: 38686}
+    projection: [{key: income_limit, method: index_cpi, cpi_lag: 1, round: 1}]  # future years: prior year's limit x (1 + CPI change)
     min_age: 65
     notes: >
       Decided (2026-10-14): assign separately from the county version, matching the roll's
