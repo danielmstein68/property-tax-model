@@ -23,8 +23,14 @@ Each year (owners only; renters come with pass-through):
   5. rates: each county, city and school district sets its millage from Florida's rolled-back rate
      rules, given how its whole taxable base grew (ptm.rate_setting); then tax
 
-Not yet (next pieces): new construction and growth in the number of owners, homestead status
-changes, re-testing income-limited exemptions.
+  3c. new owners: owner households grow with Florida's household forecast (constant ownership
+     rate); each year's new owners live in new homes at full value (no Save Our Homes savings),
+     with characteristics of recent buyers (moved in within ~2 years) placed by county in
+     proportion to new construction (DOR Data Book). They are pre-built "cohort" records with zero
+     weight until their year. New construction stays out of rolled-back rates in its first year
+     and then joins each jurisdiction's base (REC new-construction rates by property type).
+
+Not yet: homestead status changes, re-testing income-limited exemptions.
 """
 
 import copy
@@ -111,6 +117,36 @@ def age_band_factors(pop: pd.DataFrame, years: range) -> pd.DataFrame:
     return pd.DataFrame(out, index=list(years))
 
 
+COHORT_YEARS = range(BASE_YEAR + 1, 2037)   # new-owner cohorts (one per year)
+COHORT_SIZE = 2500                           # records sampled per cohort
+
+
+def _county_nc_share() -> pd.Series:
+    """Share of 2026 new construction taxable value by county FIPS (DOR Data Book)."""
+    from ptm.millage import county_fips_by_name
+    from ptm.ratemodel import load_databook, norm
+    db = load_databook()
+    fips = {norm(k): v for k, v in county_fips_by_name().items()}
+    db["county_fips"] = db["key"].map({**fips, "dade": fips.get("miamidade")})
+    s = db.dropna(subset=["county_fips"]).set_index("county_fips")["nc_2026"].clip(lower=0)
+    return s / s.sum()
+
+
+def _nc_rates() -> pd.DataFrame:
+    """Yearly new construction as a share of the prior year's just value, by REC category
+    (adopted forecast, 2027-2032; later years hold 2032)."""
+    from ptm.economy import PATHS
+    d = pd.read_csv(PATHS)
+    d = d[d["source"] == "rec_adopted"]
+    out = {}
+    for cat, key in [("homestead", "hs"), ("nonhomestead_residential", "nh"), ("nonresidential", "nr")]:
+        jv = d[d["variable"] == f"just_value_{cat}"].set_index("year")["value"]
+        nc = d[d["variable"] == f"new_construction_{cat}"].set_index("year")["value"]
+        out[key] = (nc / jv.shift()).dropna()
+    r = pd.DataFrame(out)
+    return r.reindex(range(BASE_YEAR + 1, 2051)).ffill()
+
+
 DYNAMIC = ["jv", "valp_market_cal", "av_school_prior", "av_nonschool_prior", "taxable_school_prior",
            "taxable_county_prior"]
 
@@ -133,7 +169,7 @@ class Projection:
         self.rates = RateSetter(self.rate_settings, BASE_YEAR, sr["rle_millage_2026"], sr["school_2026"])
         self.rng = np.random.default_rng(seed)
 
-        prep = _cached(("prep", id(baseline), len(baseline)), lambda: self._prepare(baseline))
+        prep = _cached(("prep", id(baseline), len(baseline)), lambda: self._prepare_cached(baseline))
         self.units = prep["static"]                      # shared, read-only
         self.a = {k: v.copy() for k, v in prep["dynamic"].items()}
         self.income = {k: v.copy() for k, v in prep["income"].items()}
@@ -143,9 +179,26 @@ class Projection:
         self.demo = {**self.econ.spec.get("demography", {}), **(demography or {})}
         self.p_death = prep["p_death_reset"] if self.demo.get("deaths", True) else np.zeros(len(self.w0))
         self.age_band = prep["age_band"]
+        self._band_names = [n for _, _, n in AGE_BANDS] + [""]
+        pos = {n: i for i, n in enumerate(self._band_names)}
+        self._band_idx = np.array([pos.get(b, len(self._band_names) - 1) for b in self.age_band])
         self.band_factors = age_band_factors(_cached("demography", _demography)[0], range(BASE_YEAR, 2051)) \
             if self.demo.get("reweight_by_age", True) else None
         self.weights = {BASE_YEAR: self.w.copy()}
+        self.cohort_year = prep["cohort_year"]
+        self.orig = self.cohort_year == 0
+        self.owners_2026 = self.w0[self.orig].sum()
+        self.nc = _cached("nc_rates", _nc_rates)
+        # new owners each year = owners x household growth (constant ownership rate)
+        self.cohort_w = np.zeros(len(self.w0))
+        if self.demo.get("household_growth", True):
+            idx, prev = 1.0, 1.0
+            for y in COHORT_YEARS:
+                idx *= 1 + self.econ.rate("households", y)
+                m = self.cohort_year == y
+                share = prep["cohort_share"][m]
+                self.cohort_w[m] = self.owners_2026 * (idx - prev) * share / share.sum()
+                prev = idx
         self.ci = prep["ci"]
         self.ci_ok = prep["ci_ok"]
         self.yi = prep["yi"]
@@ -159,6 +212,21 @@ class Projection:
         self._base_rates = self._calibrate_sale_rates()
         self.rows = [self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES})]
+
+    def _prepare_cached(self, baseline: pd.DataFrame) -> dict:
+        """_prepare, saved to disk when the baseline says where (Monte Carlo workers load it)."""
+        import pickle
+        from pathlib import Path
+        path = baseline.attrs.get("prep_cache")
+        src = baseline.attrs.get("prep_source")
+        if path and Path(path).exists() and (not src or Path(path).stat().st_mtime >= Path(src).stat().st_mtime):
+            with open(path, "rb") as fh:
+                return pickle.load(fh)
+        prep = self._prepare(baseline)
+        if path:
+            with open(path, "wb") as fh:
+                pickle.dump(prep, fh)
+        return prep
 
     def _prepare(self, baseline: pd.DataFrame) -> dict:
         u = baseline.loc[owner_mask(baseline), self._needed_columns(baseline)].copy()
@@ -187,23 +255,52 @@ class Projection:
         band = np.full(len(u), "", dtype=object)
         for lo, hi, name in AGE_BANDS:
             band[(age >= lo) & (age <= hi)] = name
+        # new-owner cohorts: recent buyers (moved in within ~2 years), placed by county in
+        # proportion to new construction; one block of COHORT_SIZE records per year, zero weight
+        # until then (weights set in __init__ from the household forecast)
+        n0 = len(u)
+        donors = np.flatnonzero((u["MV"] <= 2).to_numpy())
+        dw = u["WGTP"].to_numpy(dtype=float)[donors]
+        dc = u["county_fips_tax"].to_numpy()[donors]
+        share_now = pd.Series(dw).groupby(dc).sum() / dw.sum()
+        target = _cached("nc_share", _county_nc_share)
+        adj = (target.reindex(share_now.index) / share_now).fillna(1.0).clip(0.2, 5.0)
+        pw = dw * pd.Series(dc).map(adj).fillna(1.0).to_numpy()
+        pw = pw / pw.sum()
+        crng = np.random.default_rng(2026)
+        picks, cyear = [], []
+        for y in COHORT_YEARS:
+            picks.append(crng.choice(donors, size=COHORT_SIZE, replace=True, p=pw))
+            cyear.append(np.full(COHORT_SIZE, y))
+        pick = np.concatenate(picks)
+        cohort_year = np.concatenate([np.zeros(n0, int)] + cyear)
+        allrows = np.concatenate([np.arange(n0), pick])
+        u = u.iloc[allrows].copy()
+        u.index = pd.RangeIndex(len(u))
+        u["cohort_year"] = cohort_year
+        take = lambda arr: arr[allrows]  # noqa: E731
+        hs, ci, q, spouse, band = take(hs), take(ci), take(q), take(spouse), take(band)
+        f = lambda c: u[c].astype(float).to_numpy()  # noqa: E731
         # static frame for the engine: exemption flags and values, shares; plus reporting columns
         static_cols = [c for c in u.columns if c not in set(DYNAMIC)]
+        tax26 = np.where(cohort_year == 0, np.nan_to_num(f(f"tax_model_{BASE_YEAR}")), 0.0)
         return {
-            "static": u[static_cols],
+            "static": u[static_cols], "cohort_year": cohort_year, "cohort_share": np.concatenate(
+                [np.zeros(n0)] + [pw[np.searchsorted(donors, k)] for k in picks]),
             "dynamic": {"jv": f("valp_jv_cal"), "valp_market_cal": f("valp_market_cal"),
                         "av_school_prior": f(f"av_sd_{BASE_YEAR}"), "av_nonschool_prior": f(f"av_nsd_{BASE_YEAR}"),
                         "taxable_school_prior": f(f"taxable_school_{BASE_YEAR}"),
                         "taxable_county_prior": f(f"taxable_county_{BASE_YEAR}")},
             "income": {c: f(c) for c in self.econ.spec["income_growth"] if c in u},
-            "hs": hs, "w": f("WGTP"), "ci": ci, "ci_ok": ci >= 0, "yi": u["city_idx"].to_numpy(),
+            "hs": hs, "w": np.where(cohort_year == 0, f("WGTP"), 0.0), "ci": ci, "ci_ok": ci >= 0, "yi": u["city_idx"].to_numpy(),
             "min_count_ok": counts >= 30,
             # death of the owner with no spouse present passes the home on (transfer to a surviving
             # spouse isn't a change of ownership, s. 193.155(3)(a)); married couples: both die
             "p_death_reset": np.where(spouse, q * q, q), "age_band": band,
             **{f"mill_{c}": np.nan_to_num(f(f"millage_{c}")) for c in LEVIES},
-            "tax_2026": np.nan_to_num(f(f"tax_model_{BASE_YEAR}")),
-            **{f"tax_{c}_2026": np.nan_to_num(f(f"tax_{c}_{BASE_YEAR}")) for c in LEVIES},
+            "tax_2026": tax26,
+            **{f"tax_{c}_2026": np.where(cohort_year == 0, np.nan_to_num(f(f"tax_{c}_{BASE_YEAR}")), 0.0)
+               for c in LEVIES},
         }
 
     # --- sales -----------------------------------------------------------------------------------
@@ -253,17 +350,32 @@ class Projection:
         for col, var in e.spec["income_growth"].items():
             if col in self.income:
                 self.income[col] *= 1 + e.rate(var, y)
+        w = self.w0.copy()
         if self.band_factors is not None:
-            r = self.band_factors.loc[y]
-            fac = np.array([r.get(b, 1.0) if b else 1.0 for b in self.age_band], dtype=float)
+            r = self.band_factors.loc[y].reindex(self._band_names).fillna(1.0).to_numpy()
+            fac = r[self._band_idx]
             w = self.w0 * fac
-            self.w = w * self.w0.sum() / w.sum()          # owners held fixed; composition shifts
-            self.weights[y] = self.w.copy()
+            w = w * self.owners_2026 / w[self.orig].sum()   # existing owners: composition shifts
+        entering = self.cohort_year == y
+        active = (self.cohort_year > 0) & (self.cohort_year <= y)
+        self.w = np.where(self.orig, w, np.where(active, self.cohort_w, 0.0))
+        self.weights[y] = self.w.copy()
+        # new homes enter at just value, first homestead year (no Save Our Homes savings)
+        for k in ["av_school_prior", "av_nonschool_prior"]:
+            a[k] = np.where(entering, a["jv"], a[k])
+        for k in ["taxable_school_prior", "taxable_county_prior"]:
+            a[k] = np.where(entering, 0.0, a[k])
+        self._existing = self.orig | ((self.cohort_year > 0) & (self.cohort_year < y))
         sold, transfer = self._draw_sales()
         df = self.units.assign(jv=a["jv"], av_school_prior=a["av_school_prior"],
-                               av_nonschool_prior=a["av_nonschool_prior"], homestead_prior=self.hs,
+                               av_nonschool_prior=a["av_nonschool_prior"],
+                               homestead_prior=self.hs & ~entering,
                                changed_ownership=sold, improvements=0.0, portability_transfer=transfer)
-        res = step(df, self.law, y)
+        live = self.orig | active                      # future cohorts don't exist yet: skip them
+        res_live = step(df[live], self.law, y)
+        res = res_live.reindex(df.index)
+        for c in ["av_school", "av_county"]:
+            res[c] = res[c].fillna(pd.Series(a["jv"], index=df.index))
         taxable = {c: res[f"taxable_{c}"].fillna(0).to_numpy() for c in LEVIES}
         self._set_rates(taxable, y)
         tax = {c: taxable[c] * self.mill[c] / 1000 for c in LEVIES}
@@ -284,7 +396,7 @@ class Projection:
     def _set_rates(self, taxable: dict, y: int) -> None:
         """Rates for year y from each jurisdiction's taxable growth (homestead part from the model)."""
         hs, w, ci = self.hs, self.w, self.ci
-        sel = hs & self.ci_ok
+        sel = hs & self.ci_ok & self._existing        # new construction stays out of rolled-back rates
         nc = len(self.rates.counties)
         growth = {}
         for c in ["school", "county"]:
@@ -293,8 +405,10 @@ class Projection:
             with np.errstate(divide="ignore", invalid="ignore"):
                 g = np.where((before > 0) & self.min_count_ok, now / before, np.nan)
             growth[c] = g                                  # thin counties use the median
+        nc = self.nc.loc[y] if self.demo.get("household_growth", True) else None
         self.rates.step_arrays(growth["school"], growth["county"],
-                               self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y)
+                               self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y,
+                               nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]))
         rc = self.rates.county_draws.mean(axis=0)
         rcity = self.rates.city_draws.mean(axis=0)
         rle = self.rates.rle_draws.mean(axis=0)
@@ -322,6 +436,7 @@ class Projection:
                "homestead_soh_savings_avg": (np.maximum(jv - av, 0) * w)[hs].sum() / whs,
                "share_sold": (sold * w).sum() / wsum, "homestead_share_sold": (sold * w)[hs].sum() / whs,
                "homestead_share_death_transfer": (getattr(self, "_died", np.zeros(len(w), bool)) * w)[hs].sum() / whs,
+               "new_owner_share": w[self.cohort_year > 0].sum() / wsum if hasattr(self, "cohort_year") else 0.0,
                "share_owners_75_plus": w[np.isin(self.age_band, ["75_79", "80_84", "85_plus"])].sum() / wsum}
         for c, t in classes.items():
             row[f"tax_{c}"] = (np.nan_to_num(t) * w).sum()
@@ -352,16 +467,18 @@ class Projection:
             for k in ["household_flag", "value_column"]:
                 if r.spec.get(k):
                     cols.add(r.spec[k])
+        cols |= {"income_decile"}
         cols |= {c for c in b.columns if c.startswith("ex_")}   # replicate weights stay in the baseline (join by index)
         return [c for c in b.columns if c in cols]
 
-    def draw_totals(self, groups: pd.Series) -> dict:
+    def draw_totals(self, groups: "pd.Series | str") -> dict:
         """Tax totals for every rate draw: {year: array (n_groups + 1, n_draws)}, rows = the sorted
         group labels, then the all-owner total. Exact: tax is taxable x rate, and taxable values
         don't depend on rates, so each draw's tax is a weighted sum computed by matrix products."""
         u = self.units
-        labels = sorted(groups.reindex(u.index).dropna().unique())
-        gpos = groups.reindex(u.index).map({g: i for i, g in enumerate(labels)}).to_numpy()
+        g = u[groups] if isinstance(groups, str) else groups.reindex(u.index)
+        labels = sorted(g.dropna().unique())
+        gpos = g.map({v: i for i, v in enumerate(labels)}).to_numpy()
         ng = len(labels) + 1
         w = u["WGTP"].to_numpy()
         ci = u["county_idx"].to_numpy()

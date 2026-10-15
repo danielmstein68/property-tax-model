@@ -101,11 +101,14 @@ turnover:
 demography:
   deaths: true
   reweight_by_age: true
+  household_growth: true
   note: Death of an owner with no spouse present passes the home on and resets its assessment
     (Florida life table 2021, CDC NCHS NVSR 73-7; 2021 includes COVID-era deaths, so slightly high).
     Deaths count inside the calibrated reset rates above, not on top. Owner weights follow Florida's
     projected population by age band (Demographic Estimating Conference Nov 2023 with BEBR Bulletin
-    199; 2020 census, 2030 and 2040 projections, interpolated), with the number of owners held fixed.
+    199; 2020 census, 2030 and 2040 projections, interpolated), existing owners held fixed. New owners
+    (household_growth) = owners x Florida household growth (EEC), living in new homes at full value;
+    characteristics of recent buyers, placed by county by 2026 new construction (DOR Data Book).
 
 # How governments set millage each year (ptm/rate_setting.py). Options:
 #   history      draw each government's yearly rate change from what Florida governments of the

@@ -219,8 +219,10 @@ class RateSetter:
                          home_value_growth, nonres_growth, year)
 
     def step_arrays(self, gs: np.ndarray, gc: np.ndarray, home_value_growth: float, nonres_growth: float,
-                    year: int | None = None) -> None:
-        """step() on arrays aligned to self.counties (NaN = use the median)."""
+                    year: int | None = None, nc_rates: tuple | None = None) -> None:
+        """step() on arrays aligned to self.counties (NaN = use the median). nc_rates = new
+        construction as a share of each part (homestead, non-homestead residential,
+        non-residential): excluded from this year's rolled-back rates, added to the base after."""
         gs = np.where(np.isnan(gs), np.nanmedian(gs), gs)
         gc = np.where(np.isnan(gc), np.nanmedian(gc), gc)
         c, hv, nr = self._c, 1 + home_value_growth, 1 + nonres_growth
@@ -237,6 +239,11 @@ class RateSetter:
         else:
             self.rle_draws = self.rle_draws * rs
         self.county_draws = self.county_draws * self._ratio("county", g_county)
+        if nc_rates is not None:
+            nh_, nn_, nr_ = nc_rates
+            for k, r in [("hs_school", nh_), ("nh_school", nn_), ("nr_school", nr_),
+                         ("hs_county", nh_), ("nh_county", nn_), ("nr_county", nr_)]:
+                new[k] = new[k] * (1 + r)
         self._c = new
 
         yv, cc = self._y, self._city_county
@@ -246,6 +253,9 @@ class RateSetter:
         with np.errstate(divide="ignore", invalid="ignore"):
             g_city = np.where(before > 0, (newy["hs"] + newy["nh"] + newy["nr"]) / before, 1.0)
         self.city_draws = self.city_draws * self._ratio("municipal", g_city)
+        if nc_rates is not None:
+            newy = {"hs": newy["hs"] * (1 + nc_rates[0]), "nh": newy["nh"] * (1 + nc_rates[1]),
+                    "nr": newy["nr"] * (1 + nc_rates[2])}
         self._y = newy
         self.last_growth = {"school": pd.Series(g_school, index=self.counties.index),
                             "county": pd.Series(g_county, index=self.counties.index),

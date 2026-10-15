@@ -80,3 +80,15 @@ def test_age_band_factors():
     assert f.loc[2026].round(12).eq(1).all()                # base year = 1
     assert f.loc[2036, "85_plus"] > f.loc[2036, "45_64"]     # Florida ages
     assert 0 < life[50] < life[85] < 1
+
+
+def test_new_owner_cohorts_enter_at_full_value():
+    from ptm.project import Projection
+    b = pd.read_parquet("data/processed/projection_input_2026.parquet")
+    p = Projection(b, "central").run(2028)
+    w27, cy = p.weights[2027], p.cohort_year
+    assert w27[cy == 2028].sum() == 0 and w27[cy == 2027].sum() > 0       # cohorts appear in their year
+    new27 = (cy == 2027) & p.hs
+    av = p.household_results["av_school_2027"].to_numpy()
+    assert np.allclose(av[new27], p.a["jv"][new27] / (1 + p.econ.rate("home_value", 2028)), rtol=1e-6)
+    assert p.summary.owners[2028] > p.summary.owners[2026]

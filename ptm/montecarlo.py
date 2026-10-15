@@ -49,10 +49,14 @@ def slim_baseline(refresh: bool = False) -> Path:
     return SLIM
 
 
+PREP = ROOT / "data" / "processed" / "projection_prep_2026.pkl"
+
+
 def _baseline() -> pd.DataFrame:
     global _B
     if _B is None:
         _B = pd.read_parquet(SLIM)
+        _B.attrs = {"prep_cache": str(PREP), "prep_source": str(SLIM)}
     return _B
 
 
@@ -89,7 +93,7 @@ def _run_path(args) -> dict:
     ov = shock_overrides(scenario, path_seed, end_year) if noise else None
     rs = {**(rate_setting or {}), "seed": path_seed}
     p = Projection(b, scenario, overrides=ov, rate_setting=rs, seed=path_seed).run(end_year)
-    d = p.draw_totals(b["income_decile"])
+    d = p.draw_totals("income_decile")
     return {"seed": path_seed, "draws": {y: v for y, v in d.items() if y != "labels"},
             "labels": d["labels"], "summary": p.summary, "seconds": (t1 - t0, time.time() - t1)}
 
@@ -98,6 +102,8 @@ def run_montecarlo(scenario: str = "central", n_paths: int = 50, end_year: int =
                    workers: int | None = None, rate_setting: dict | None = None) -> dict:
     workers = workers or max(1, min(5, (os.cpu_count() or 2) // 2 - 1))   # physical cores - 1, memory-bound
     slim_baseline()
+    if not PREP.exists() or PREP.stat().st_mtime < SLIM.stat().st_mtime:
+        _run_path((scenario, seed, 2027, rate_setting, False))   # builds the prepared inputs once
     jobs = [(scenario, seed, end_year, rate_setting, False)]
     jobs += [(scenario, seed + 1 + i, end_year, rate_setting, True) for i in range(n_paths)]
     with ProcessPoolExecutor(max_workers=workers) as ex:
