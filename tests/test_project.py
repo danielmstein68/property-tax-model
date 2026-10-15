@@ -53,3 +53,13 @@ def test_rate_ratio_rules():
     assert rate_ratio("keep_capped", g, 1.10) == pytest.approx([1.0, 1.0, 1.10 / 1.20])  # cut only above 110%
     with pytest.raises(ValueError):
         rate_ratio("whatever", g, 1.10)
+
+
+def test_history_draws_shape_and_cap():
+    from ptm.rate_setting import RateHistory
+    h = RateHistory(neighbors=60)
+    rng = np.random.default_rng(0)
+    d = h.draw("county", np.log(np.array([0.9, 1.04, 1.25])), rng, 500)
+    assert d.shape == (500, 3)
+    assert (d[:, 1] > 0).mean() < 0.3                     # rate increases are uncommon in normal years
+    assert np.median(d[:, 1]) == 0                         # typical county keeps its rate

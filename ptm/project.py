@@ -74,7 +74,13 @@ class Projection:
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
         self.law_base = law or load_law()
-        self.rates = RateSetter(self.rate_settings, BASE_YEAR)
+        from ptm.millage import county_fips_by_name
+        from ptm.ratemodel import norm, school_rates_2026
+        sr = school_rates_2026()
+        fips = {norm(k): v for k, v in county_fips_by_name().items()}
+        sr["county_fips"] = sr["key"].map({**fips, "dade": fips.get("miamidade")})
+        sr = sr.dropna(subset=["county_fips"]).set_index("county_fips")
+        self.rates = RateSetter(self.rate_settings, BASE_YEAR, sr["rle_millage_2026"], sr["school_2026"])
         self.rng = np.random.default_rng(seed)
         u = baseline.loc[owner_mask(baseline), self._needed_columns(baseline)].copy()
         u["homestead"] = (u["homestead"] == True)  # noqa: E712
@@ -171,7 +177,7 @@ class Projection:
             g = (now / before.replace(0, np.nan))
             growth[c] = g[n.reindex(g.index) >= 30]          # thin counties use the median
         self.rates.step(growth["school"], growth["county"],
-                        self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y))
+                        self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y)
         county = u["county_fips_tax"]
         u["millage_county"] = u["millage_county_base"] * county.map(self.rates.ratio_county).fillna(1)
         idx = u["city_idx"].to_numpy()

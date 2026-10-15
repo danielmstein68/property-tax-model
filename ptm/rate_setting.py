@@ -4,6 +4,12 @@ The rolled-back rate is last year's levy over this year's taxable value excludin
 construction (s. 200.065(1)). Because last year's levy is last year's rate x last year's taxable
 value, the rolled-back rate = last year's rate / g, where g is the growth of the jurisdiction's
 existing taxable value. Rules (inputs/fl_projection_assumptions.yaml, `rate_setting`):
+  history      each year, each government's rate change is drawn from what Florida governments of
+               the same type did in years with similar base growth (EDR ad valorem profiles,
+               counties 1996-2025, cities 2009-2025, school districts 1997-2025; RateHistory), then
+               capped at cap_multiple x rolled-back except with exceed_cap_probability (2026 law:
+               beyond 110% needs a unanimous vote; 1 of 33 counties did in 2026). n draws; the
+               central path uses their mean (tax is linear in the rate)
   keep_capped  keep last year's rate, cut to cap_multiple x rolled-back if above it (tested on 2026:
                median error 0%; the 110% tier needs a two-thirds vote under s. 200.065(5)(a) as
                amended 2026)
@@ -30,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-RULES = {"keep_capped", "rolled_back", "hold"}
+RULES = {"history", "keep_capped", "rolled_back", "hold"}
 
 
 def _city_key(name) -> str:
@@ -98,8 +104,31 @@ def school_rle_2026() -> pd.Series:
     return s.dropna(subset=["county_fips"]).set_index("county_fips")["rle_millage_2026"]
 
 
+class RateHistory:
+    """Florida rate changes by government type and base growth (scripts/fl_millage_history.py)."""
+
+    def __init__(self, path: Path = ROOT / "data" / "processed" / "millage_changes.parquet", neighbors: int = 60):
+        d = pd.read_parquet(path)
+        self.neighbors = neighbors
+        self.by = {}
+        for kind, g in d.groupby("kind"):
+            g = g.sort_values("x")
+            self.by[kind] = (g["x"].to_numpy(), g["dlm"].to_numpy())
+
+    def draw(self, kind: str, x: np.ndarray, rng: np.random.Generator, n_draws: int) -> np.ndarray:
+        """(n_draws, len(x)) log rate changes: for each government, a random one of the `neighbors`
+        historical government-years of the same kind with the closest base growth."""
+        xs, ys = self.by[kind]
+        k = min(self.neighbors, len(xs))
+        lo = np.clip(np.searchsorted(xs, x) - k // 2, 0, len(xs) - k)
+        return ys[lo[None, :] + rng.integers(0, k, size=(n_draws, len(x)))]
+
+
+HISTORY_KIND = {"county": "county", "municipal": "municipal", "school_rle": "school"}
+
+
 def rate_ratio(rule: str, g: np.ndarray, cap_multiple: float) -> np.ndarray:
-    """This year's rate / last year's rate, given existing taxable value growth g."""
+    """This year's rate / last year's rate, given existing taxable value growth g (fixed rules)."""
     if rule == "hold":
         return np.ones_like(g)
     if rule == "rolled_back":
@@ -110,27 +139,67 @@ def rate_ratio(rule: str, g: np.ndarray, cap_multiple: float) -> np.ndarray:
 
 
 class RateSetter:
-    """Tracks each jurisdiction's taxable value parts and cumulative rate ratios."""
+    """Tracks each jurisdiction's taxable value parts and rates for n_draws rate paths.
 
-    def __init__(self, settings: dict, base_year: int = 2026):
+    ratio_county / ratio_city: rate now / 2026 rate (mean over draws, by jurisdiction);
+    ratio_school: required local effort now / 2026 (mean over draws, by county). The full draws
+    are in the *_draws arrays and `paths` (per year) for the Monte Carlo summaries."""
+
+    def __init__(self, settings: dict, base_year: int = 2026, rle_2026: pd.Series | None = None,
+                 school_total_2026: pd.Series | None = None):
         self.settings = settings
-        for k in ["county", "municipal", "school_rle"]:
+        for k in HISTORY_KIND:
             if settings[k] not in RULES:
                 raise ValueError(f"rate_setting.{k}: '{settings[k]}' not one of {sorted(RULES)}")
+        uses_history = any(settings[k] == "history" for k in HISTORY_KIND)
+        self.n_draws = int(settings.get("draws", 200)) if uses_history else 1
+        self.rng = np.random.default_rng(int(settings.get("seed", 2026)))
+        self.history = RateHistory(neighbors=int(settings.get("history_neighbors", 60))) if uses_history else None
         self.counties, self.cities = composition(base_year)
-        self.ratio_county = pd.Series(1.0, index=self.counties.index)
-        self.ratio_school = pd.Series(1.0, index=self.counties.index)
-        self.ratio_city = pd.Series(1.0, index=self.cities.index)
+        nc, ny = len(self.counties), len(self.cities)
+        self.county_draws = np.ones((self.n_draws, nc))
+        self.city_draws = np.ones((self.n_draws, ny))
+        rle = (rle_2026 if rle_2026 is not None else school_rle_2026()).reindex(self.counties.index).fillna(0)
+        total = school_total_2026.reindex(self.counties.index).fillna(rle) if school_total_2026 is not None else rle
+        self.rle_2026 = rle.to_numpy()
+        self.school_fixed = (total - rle).to_numpy()
+        self.rle_draws = np.tile(self.rle_2026, (self.n_draws, 1))
         self.city_pos = {k: i for i, k in enumerate(self.cities.index)}   # (county, city) -> position
+        self.paths = {}
+
+    @property
+    def ratio_county(self) -> pd.Series:
+        return pd.Series(self.county_draws.mean(axis=0), index=self.counties.index)
+
+    @property
+    def ratio_city(self) -> pd.Series:
+        return pd.Series(self.city_draws.mean(axis=0), index=self.cities.index)
+
+    @property
+    def ratio_school(self) -> pd.Series:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r = np.where(self.rle_2026 > 0, self.rle_draws.mean(axis=0) / self.rle_2026, 1.0)
+        return pd.Series(r, index=self.counties.index)
 
     def city_index(self, county: pd.Series, city: pd.Series) -> np.ndarray:
         """Position of each household's city in ratio_city (-1 if none)."""
         return np.array([self.city_pos.get(k, -1) for k in zip(county, city)])
 
+    def _ratio(self, which: str, g: np.ndarray) -> np.ndarray:
+        """(n_draws, n) rate ratios for one year under the configured rule, with the legal cap."""
+        rule, cap = self.settings[which], float(self.settings.get("cap_multiple", 1.10))
+        if rule != "history":
+            return np.tile(rate_ratio(rule, g, cap), (self.n_draws, 1))
+        r = np.exp(self.history.draw(HISTORY_KIND[which], np.log(g), self.rng, self.n_draws))
+        if which != "school_rle":  # 2026 law: above cap x rolled-back needs a unanimous vote
+            exceed = self.rng.random(r.shape) < float(self.settings.get("exceed_cap_probability", 0.03))
+            r = np.where(exceed, r, np.minimum(r, cap / g[None, :]))
+        return r
+
     def step(self, hs_growth_school: pd.Series, hs_growth_county: pd.Series,
-             home_value_growth: float, nonres_growth: float) -> None:
+             home_value_growth: float, nonres_growth: float, year: int | None = None) -> None:
         """Advance one year. hs_growth_* = homestead taxable growth by county FIPS (model)."""
-        c, cap = self.counties, float(self.settings.get("cap_multiple", 1.10))
+        c = self.counties
         gs = hs_growth_school.reindex(c.index).fillna(hs_growth_school.median())
         gc = hs_growth_county.reindex(c.index).fillna(hs_growth_county.median())
         new = pd.DataFrame({
@@ -138,10 +207,17 @@ class RateSetter:
             "nr_school": c["nr_school"] * (1 + nonres_growth),
             "hs_county": c["hs_county"] * gc, "nh_county": c["nh_county"] * (1 + home_value_growth),
             "nr_county": c["nr_county"] * (1 + nonres_growth)}, index=c.index)
-        g_school = new[["hs_school", "nh_school", "nr_school"]].sum(axis=1) / c[["hs_school", "nh_school", "nr_school"]].sum(axis=1)
-        g_county = new[["hs_county", "nh_county", "nr_county"]].sum(axis=1) / c[["hs_county", "nh_county", "nr_county"]].sum(axis=1)
-        self.ratio_school *= rate_ratio(self.settings["school_rle"], g_school.to_numpy(), cap)
-        self.ratio_county *= rate_ratio(self.settings["county"], g_county.to_numpy(), cap)
+        sch, cty = ["hs_school", "nh_school", "nr_school"], ["hs_county", "nh_county", "nr_county"]
+        g_school = new[sch].sum(axis=1) / c[sch].sum(axis=1)
+        g_county = new[cty].sum(axis=1) / c[cty].sum(axis=1)
+        # school: a drawn change applies to the whole operating rate, in mills, and lands on RLE
+        rs = self._ratio("school_rle", g_school.to_numpy())
+        if self.settings["school_rle"] == "history":
+            total_prev = self.school_fixed[None, :] + self.rle_draws
+            self.rle_draws = np.maximum(self.rle_draws + total_prev * (rs - 1), 0)
+        else:
+            self.rle_draws = self.rle_draws * rs
+        self.county_draws = self.county_draws * self._ratio("county", g_county.to_numpy())
         self.counties = new
 
         ct = self.cities
@@ -149,7 +225,10 @@ class RateSetter:
         newc = pd.DataFrame({"hs": ct["hs"] * gc.reindex(cfips).fillna(gc.median()).to_numpy(),
                              "nh": ct["nh"] * (1 + home_value_growth),
                              "nr": ct["nr"] * (1 + nonres_growth)}, index=ct.index)
-        g_city = newc.sum(axis=1) / ct.sum(axis=1).replace(0, np.nan)
-        self.ratio_city *= rate_ratio(self.settings["municipal"], g_city.fillna(1).to_numpy(), cap)
+        g_city = (newc.sum(axis=1) / ct.sum(axis=1).replace(0, np.nan)).fillna(1)
+        self.city_draws = self.city_draws * self._ratio("municipal", g_city.to_numpy())
         self.cities = newc
         self.last_growth = {"school": g_school, "county": g_county, "city": g_city}
+        if year is not None:
+            self.paths[year] = {"county": self.county_draws.copy(), "city": self.city_draws.copy(),
+                                "rle": self.rle_draws.copy()}
