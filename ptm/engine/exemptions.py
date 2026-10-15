@@ -89,7 +89,7 @@ def apply_exemptions(units: pd.DataFrame, law: Law, year: int, detail: bool = Fa
                 if kind == "fixed":
                     amount = (elig > 0) * np.minimum(base, float(r.get("amount", year))) * hs_share
                 else:
-                    start, width = float(r.spec["band_start"]), float(r.get("amount", year))
+                    start, width = float(r.get("band_start", year)), float(r.get("amount", year))
                     amount = (elig > 0) * np.clip(base - start, 0, width) * hs_share
                 take = np.minimum(np.maximum(remaining[c], 0), amount)
                 remaining[c] = remaining[c] - take
@@ -99,14 +99,14 @@ def apply_exemptions(units: pd.DataFrame, law: Law, year: int, detail: bool = Fa
         if kind == "fixed":
             amount = elig * float(r.get("amount", year))           # a count multiplies the amount
         elif kind == "band":
-            start, width = float(r.spec["band_start"]), float(r.get("amount", year))
+            start, width = float(r.get("band_start", year)), float(r.get("amount", year))
             base = av[r.spec["applies_to"][0]]
             amount = (elig > 0) * np.clip(base - start, 0, width)
         elif kind == "local_option":
             amount = (elig > 0) * np.minimum(_flag(units, r.spec["value_column"], missing),
-                                             float(r.spec.get("max_amount", np.inf)))
+                                             float(r.get("max_amount", year, np.inf)))
         elif kind == "reduction":
-            share_cap = float(r.spec.get("max_share_of_assessed", 1.0))
+            share_cap = float(r.get("max_share_of_assessed", year, 1.0))
             raw = _flag(units, r.spec["value_column"], missing)
             base = av[r.spec["applies_to"][0]]
             amount = (elig > 0) * np.minimum(raw, share_cap * base)

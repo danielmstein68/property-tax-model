@@ -219,10 +219,14 @@ class RateSetter:
                          home_value_growth, nonres_growth, year)
 
     def step_arrays(self, gs: np.ndarray, gc: np.ndarray, home_value_growth: float, nonres_growth: float,
-                    year: int | None = None, nc_rates: tuple | None = None) -> None:
-        """step() on arrays aligned to self.counties (NaN = use the median). nc_rates = new
+                    year: int | None = None, nc_rates: tuple | None = None,
+                    cap_multiple: float | None = None) -> None:
+        """step() on arrays aligned to self.counties (NaN = use the median). cap_multiple overrides
+        the settings' limit for this year (from the law spec). nc_rates = new
         construction as a share of each part (homestead, non-homestead residential,
         non-residential): excluded from this year's rolled-back rates, added to the base after."""
+        if cap_multiple is not None:
+            self.settings = {**self.settings, "cap_multiple": cap_multiple}
         gs = np.where(np.isnan(gs), np.nanmedian(gs), gs)
         gc = np.where(np.isnan(gc), np.nanmedian(gc), gc)
         c, hv, nr = self._c, 1 + home_value_growth, 1 + nonres_growth

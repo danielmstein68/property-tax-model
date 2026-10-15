@@ -1,0 +1,6 @@
+# Example policy (for testing the comparison machinery, not a proposal).
+name: Double the second homestead exemption
+description: The second homestead exemption (non-school levies, on assessed value above $50,000)
+  doubles from $27,177 to $54,354 in 2027 and keeps growing with inflation as under current law.
+changes:
+  - {rule: homestead_second, key: amount, value: 54354, from: 2027}

@@ -24,20 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 YEAR = 2026
 CLASSES = ["school", "county", "municipal", "special"]
 
-# Regions by county FIPS (Florida, 3-digit)
-REGIONS = {
-    "Southeast": ["086", "011", "099", "087", "085", "111", "061", "093"],
-    "Southwest": ["071", "021", "015", "115", "081", "051", "043", "027", "049", "055"],
-    "Tampa Bay": ["057", "103", "101", "053", "105", "017"],
-    "Central": ["095", "097", "117", "069", "127", "009", "119", "083", "035"],
-    "Northeast": ["031", "109", "019", "089", "003", "107", "001", "007", "023", "041", "075", "121", "125"],
-}
-REGION_OF = {f: r for r, fs in REGIONS.items() for f in fs}
-
-AGE_BANDS = [(0, 44, "Under 45"), (45, 64, "45–64"), (65, 74, "65–74"), (75, 200, "75 and over")]
-MV_BANDS = {1: "Under 2 years", 2: "Under 2 years", 3: "2–4 years", 4: "5–9 years",
-            5: "10–19 years", 6: "20 years or more", 7: "20 years or more"}
-HOME_TYPES = {"sfr": "Single-family", "condo": "Condo / co-op", "mobile": "Mobile home (owns land)"}
+from ptm.results import AGE_BANDS, HOME_TYPES, MV_BANDS, REGION_OF, REGIONS  # noqa: E402
 
 
 def weighted_median(x: pd.Series, w: pd.Series) -> float:

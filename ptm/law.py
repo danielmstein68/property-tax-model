@@ -46,6 +46,8 @@ class Rule:
 
     def get(self, key: str, year: int | None = None, default: Any = None) -> Any:
         v = self.spec.get(key, default)
+        if v is None:
+            return default
         return value_for(v, year, f"{self.id}.{key}") if year is not None else v
 
 

@@ -60,7 +60,7 @@ def project_law(law: Law, econ: Economy, last_year: int) -> Law:
             for y in range(max(vals) + 1, last_year + 1):
                 cpi = econ.rate("cpi", y - p.get("cpi_lag", 1))
                 if method == "lesser_of_max_and_cpi":
-                    v = min(float(r.spec["max_rate"]), cpi)
+                    v = min(float(r.get("max_rate", y)), cpi)
                 elif method == "index_cpi":
                     g = max(cpi, 0.0) if p.get("floor_zero") else cpi
                     v = vals[y - 1] * (1 + g)
@@ -412,9 +412,13 @@ class Projection:
                 g = np.where((before > 0) & self.min_count_ok, now / before, np.nan)
             growth[c] = g                                  # thin counties use the median
         nc = self.nc.loc[y] if self.demo.get("household_growth", True) else None
+        try:   # the law's two-thirds-vote limit (multiple of the rolled-back rate) for this year
+            cap = float(self.law.rule("maximum_millage_vote").get("two_thirds_vote_max_of_rolled_back", y))
+        except Exception:
+            cap = None
         self.rates.step_arrays(growth["school"], growth["county"],
                                self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y,
-                               nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]))
+                               nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]), cap_multiple=cap)
         rc = self.rates.county_draws.mean(axis=0)
         rcity = self.rates.city_draws.mean(axis=0)
         rle = self.rates.rle_draws.mean(axis=0)

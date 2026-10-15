@@ -22,6 +22,33 @@ from ptm.settings import Settings
 
 REPLICATES = [f"WGTP{i}" for i in range(1, 81)]
 
+# Regions by county FIPS (Florida, 3-digit)
+REGIONS = {
+    "Southeast": ["086", "011", "099", "087", "085", "111", "061", "093"],
+    "Southwest": ["071", "021", "015", "115", "081", "051", "043", "027", "049", "055"],
+    "Tampa Bay": ["057", "103", "101", "053", "105", "017"],
+    "Central": ["095", "097", "117", "069", "127", "009", "119", "083", "035"],
+    "Northeast": ["031", "109", "019", "089", "003", "107", "001", "007", "023", "041", "075", "121", "125"],
+}
+REGION_OF = {f: r for r, fs in REGIONS.items() for f in fs}
+
+AGE_BANDS = [(0, 44, "Under 45"), (45, 64, "45–64"), (65, 74, "65–74"), (75, 200, "75 and over")]
+MV_BANDS = {1: "Under 2 years", 2: "Under 2 years", 3: "2–4 years", 4: "5–9 years",
+            5: "10–19 years", 6: "20 years or more", 7: "20 years or more"}
+HOME_TYPES = {"sfr": "Single-family", "condo": "Condo / co-op", "mobile": "Mobile home (owns land)"}
+
+
+def household_groups(h: pd.DataFrame) -> pd.DataFrame:
+    """Readable groups for tables and comparisons: age, years in home, home type, homestead, region."""
+    out = pd.DataFrame(index=h.index)
+    out["age_group"] = pd.cut(h["HHLDRAGEP"], [a - 0.5 for a, _, _ in AGE_BANDS] + [200],
+                              labels=[l for *_, l in AGE_BANDS]).astype(str)
+    out["years_in_home"] = h["MV"].map(MV_BANDS)
+    out["home_type"] = h["home_type"].map(HOME_TYPES)
+    out["homestead"] = np.where(h["homestead"].fillna(False).astype(bool), "Homestead", "Not homestead")
+    out["region"] = h["county_fips"].map(REGION_OF).fillna("North & Panhandle")
+    return out
+
 
 def weighted_cutoffs(x: pd.Series, w: pd.Series, n: int = 10) -> np.ndarray:
     o = np.argsort(x.to_numpy())

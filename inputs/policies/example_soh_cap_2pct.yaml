@@ -1,0 +1,6 @@
+# Example policy (for testing the comparison machinery, not a proposal).
+name: Save Our Homes cap at 2%
+description: Homestead assessments may rise at most 2% a year (or CPI if lower) from 2027,
+  instead of 3%.
+changes:
+  - {rule: soh_cap, key: max_rate, value: 0.02, from: 2027}
