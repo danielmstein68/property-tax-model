@@ -15,11 +15,12 @@ Each year (owners only; renters come with pass-through):
      (lock-in), set so the 2026 average matches the 2025 sale rates in the rolls; a homestead sale
      resets the assessment to just value unless the owner ports their savings (turnover settings in
      inputs/fl_projection_assumptions.yaml). The household stays in the data (its home resets).
-  4. engine: assessment caps, exemptions, taxable value and tax (ptm.engine.step)
+  4. engine: assessment caps, exemptions and taxable value (ptm.engine.step)
+  5. rates: each county, city and school district sets its millage from Florida's rolled-back rate
+     rules, given how its whole taxable base grew (ptm.rate_setting); then tax
 
 Not yet (next pieces): deaths of older owners, reweighting to household projections by age, new
-construction, homestead status changes, re-testing income-limited exemptions, and rate-setting -
-millage is held at 2026 rates for now.
+construction, homestead status changes, re-testing income-limited exemptions.
 """
 
 import copy
@@ -30,6 +31,7 @@ import pandas as pd
 from ptm.economy import Economy
 from ptm.engine.step import carry_forward, step
 from ptm.law import Law, load_law
+from ptm.rate_setting import RateSetter, _city_key, school_rle_2026
 from ptm.results import owner_mask
 
 BASE_YEAR = 2026
@@ -67,9 +69,11 @@ def lock_in_factor(savings: np.ndarray, per_100k: float, floor: float) -> np.nda
 
 class Projection:
     def __init__(self, baseline: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
-                 seed: int = 2026, law: Law | None = None):
+                 seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None):
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
+        self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
+        self.rates = RateSetter(self.rate_settings, BASE_YEAR)
         self.law_base = law or load_law()
         self.rng = np.random.default_rng(seed)
         h = baseline[owner_mask(baseline)].copy()
@@ -82,6 +86,14 @@ class Projection:
         u["changed_ownership"] = False
         u["improvements"] = 0.0
         u[f"tax_{BASE_YEAR}"] = u[f"tax_model_{BASE_YEAR}"]
+        # rates: 2026 levels by jurisdiction; school = statutory part + required local effort
+        u["rle_2026"] = u["county_fips_tax"].map(school_rle_2026()).fillna(0)
+        u["millage_school_fixed"] = u["millage_school"] - u["rle_2026"]
+        for c in ["county", "municipal"]:
+            u[f"millage_{c}_base"] = u[f"millage_{c}"]
+        u["city_key"] = u["municipality"].fillna("").map(_city_key)
+        for c in ["school", "county"]:
+            u[f"taxable_{c}_prior"] = u[f"taxable_{c}_{BASE_YEAR}"]
         u[f"av_school_{BASE_YEAR}"] = u["av_school_prior"]
         self.units = u
         self.year = BASE_YEAR
@@ -128,14 +140,39 @@ class Projection:
         u["changed_ownership"] = sold
         u["portability_transfer"] = transfer
         res = step(u, law, y)
+        self._set_rates(u, res, y)
+        for c in LEVIES:
+            res[f"tax_{c}"] = res[f"taxable_{c}"] * u[f"millage_{c}"].fillna(0) / 1000
+        res["tax_total"] = res[[f"tax_{c}" for c in LEVIES]].sum(axis=1)
         u[f"tax_{y}"] = res["tax_total"]
         u[f"av_school_{y}"] = res["av_school"]
         for c in LEVIES:
             u[f"tax_{c}_{y}"] = res[f"tax_{c}"]
         self.rows.append(self._row(u, y, sold, res["tax_total"], res["av_school"],
                                    {c: res[f"tax_{c}"] for c in LEVIES}, law))
-        self.units = carry_forward(u, res).drop(columns=["portability_transfer"])
+        nxt = carry_forward(u, res).drop(columns=["portability_transfer"])
+        for c in ["school", "county"]:
+            nxt[f"taxable_{c}_prior"] = res[f"taxable_{c}"]
+        self.units = nxt
         self.year = y
+
+    def _set_rates(self, u: pd.DataFrame, res: pd.DataFrame, y: int) -> None:
+        """Rates for year y from each jurisdiction's taxable growth (homestead part from the model)."""
+        hs, w = u["homestead"], u["WGTP"]
+        growth = {}
+        for c in ["school", "county"]:
+            now = (res[f"taxable_{c}"] * w)[hs].groupby(u["county_fips_tax"][hs]).sum()
+            before = (u[f"taxable_{c}_prior"] * w)[hs].groupby(u["county_fips_tax"][hs]).sum()
+            n = hs.groupby(u["county_fips_tax"]).sum()
+            g = (now / before.replace(0, np.nan))
+            growth[c] = g[n.reindex(g.index) >= 30]          # thin counties use the median
+        self.rates.step(growth["school"], growth["county"],
+                        self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y))
+        county = u["county_fips_tax"]
+        u["millage_county"] = u["millage_county_base"] * county.map(self.rates.ratio_county).fillna(1)
+        city_ratio = pd.Series(list(zip(county, u["city_key"])), index=u.index).map(self.rates.ratio_city)
+        u["millage_municipal"] = u["millage_municipal_base"] * city_ratio.fillna(1).where(u["millage_municipal_base"] > 0, 1)
+        u["millage_school"] = u["millage_school_fixed"] + u["rle_2026"] * county.map(self.rates.ratio_school).fillna(1)
 
     def run(self, end_year: int = 2036) -> "Projection":
         while self.year < end_year:
@@ -156,6 +193,10 @@ class Projection:
                "homestead_share_sold": (sold[hs] * w[hs]).sum() / w[hs].sum()}
         for c, t in classes.items():
             row[f"tax_{c}"] = (t.fillna(0) * w).sum()
+        for c in ["school", "county", "municipal"]:
+            m = u[f"millage_{c}"]
+            has = m.fillna(0) > 0
+            row[f"millage_{c}_avg"] = np.average(m[has], weights=w[has]) if has.any() else np.nan
         if law is not None:
             row["soh_cap"] = float(law.rule("soh_cap").get("cap", y))
             row["homestead_second_amount"] = float(law.rule("homestead_second").get("amount", y))

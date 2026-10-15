@@ -43,3 +43,13 @@ def test_portability_transfer():
 def test_lock_in():
     f = lock_in_factor(np.array([0, 100_000, 1_000_000]), -0.0625, 0.5)
     assert list(f) == [1.0, 0.9375, 0.5]
+
+
+def test_rate_ratio_rules():
+    from ptm.rate_setting import rate_ratio
+    g = np.array([0.95, 1.05, 1.20])
+    assert list(rate_ratio("hold", g, 1.10)) == [1.0, 1.0, 1.0]
+    assert rate_ratio("rolled_back", g, 1.10) == pytest.approx(1 / g)
+    assert rate_ratio("keep_capped", g, 1.10) == pytest.approx([1.0, 1.0, 1.10 / 1.20])  # cut only above 110%
+    with pytest.raises(ValueError):
+        rate_ratio("whatever", g, 1.10)

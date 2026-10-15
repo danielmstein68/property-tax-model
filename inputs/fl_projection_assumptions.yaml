@@ -97,6 +97,18 @@ turnover:
       (ASS_DIF_TRNS > 0); median $106,024. In the model a household that sells and ports keeps its
       own savings (up to $500,000) on its next home.
 
+# How governments set millage each year (ptm/rate_setting.py). Options:
+#   keep_capped  keep last year's rate, cut to cap_multiple x the rolled-back rate if above it
+#                (best fit to 2026 adopted county rates; the 110% tier needs a two-thirds vote)
+#   rolled_back  the rolled-back rate every year (revenue-neutral on existing property)
+#   hold         last year's rate
+rate_setting:
+  county: keep_capped
+  municipal: keep_capped
+  school_rle: keep_capped
+  cap_multiple: 1.10
+  decided: "2026-10-15 (Daniel): keep_capped (option a)"
+
 scenarios:
   central:
     description: Official Florida forecasts (REC adopted, EEC).
