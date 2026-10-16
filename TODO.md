@@ -2,8 +2,49 @@
 
 Steps we're working through one at a time. Each gets discussed before it's built.
 
-## In progress
-- [ ] **Load Florida PUMS** (2024 1-year housing file) — `ptm/load.py`
+## Open items (cleaned up 2026-10-16)
+**Accuracy**
+- [ ] Top-coded tax ($42,500, ~1% of PUMS owners): impute from taxable value x local rates.
+- [ ] 2026 rates: swap in DOR's 2026 TACD / Table 1 when posted; collect remaining county rates; more 2026 city rates (Tampa, Orlando, Clearwater, Naples, Tallahassee, Gainesville, remaining Broward cities).
+- [ ] County checks: Putnam (homestead tax 12% above the roll), Escambia (8% below; 41 parcels missing just value), homesteads under $100k (9% below).
+- [ ] Senior long-term exemption: sliders barely move results (PUMS `MV` tenure bands); check eligibility by tenure.
+- [ ] Separate 10-mill caps for county-dependent districts and MSTUs (needs per-authority rates); special-district class (independent districts, water management districts).
+- [ ] Fix `inputs/fl_exemption_codes.csv`: codes 31-34 are $5,000 (not $500).
+- [ ] Replace `SCHOOL_SHARE` (0.37) in `ptm/aging.py` tax aging with county millage.
+- [ ] Reprocess NAL rolls so the stored `own_out_of_state` flag is correct (code recomputes it).
+- [ ] Income top-coding flag (`flag_topcode_hincp`) is meaningless; drop or detect from the person file.
+
+**Projections**
+- [ ] Inflation: average CBO, SS Trustees, Philadelphia Fed SPF; expose an inflation control.
+- [ ] Regional/type variation in appreciation (condos, Southwest Florida).
+- [ ] Check first projected years against REC taxable value forecasts.
+- [ ] Faster Monte Carlo (batch paths); new development reweighting each projection year.
+
+**Behavioural responses**
+- [ ] Owners dropping the exemption when a policy shrinks it (only claiming is modelled).
+- [ ] Second-home switching in city bases and history-mode rate responses.
+
+**Amendment 3 and policy**
+- [ ] Local options: counties/cities raising the exemption; shortening the newcomer wait from 2030.
+- [ ] County map of revenue lost and rate increases.
+- [ ] (optional) Compare county/city/special district impacts with REC's per-government tables (impact0710.pdf pages 5-18).
+- [ ] Tests for 2026-10-15/16 features (Amendment 3 exemption, new residents, cap blocks, 10-mill cap, state offsets, take-up/residency switch).
+
+**Bigger**
+- [ ] Live engine so users can combine changes freely (replaces the pre-computed grid).
+- [ ] Texas (next; research in `docs/research/texas_homestead_takeup.md`), then Ohio (HB 920; rollback-then-cap).
+- [ ] Renters / pass-through (dropped 2026-10-15; see below).
+
+**Needs Daniel**
+- [ ] Request the 2024 final NAL roll from DOR (draft ready; Daniel sends).
+- [ ] Check the 29 fiscally constrained counties against EDR's map (Property-Tax-FiscallyConstrainedCounties.pdf, slide 3).
+- [ ] Check the strike-through in SB 4-F s. 200.065(5)(a) (per capita income adjustment struck?).
+
+---
+# History and notes
+
+## In progress (historical)
+- [x] **Load Florida PUMS** (2024 1-year housing file) — `ptm/load.py`
 
 ## Done
 - [x] **Florida parcel rolls, all 67 counties** (2026-10-13; 29 final, 38 preliminary) — `scripts/fl_parcels.py`; checks in `data/processed/fl_nal_2026/_checks.csv`. 9.86M residential parcels, 5.21M homesteads, 717 MB processed. Rerun later for final rolls.
@@ -41,7 +82,7 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
    - Small gaps: Lee 325 (263 homesteads, likely new 2026 district); Lake 3 / Flagler 1 / Bay 1 codes with ~0 homesteads; Liberty code mapping inferred.
 
 ## Next
-- [ ] **Link PUMS and parcel data** (after aging PUMS to 2026). No record-level join is possible, so link by groups:
+- [x] **Link PUMS and parcel data** (done: homestead status, gaps, districts, calibration — see "Where we left off"). No record-level join is possible, so link by groups:
   1. Map parcels to PUMAs (`CENSUS_BK` → tract → PUMA).
   2. Age PUMS to 2026.
   3. Build cells: PUMA × value band × homestead/owner (maybe building type).
@@ -49,8 +90,8 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
   5. Calibrate PUMS totals by PUMA to the roll (homestead counts, value, taxable value).
   - Check: Florida "just value" vs market value (believed ~15% below market for cost of sale — confirm).
   - Result is a 2026 baseline *dataset*; still needs millage calibration, tax rules as code, renters, projection, metrics.
-- [ ] **Two-part structure:** households (PUMS + roll) for distribution; all parcels (roll directly) for revenue, since second homes, investor-owned rentals and vacant land aren't PUMS households (and Amendment 3's 5% cap mainly hits them). Same tax-rule code for both.
-- [ ] **Age to 2026.** Two target dates:
+- [x] **Two-part structure** (done as households + roll-based local bases and non-owner estimate): households (PUMS + roll) for distribution; all parcels (roll directly) for revenue, since second homes, investor-owned rentals and vacant land aren't PUMS households (and Amendment 3's 5% cap mainly hits them). Same tax-rule code for both.
+- [x] **Age to 2026.** Two target dates:
   - **values → Jan 1, 2026** (Florida assessment date; matches the 2026 roll);
   - **incomes and rents → calendar-year 2026 average** (income during the year the 2026 bill is paid; PUMS income is effectively calendar-2024 income).
   - [x] **Home values, by county × type × tier** — `add_aged_values` in `ptm/aging.py`; inputs from `scripts/value_factors.py`:
@@ -71,18 +112,18 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
     - [ ] Unit tests for `ptm/florida.py` (add pytest).
   - **Household count:** handled by calibration to the roll's 2026 homestead count.
 - [ ] **Request 2024 final NAL roll** from DOR (PTOTechnology@floridarevenue.com) — draft ready on request; you send it.
-- [ ] **Florida current-law rules** — spec done: `inputs/fl_law.yaml` (24 rules, verbatim sources, confidence flags), readable page `docs/FL_LAW.md` (`scripts/law_page.py`), loader `ptm/law.py`. Review decisions 2026-10-14 recorded in the spec. Still to do:
-  - [ ] Rules engine reading the spec (assessment, exemptions in statutory order, taxable value by levy class) + unit tests.
+- [x] **Florida current-law rules** — spec done: `inputs/fl_law.yaml` (24 rules, verbatim sources, confidence flags), readable page `docs/FL_LAW.md` (`scripts/law_page.py`), loader `ptm/law.py`. Review decisions 2026-10-14 recorded in the spec. Still to do:
+  - [x] Rules engine reading the spec (assessment, exemptions in statutory order, taxable value by levy class) + unit tests.
   - [x] Exemptions engine (`ptm/engine/exemptions.py`) — 15 hand-worked tests.
   - [x] Roll test (`scripts/roll_test.py`): 9,854,810 residential parcels, **99.39% exact** on both school and county taxable value (school 99.51%, county 99.43%); **99.82%** excluding explained cases (exemptions outside the spec, $10 condo common elements, Gadsden's preliminary roll using the 2025 second-band amount). 17,343 parcels left to explain (standard homesteads 9.5k, county senior 3.7k, veterans' discount 2.0k, $5,000 ex-service 1.7k).
   - [x] Exemption assignment updates (2026-10-14, `ptm/exemptions.py`, `ptm/millage.py`): county codes only for county senior counts (city 04/40 separate, eligibility-based so cities without a county ordinance get candidates); county-group senior amounts; long-term senior statutory test (just value < $250k in first qualifying year, deflated; 25+ years); total disability excludes Brevard's $5,000 code-08 entries (roll: 3,608 homesteads, not 14,967) with $0 reporters and the $37,712 gross-income limit first; new $5,000 exemptions assigned (widow/blind/disabled 561k, disabled ex-service 161k). Owner tax $25.441B → $25.425B; official-levy check 1.048; modelled/reported median 0.904.
   - [ ] Fix `inputs/fl_exemption_codes.csv`: codes 31–34 are $5,000 (not $500, per ch. 2022-97 and the roll).
   - [x] Assessment rules (`ptm/engine/assess.py`) — Save Our Homes cap with recapture, reset on sale / first homestead year, improvements, non-homestead 10% cap (school at just value). 12 hand-worked tests. Reset-on-sale checked against 2025 sales in the roll (non-homesteads 99.8%; homesteads 74.7%, rest explained by portability). Full test needs the 2025 roll (requested).
   - [x] Year-step (`ptm/engine/step.py`): `step()` = assessment → exemptions → taxable → tax (rates plug in as `millage_<class>` columns), `carry_forward()` for the next year. 6 tests incl. tax by hand and a three-year path. ~3.5 s per million units per year.
-  - [ ] Step 4 — wire the engine into the baseline (coordinate with the rates chat: `ptm/baseline.py`, `ptm/millage.py`, `ptm/exemptions.py`, `ptm/aging.py`): household taxable values from the engine (four levy classes) instead of `exemptions.py`'s calculation; `millage.py` uses them.
-  - [ ] Portability: revisit when projecting movers (not modelled explicitly for 2026). Roll: ~25% of 2025 homestead buyers ported, median $104,957 (`ASS_DIF_TRNS`).
-- [ ] **Calibration** — match modelled tax to reported `TAXAMT` and published levy totals
-- [ ] **Metrics** — distribution tables by income decile etc., Suits index, replicate-weight SEs
+  - [x] Step 4 — wire the engine into the baseline (done: `engine_tax` in `ptm/millage.py`) (coordinate with the rates chat: `ptm/baseline.py`, `ptm/millage.py`, `ptm/exemptions.py`, `ptm/aging.py`): household taxable values from the engine (four levy classes) instead of `exemptions.py`'s calculation; `millage.py` uses them.
+  - [x] Portability: modelled in projections (14% of homestead sales; law limit since 2026-10-16). Earlier note: revisit when projecting movers (not modelled explicitly for 2026). Roll: ~25% of 2025 homestead buyers ported, median $104,957 (`ASS_DIF_TRNS`).
+- [x] **Calibration** (option A: modelled tax validated against official levies) — match modelled tax to reported `TAXAMT` and published levy totals
+- [x] **Metrics** (`ptm/results.py`: deciles, Suits, replicate SEs) — distribution tables by income decile etc., Suits index, replicate-weight SEs
 - [x] **Monroe County check** — fixed (shared PUMA merged Monroe with Miami-Dade); now 0.95 of roll. See CHALLENGES.md.
 - [ ] **Putnam check** — model homestead tax 12% above the roll (218 records).
 - [ ] **Under-$100k homesteads** — 9% below the roll since value-tenth ranking (small bills; low priority).
@@ -91,13 +132,13 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 - [ ] **Reprocess NAL rolls** so the stored `own_out_of_state` flag is correct (code now recomputes it from `own_state`).
 - [ ] **More 2026 city rates** — Tampa, Orlando, Clearwater, Naples, Tallahassee, Gainesville, remaining Broward cities; replace proposed with final when DOR's 2026 Table 1 is out.
 - [ ] **Escambia check** — 8% below the roll (814 records; 41 parcels missing JV).
-- [~] **Public results display — the first public output** (agreed 2026-10-14). Draft built (private artifact): `ptm/results.py` → `scripts/results_2026.py` → `scripts/build_display.py` (`display/template.html`), styled after landeconomics.org. Next: county map, example households, "how the model compares" section; sharing is Daniel's call. Once the status quo is complete (owners only): a public page presenting Florida's current property tax by income decile, age, region and home type, with clear "owners only" labelling and links to LIMITATIONS. Plan the design together before building.
-- [ ] **Current-law projection** — 2026 → 2036
-- [ ] **Amendment 3** (Florida, Nov 3 2026 ballot) — first policy
-  - **Take-up setting** (default off): "possibly eligible" non-claimers start claiming with probability rising in the benefit (bigger exemptions → more filers → bigger revenue loss). Show static and with-take-up results.
-  - **Snowbird residency switch** (default off): some likely-ineligible snowbirds move legal residency to Florida.
-- [ ] **Ohio** — HB 920 reduction factors; Ramaswamy rollback-then-cap (rollback year as a setting)
-- [ ] **Texas**
+- [x] **Public results display — the first public output** (agreed 2026-10-14). Draft built (private artifact): `ptm/results.py` → `scripts/results_2026.py` → `scripts/build_display.py` (`display/template.html`), styled after landeconomics.org. Next: county map, example households, "how the model compares" section; sharing is Daniel's call. Once the status quo is complete (owners only): a public page presenting Florida's current property tax by income decile, age, region and home type, with clear "owners only" labelling and links to LIMITATIONS. Plan the design together before building.
+- [x] **Current-law projection** — 2026 → 2036 (step 2 below)
+- [x] **Amendment 3** (Florida, Nov 3 2026 ballot) — first policy (page done 2026-10-16)
+  - **Take-up setting** (built 2026-10-16, on by default, central 20%; superseded note: default off): "possibly eligible" non-claimers start claiming with probability rising in the benefit (bigger exemptions → more filers → bigger revenue loss). Show static and with-take-up results.
+  - **Snowbird residency switch** (built 2026-10-16 as residency_switch, on by default; superseded note: default off): some likely-ineligible snowbirds move legal residency to Florida.
+- [ ] **Ohio** (see Open items) — HB 920 reduction factors; Ramaswamy rollback-then-cap (rollback year as a setting)
+- [ ] **Texas** (see Open items)
 
 ## Dropped: pass-through to renters
 **Decided 2026-10-15 (Daniel): not doing rental pass-through.** Results stay owners only (the page says so); the settings switch keeps raising an error. Earlier notes kept for reference:
@@ -132,8 +173,8 @@ Florida's voter file (Division of Elections, on request; check use terms and exe
 - [x] **Monte Carlo** — `ptm/montecarlo.py`: noisy home value / non-residential / CPI paths x 200 rate draws, p10/p50/p90 by income decile. ~35 s for 20 paths on the laptop (5 workers).
 - [x] **Deaths and age mix** — Florida 2021 life table (owner death without spouse resets; inside the calibrated reset rate); weights follow FDEC/BEBR population by age.
 - [x] **New owners / new construction** — owners grow with EEC households; new homes at full value (recent-buyer donors placed by county new construction); NC out of rolled-back in year 1, then in the base.
-- [ ] Projection, remaining: homestead status changes (claims/drops), re-test income-limited exemptions with indexed limits, regional/condo appreciation differences, max-millage tracking (ch. 2026-240), faster Monte Carlo (batch paths).
-- [ ] **Step 3**: projections and bands on the results page.
+- [x] Projection, remaining (2026-10-16: claims modelled; income-limited exemptions re-tested yearly; vote limits encoded): homestead status changes (claims/drops), re-test income-limited exemptions with indexed limits, regional/condo appreciation differences, max-millage tracking (ch. 2026-240), faster Monte Carlo (batch paths).
+- [x] **Step 3**: projections and bands on the results page (baseline outlook).
 - [ ] Check first projected years against REC taxable value forecasts.
 
 ## Municipality engine (revenue-neutral rates) — requested 2026-10-15
@@ -144,12 +185,12 @@ Modelled on the Maine property tax model's "Municipality Engine" (it re-solves e
 - [x] **Per-government results** (done 2026-10-16: section 4 table of county general, city and school rates, current law vs policy): rate change for each county, city and school district (also the geography view).
 - [x] **Page**: third series via checkbox in Policy comparisons; mode added to `scripts/policy_grid.py` ("neutral").
 - [ ] Map of rate changes by government.
-- [ ] Feed non-homestead cap changes into jurisdiction bases.
+- [x] Feed non-homestead cap changes into jurisdiction bases (cap blocks, 2026-10-16).
 - Estimate: 3-4 hours. Check Maine's model documentation for definitions to match (MVR fields, reimbursement rules).
 
 ## Amendment 3 page — requested 2026-10-15
 - [x] (2026-10-16: "Amendment 3" view: whole amendment, larger exemption, 5% cap; five-year rule as written / struck down; revenue vs state estimate; policies in inputs/policies/amendment3*.yaml) A separate page (or view) with every change Amendment 3 makes, modelled against current law: read the amendment and implementing bill text, encode each provision as policy changes/levers, show the three outputs (new situation, changes, winners/losers) per provision and combined. Revenue-neutral mode (above) is relevant: local governments would need to replace lost revenue.
-- [ ] Amendment 3: check SB 4-F (ch. 2026-240) implementing details (administration of the five-year rule, any elimination schedule the ballot summary mentions); local options (counties/cities raising the exemption; 2030 shortening of the wait).
+- [x] Amendment 3: read SB 4-F (ch. 2026-240): it changes s. 200.065 vote limits and re-enacts the fiscally constrained offsets; no elimination schedule or five-year-rule administration in it. Local options moved to Open items. Was: check SB 4-F (ch. 2026-240) implementing details (administration of the five-year rule, any elimination schedule the ballot summary mentions); local options (counties/cities raising the exemption; 2030 shortening of the wait).
 - [x] Remove the double count of non-claimer owner-occupied homes in the non-owner tax estimate (2026-10-16).
 - [x] Revenue lost (all property, rates unchanged; 10-year total; after responses; by government) leads the policy and Amendment 3 pages (2026-10-16).
 - [x] Fiscally constrained county offsets as a revenue-neutral setting (s. 218.125 formula; 29 counties) (2026-10-16). Amendment 3: about $94M (2027), $174M (2031).
