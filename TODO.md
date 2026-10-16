@@ -155,3 +155,4 @@ Modelled on the Maine property tax model's "Municipality Engine" (it re-solves e
 - [x] Fiscally constrained county offsets as a revenue-neutral setting (s. 218.125 formula; 29 counties) (2026-10-16). Amendment 3: about $94M (2027), $174M (2031).
 - [ ] Separate 10-mill caps for county-dependent districts and MSTUs (needs per-authority rates).
 
+- [x] Revenue section: headline 'lost by Florida's local governments' and a 'for scale' line from statewide county and city Annual Financial Reports, FY 2023-24 (inputs/fl_local_finance_fy2024.yaml) (2026-10-16). Per-government revenue shares dropped: unadjusted county AFR files mix in custodial (pass-through) taxes.

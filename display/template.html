@@ -349,6 +349,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="eyebrow">1 · Revenue</div>
       <h2 id="pol-rev-title">Revenue lost to local governments</h2>
       <div class="figures" id="pol-rev-figures"></div>
+      <p id="pol-rev-scale"></p>
       <p id="pol-rev-where"></p>
       <div class="charts">
         <div class="chart">
@@ -1019,6 +1020,7 @@ function renderPolicy() {
 }
 
 // 1. revenue lost (all property)
+const FIN = __FIN__;
 const RYEARS = G.current_law.yearly.filter(r => r.year > 2026).map(r => r.year);
 const allTax = y => { const b = G.current_law.yearly.find(r => r.year === y); return b.tax_total + b.nonowner; };
 const bnAbs = v => "$" + (Math.abs(v) / 1e9).toFixed(Math.abs(v) >= 1e10 ? 1 : 2) + " billion";
@@ -1032,7 +1034,7 @@ function renderRevenue(run, y, M) {
   const N = yr("none", y), R = yr("respond", y), lost = -N.all, word = lost >= 0 ? "lost" : "gained";
   const cum = RYEARS.reduce((t, yy) => t - (yr("none", yy).all || 0), 0);
   $("pol-rev-figures").innerHTML = [
-    [bnS(-N.all).replace(/^[+−]/, ""), `Revenue ${word} in ${y}, tax rates unchanged`, "lead"],
+    [bnS(-N.all).replace(/^[+−]/, ""), `${lost >= 0 ? "Lost by" : "Gained by"} Florida's local governments in ${y}, tax rates unchanged`, "lead"],
     [pct(Math.abs(lost) / allTax(y), 1), `Of all property tax in ${y}`],
     [bnS(cum).replace(/^[+−]/, ""), `Revenue ${cum >= 0 ? "lost" : "gained"} 2027–${RYEARS[RYEARS.length - 1]}, rates unchanged`],
     [bnS(-R.all).replace(/^[+−]/, ""), `Still ${-R.all >= 0 ? "lost" : "gained"} in ${y} after governments respond`],
@@ -1048,6 +1050,16 @@ function renderRevenue(run, y, M) {
       (POL.nocap ? " (This version ignores the 10-mill cap.)" : nHeld ? ` About ${short >= 5e6 ? bnAbs(short) : usd(short)} can't be raised because ${nHeld} ${nHeld === 1 ? "government is" : "counties and cities are"} held at the 10-mill cap; it stays lost.` : " No county or city hits the 10-mill cap.");
   }
   $("pol-rev-where").textContent = where;
+  // for scale: non-school share lost, translated with statewide county and city finances (FY 2023-24)
+  const b = G.current_law.yearly.find(q => q.year === y);
+  const nsLost = -(N.all - N.school - N.nonowner_school), nsTot = (b.tax_total - b.school) + (b.nonowner - b.nonowner_school);
+  const sLost = -(N.school + N.nonowner_school), sTot = b.school + b.nonowner_school, sh = nsLost / nsTot;
+  $("pol-rev-scale").innerHTML = Math.abs(nsLost) < 5e6 && Math.abs(sLost) < 5e6 ? "" :
+    `<b>For scale:</b> ` + (Math.abs(nsLost) >= 5e6 ? `that is ${pct(Math.abs(sh), 1)} of the property tax counties, cities and special districts would collect in ${y}. ` +
+      `Property tax pays for about ${pct(FIN.property_tax_share_of_revenue, 0)} of Florida counties' and cities' revenue, so ${sh >= 0 ? "losing" : "gaining"} that share is like ${sh >= 0 ? "losing" : "gaining"} about ${pct(Math.abs(sh) * FIN.property_tax_share_of_revenue, 1)} of all their revenue, ` +
+      `or a sum equal to about ${pct(Math.abs(sh) * FIN.property_tax_per_public_safety_dollar, 0)} of what they spend on public safety (police, fire, emergency services). ` : "") +
+    (Math.abs(sLost) >= 5e6 ? `School districts ${sLost >= 0 ? "lose" : "gain"} ${pct(Math.abs(sLost) / sTot, 1)} of their property tax. ` : "") +
+    `<span class="muted-p">County and city finances: <a href="${FIN.source_url}">state Annual Financial Reports, fiscal year 2023–24</a> (excluding taxes collected for other governments, transfers and borrowing; counties exclude Jacksonville-Duval). A comparison of size, not a forecast of which services would be cut.</span>`;
   // chart: revenue lost by year, each response
   const W = 520, H = 260, L = 56, R_ = 12, T = 14, B = 30;
   const S = M.map(m => ({ m, pts: run[key(m)].yearly.filter(r => r.all !== null && r.all !== undefined).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));

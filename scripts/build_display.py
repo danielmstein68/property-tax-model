@@ -18,7 +18,10 @@ def main() -> None:
     proj = (res / "fl_projections.json").read_text(encoding="utf-8")
     page = (ROOT / "display" / "template.html").read_text(encoding="utf-8")
     grid = (res / "fl_policy_grid.json").read_text(encoding="utf-8")
-    page = page.replace("__DATA__", data).replace("__PROJ__", proj).replace("__GRID__", grid)
+    import json
+    import yaml
+    fin = json.dumps(yaml.safe_load((ROOT / "inputs" / "fl_local_finance_fy2024.yaml").read_text(encoding="utf-8")))
+    page = page.replace("__DATA__", data).replace("__PROJ__", proj).replace("__GRID__", grid).replace("__FIN__", fin)
     dest = ROOT / "display" / "fl_2026_status_quo.html"
     dest.write_text(page, encoding="utf-8")
     print(f"wrote {dest}")
