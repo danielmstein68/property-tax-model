@@ -28,6 +28,17 @@ variables:
     after_forecast: {method: ease_to, target_variable: median_price_single_family,
                      target_source: fl_eec_2026_07, years: 4}
 
+  nonhomestead_spread:
+    description: Non-homestead residential appreciation minus all-residential appreciation (added to
+      home_value for the non-homestead part of local tax bases and for second homes). REC adopted
+      forecast by category, existing property (new construction excluded) - non-homestead homes
+      (largely condos and second homes) appreciate more slowly than homesteads; eased to 0 by 2036.
+      Without it, non-school bases grew faster than REC's forecast (docs/checks/projection_vs_rec_2026.md).
+    values: {2026: 0.0, 2027: -0.0117, 2028: -0.0132, 2029: -0.0131, 2030: -0.0122, 2031: -0.0121,
+             2032: -0.0128, 2033: -0.0096, 2034: -0.0064, 2035: -0.0032, 2036: 0.0}
+    source_note: inputs/fl_economy_paths.csv, rec_adopted, appreciation_nonhomestead_residential minus
+      appreciation_residential (Revenue Estimating Conference, Ad Valorem, Aug 2026)
+
   nonresidential_value:
     description: Market value growth of existing non-residential property (needed for rolled-back rates).
     paths_variable: appreciation_nonresidential

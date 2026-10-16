@@ -597,7 +597,16 @@ class Projection:
                                self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y,
                                nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]), cap_multiple=cap,
                                caps=(float(self.law.rule("nonhomestead_residential_cap").get("cap", y)),
-                                     float(self.law.rule("nonresidential_cap").get("cap", y))))
+                                     float(self.law.rule("nonresidential_cap").get("cap", y))),
+                               nonhomestead_growth=self._nh_growth(y))
+
+    def _nh_growth(self, y: int) -> float:
+        """Non-homestead residential appreciation: home values plus the REC category spread."""
+        try:
+            spread = self.econ.rate("nonhomestead_spread", y)
+        except Exception:
+            spread = 0.0
+        return self.econ.rate("home_value", y) + spread
 
     def _nonowner(self, own_school: np.ndarray, own_county: np.ndarray) -> dict:
         """Estimated tax on non-homestead residential and non-residential property (rentals, second
@@ -719,7 +728,7 @@ class Projection:
         """Out-of-state second-home owners switch residence and claim: exempt value by county (local bases)."""
         if not self.rs:
             return
-        self.sb_jv = self.sb_jv * (1 + self.econ.rate("home_value", y))
+        self.sb_jv = self.sb_jv * (1 + self._nh_growth(y))
         base = pd.DataFrame(index=range(len(self.sb_jv)))
         full_p, full_c = self._exempt_as_homestead(base, self.sb_jv, self.law, y), self._exempt_as_homestead(base, self.sb_jv, self.law_cl, y)
         ci = np.maximum(self.sb_ci, 0)

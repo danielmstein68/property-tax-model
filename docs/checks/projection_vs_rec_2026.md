@@ -44,9 +44,31 @@ estimate of tax on non-owner property, and a slightly different baseline for rev
 Policy-vs-current-law differences are less affected (both runs share the bases), but the 5% cap's
 effect depends on how fast capped values catch up.
 
-## Fix (proposed, not done)
-1. Split each county's cap blocks by depth of gap (assessed / just value bands, e.g. <50%, 50-70%,
-   70-80%, 80-90%, 90-97%, at just value) from the 2026 parcels (`scripts/fl_cap_blocks_2026.py`);
-   each band catches up separately. Re-check against REC's county differentials.
-2. Look into homestead growth in 2027.
-Then re-run the grid.
+## Fix (done 2026-10-16)
+1. **Cap blocks by depth of gap** (`scripts/fl_cap_blocks_2026.py`): each county's non-homestead and
+   non-residential parcels in 14 bands of assessed / just value, each catching up separately.
+2. **Non-homestead appreciation by category** (`nonhomestead_spread` in
+   `inputs/fl_projection_assumptions.yaml`): REC forecasts non-homestead homes (mostly condos and
+   second homes) appreciating ~1.2 points a year slower than all residential (0.15% vs 1.32% in 2027);
+   the model had used one residential rate. Eased to 0 by 2036; scenarios and Monte Carlo shocks carry
+   over (it is a spread on home values).
+
+After the fix:
+| Year | School: level gap | County: level gap | County nh growth model / REC | County nr model / REC | Homestead county model / REC |
+|---|---|---|---|---|---|
+| 2027 | +0.2% | +1.4% | 5.11% / 3.24% | 7.43% / 6.13% | 7.11% / 5.69% |
+| 2028 | +0.0% | +1.9% | 5.52% / 4.78% | 7.27% / 6.66% | 6.11% / 6.14% |
+| 2029 | -0.3% | +1.9% | 6.06% / 5.85% | 7.32% / 7.17% | 6.07% / 6.61% |
+| 2030 | -0.5% | +1.9% | 6.72% / 6.76% | 7.27% / 7.32% | 5.84% / 6.26% |
+| 2031 | -0.6% | +1.9% | 6.93% / 7.05% | 7.15% / 7.29% | 5.93% / 6.31% |
+
+## Remaining differences (kept, documented)
+- **Cap catch-up in 2027-28:** the model's capped values close their gap faster than REC forecasts
+  (REC: county differentials on non-homestead residential -9% a year). The model follows the law
+  parcel band by parcel band (up to 10% a year to just value), and that matches what actually
+  happened: REC's own data show the non-homestead residential county differential fell **37.2%**
+  from 2025 to 2026 while just value grew 0.77%. REC's -9% a year is a forecasting assumption (its
+  proposals ranged from +55% to -10% for 2027).
+- **Homestead 2027:** existing homesteads' assessed value +5.1% vs just value +1.3% (Save Our Homes
+  recapture at the 2.9% cap, plus resets on sale); REC implies about one point less. Matches from
+  2028.

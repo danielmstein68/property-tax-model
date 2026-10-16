@@ -18,7 +18,7 @@ Steps we're working through one at a time. Each gets discussed before it's built
 - [ ] Inflation: average CBO, SS Trustees, Philadelphia Fed SPF; expose an inflation control.
 - [ ] Regional/type variation in appreciation (condos, Southwest Florida).
 - [x] Check first projected years against REC taxable value forecasts (2026-10-16, `docs/checks/projection_vs_rec_2026.md`): school bases close (+1.8% by 2031); county (non-school) bases too fast (+5.2% by 2031).
-- [ ] Fix non-school base growth: split cap blocks by depth of gap (catch-up too fast); explain homestead growth +1.4 pts in 2027. Then re-run the grid.
+- [x] Fix non-school base growth (2026-10-16): cap blocks by gap band; non-homestead appreciation spread from REC categories. School within 0.6% of REC to 2031, county +1.9% (2026 actuals support the faster cap catch-up). See docs/checks/projection_vs_rec_2026.md.
 - [ ] Faster Monte Carlo (batch paths); new development reweighting each projection year.
 
 **Behavioural responses**

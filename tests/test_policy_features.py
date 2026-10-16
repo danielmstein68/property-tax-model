@@ -47,9 +47,8 @@ def test_amendment3_schedule_indexes_from_2029():
 
 # --- non-homestead cap blocks -----------------------------------------------------------------------
 def _setter_with_blocks():
-    rs = RateSetter.__new__(RateSetter)
-    rs.blocks = {"nh": {"jc": np.array([100.0]), "ac": np.array([80.0]), "ju": np.array([50.0]),
-                        "au": np.array([50.0]), "sold": np.array([0.0])}}
+    rs = RateSetter.__new__(RateSetter)    # one county, two bands: 80% of just value, at just value
+    rs.blocks = {"nh": {"jv": np.array([[100.0, 50.0]]), "av": np.array([[80.0, 50.0]]), "sold": np.array([0.0])}}
     return rs
 
 
@@ -57,12 +56,12 @@ def test_cap_blocks_follow_the_cap():
     rs = _setter_with_blocks()
     g = rs._capped_growth("nh", 1.03, 0.05)
     b = rs.blocks["nh"]
-    assert b["ac"][0] == pytest.approx(84.0)                     # capped block: +5%
-    assert b["au"][0] == pytest.approx(51.5)                     # at just value: follows value growth
+    assert b["av"][0, 0] == pytest.approx(84.0)                  # capped band: +5%
+    assert b["av"][0, 1] == pytest.approx(51.5)                  # at just value: follows value growth
     assert g[0] == pytest.approx((84 + 51.5) / 130)
     rs10 = _setter_with_blocks()
     rs10._capped_growth("nh", 1.03, 0.10)
-    assert rs10.blocks["nh"]["ac"][0] == pytest.approx(88.0)     # a 10% cap catches up faster
+    assert rs10.blocks["nh"]["av"][0, 0] == pytest.approx(88.0)  # a 10% cap catches up faster
 
 
 def test_cap_blocks_never_exceed_just_value_and_sales_reset():
@@ -70,11 +69,11 @@ def test_cap_blocks_never_exceed_just_value_and_sales_reset():
     rs.blocks["nh"]["sold"] = np.array([0.5])
     rs._capped_growth("nh", 1.00, 0.50)
     b = rs.blocks["nh"]
-    assert b["ac"][0] <= b["jc"][0] + 1e-9                        # never above just value
+    assert (b["av"] <= b["jv"] + 1e-9).all()                     # never above just value
     rs2 = _setter_with_blocks()
     rs2.blocks["nh"]["sold"] = np.array([0.5])
     rs2._capped_growth("nh", 1.0, 0.0)
-    assert rs2.blocks["nh"]["ac"][0] == pytest.approx(0.5 * 100 + 0.5 * 80)   # half reset to just value
+    assert rs2.blocks["nh"]["av"][0, 0] == pytest.approx(0.5 * 100 + 0.5 * 80)   # half reset to just value
 
 
 # --- 10-mill cap and state offsets ------------------------------------------------------------------
