@@ -39,7 +39,8 @@ GROUPS_OUT = ["income_decile", "age_group", "homestead", "region"]
 REIMBURSE = [0.25, 0.5, 0.75]
 MODES = (["respond", "none", "neutral"] + [f"neutral_{round(100 * r)}" for r in REIMBURSE]
          + ["neutral_nocap"] + [f"neutral_nocap_{round(100 * r)}" for r in REIMBURSE]   # neutral: 10-mill cap
-         + ["neutral_fc"])   # cap, and the state offsets fiscally constrained counties
+         + ["neutral_fc"]    # cap, and the state offsets fiscally constrained counties
+         + ["none_static"])  # no rate response and no behavioural response (static, like the state's scoring)
 GCOLS = ["year", "grouping", "group", "owners", "avg_change", "pct_change", "change_share_of_income", "total_change",
          "share_pay_less", "share_pay_more", "gain_more_5pct", "gain_less_5pct", "no_change", "lose_less_5pct",
          "lose_more_5pct", "avg_gain_if_less", "avg_loss_if_more"]
@@ -108,7 +109,9 @@ def summarize(r: dict) -> dict:
                "nonowner": float(ch.loc[y, "nonowner_tax_nonschool"] + ch.loc[y, "nonowner_tax_school"]),
                "nonowner_school": float(ch.loc[y, "nonowner_tax_school"]),
                "all": float(ch.loc[y, "tax_all_property"]),
-               "state_offset": float(ch.loc[y, "state_offset"]) if "state_offset" in ch else 0.0}
+               "state_offset": float(ch.loc[y, "state_offset"]) if "state_offset" in ch else 0.0,
+               "claimants": float(ch.loc[y, "new_claimants"]) if "new_claimants" in ch else 0.0,
+               "switched": float(ch.loc[y, "second_homes_switched"]) if "second_homes_switched" in ch else 0.0}
               for y in ch.index if y > 2026]
     g, w = r["by_group"], r["winners"]
     m = g.merge(w, on=["year", "grouping", "group", "owners"])
@@ -141,11 +144,11 @@ def run_entry(e: dict) -> dict:
     for resp in MODES:
         neutral = resp.startswith("neutral")
         new = _run(B["b"], SCENARIO, SEED, law1, END,
-                   rate_replay=B["run"].rates.paths if resp == "none" else None,
+                   rate_replay=B["run"].rates.paths if resp in ("none", "none_static") else None,
                    revenue_neutral=B["run"].rates.paths if neutral else None,
                    reimbursement=int(resp.split("_")[-1]) / 100 if resp.split("_")[-1].isdigit() else 0.0,
                    millage_cap=10.0 if neutral and "nocap" not in resp else None,
-                   fc_offset=resp == "neutral_fc")
+                   fc_offset=resp == "neutral_fc", behaviour=resp != "none_static")
         out[resp] = summarize(compare_runs(B["run"], new, END, years=YEARS))
         if resp == "neutral_nocap":   # desired (uncapped) rate changes; the page applies the cap
             out["rates"] = rate_changes(B["run"], new)

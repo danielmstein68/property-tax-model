@@ -98,6 +98,13 @@ def _cached(key, make):
     return _CACHE[key]
 
 
+def _second_homes() -> pd.DataFrame | None:
+    """Out-of-state owners' non-homestead homes (scripts/fl_second_homes_2026.py), or None."""
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[1] / "data" / "processed" / "fl_second_homes_2026.parquet"
+    return pd.read_parquet(p, columns=["county_fips", "JV"]) if p.exists() else None
+
+
 def _school_tables() -> pd.DataFrame:
     from ptm.millage import county_fips_by_name
     from ptm.ratemodel import norm, school_rates_2026
@@ -178,7 +185,7 @@ class Projection:
                  seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None,
                  end_year: int = 2036, demography: dict | None = None, rate_replay: dict | None = None,
                  revenue_neutral: dict | None = None, reimbursement: float = 0.0,
-                 millage_cap: float | None = None, fc_offset: bool = False):
+                 millage_cap: float | None = None, fc_offset: bool = False, behaviour: bool = True):
         self.rate_replay = rate_replay    # {year: rate draws} from another run: rates don't respond
         # {year: rate draws and taxable bases} from the current-law run: each government re-solves its
         # rate to raise the same revenue (less any state reimbursement of the lost revenue)
@@ -190,6 +197,7 @@ class Projection:
         # fiscally_constrained_offset); their county taxing units raise only the rest
         self.fc_offset = fc_offset
         self._fc_now = 0.0
+        self.behaviour = behaviour   # take-up and residency-switch responses (settings takeup, residency_switch)
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
@@ -204,7 +212,7 @@ class Projection:
         self.units = prep["static"]                      # shared, read-only
         self.a = {k: v.copy() for k, v in prep["dynamic"].items()}
         self.income = {k: v.copy() for k, v in prep["income"].items()}
-        self.hs = prep["hs"]
+        self.hs = prep["hs"].copy()          # changes when non-claimers start claiming
         self.w0 = prep["w"]
         self.w = prep["w"].copy()
         self.demo = {**self.econ.spec.get("demography", {}), **(demography or {})}
@@ -258,9 +266,11 @@ class Projection:
             self.offered[rid] = np.isin(j, np.unique(j[claim & (j >= 0)]))
         self._init_new_residents(seed)
         self._init_levy_rates()
+        self._init_behaviour(seed)
         self.rows = [{**self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                   self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES}),
-                      **self._nonowner(self.a["taxable_school_prior"], self.a["taxable_county_prior"]), "state_offset": 0.0}]
+                      **self._nonowner(self.a["taxable_school_prior"], self.a["taxable_county_prior"]), "state_offset": 0.0,
+                      "new_claimants": 0.0, "second_homes_switched": 0.0}]
 
     def _prepare_cached(self, baseline: pd.DataFrame) -> dict:
         """_prepare, saved to disk when the baseline says where (Monte Carlo workers load it)."""
@@ -477,13 +487,17 @@ class Projection:
         self._existing = self.orig | ((self.cohort_year > 0) & (self.cohort_year < y))
         self.history[f"income_{y}"] = self._income()
         sold, transfer = self._draw_sales()
+        hs_prev = self.hs.copy()
+        self._county_avg_mills()
+        self._takeup(y)
+        self._residency_switch(y)
         flags = self._update_flags(y)
         waiting = self._new_residents(y, (sold & ~self._died) | entering)
         flags["new_resident_waiting"] = waiting
         self._waiting = waiting
         df = self.units.assign(**flags, jv=a["jv"], av_school_prior=a["av_school_prior"],
                                av_nonschool_prior=a["av_nonschool_prior"],
-                               homestead_prior=self.hs & ~entering,
+                               homestead=self.hs, homestead_prior=hs_prev & ~entering,
                                changed_ownership=sold, improvements=0.0, portability_transfer=transfer)
         live = self.orig | active                      # future cohorts don't exist yet: skip them
         res_live = step(df[live], self.law, y)
@@ -501,7 +515,8 @@ class Projection:
         for c in LEVIES:
             self.history[f"tax_{c}_{y}"] = tax[c]
         self.rows.append({**self._row(y, sold, total, av_school, tax), **self._nonowner(taxable["school"], taxable["county"]),
-                          "state_offset": self._fc_now})
+                          "state_offset": self._fc_now, "new_claimants": self._tk_new,
+                          "second_homes_switched": float(self.sb_share.sum() * self.sb_w) if self.rs else 0.0})
         a["av_school_prior"] = av_school
         a["av_nonschool_prior"] = res["av_county"].to_numpy()
         a["taxable_school_prior"] = taxable["school"]
@@ -528,6 +543,9 @@ class Projection:
                 with np.errstate(divide="ignore", invalid="ignore"):
                     return np.where(p > 0, (b - r * (b - p)) / p, 1.0)
             fixed = self.rates.school_fixed[None, :]
+            if self.rs:                                    # second homes that became homesteads
+                tv = {**tv, "county": np.maximum(tv["county"] - self.sb_ex["county"], 0),
+                      "school": np.maximum(tv["school"] - self.sb_ex["school"], 0)}
             rho_c, rho_y = ratio(bp["tv"]["county"], tv["county"]), ratio(bp["tv"]["city"], tv["city"])
             self._fc_now = 0.0
             if self.fc_offset and self.fc_mask.any():
@@ -575,14 +593,21 @@ class Projection:
         (own_* this year) is taken out so they aren't counted twice."""
         ci, ok, w = self.ci, self.ci_ok, self.w
         nc = len(self.rates.counties)
-        nh_own = ok & ~self.hs
-        own_s = np.bincount(ci[nh_own], weights=(own_school * w)[nh_own], minlength=nc)
-        own_c = np.bincount(ci[nh_own], weights=(own_county * w)[nh_own], minlength=nc)
+        c = self.rates._c
+        with np.errstate(divide="ignore", invalid="ignore"):
+            idx = {k: np.where(self.nh_base0[k] > 0, c[f"nh_{k}"] / self.nh_base0[k], 1.0) for k in ("county", "school")}
+        o26 = ok & self.orig              # 2026 owners: frozen at their 2026 non-homestead value, grown with the base
+        own_c = np.bincount(ci[o26], weights=(self.own0["county"] * w)[o26], minlength=nc) * idx["county"]
+        own_s = np.bincount(ci[o26], weights=(self.own0["school"] * w)[o26], minlength=nc) * idx["school"]
+        nh_new = ok & ~self.orig & ~self.hs   # new owners without the exemption: this year's value
+        own_c = own_c + np.bincount(ci[nh_new], weights=(own_county * w)[nh_new], minlength=nc)
+        own_s = own_s + np.bincount(ci[nh_new], weights=(own_school * w)[nh_new], minlength=nc)
+        own_c = own_c + self.sb_ex["county"]
+        own_s = own_s + self.sb_ex["school"]
         wsum = np.bincount(ci[ok], weights=w[ok], minlength=nc)
         avg = lambda m: np.where(wsum > 0, np.bincount(ci[ok], weights=(m * w)[ok], minlength=nc) / np.maximum(wsum, 1e-9), 0.0)
         m_ns = avg(self.mill["county"] + self.mill["municipal"] + np.nan_to_num(self.mill["special"]))
         m_s = avg(self.mill["school"])
-        c = self.rates._c
         b_ns = np.maximum(c["nh_county"] - own_c, 0) + c["nr_county"]
         b_s = np.maximum(c["nh_school"] - own_s, 0) + c["nr_school"]
         return {"nonowner_tax_nonschool": float((b_ns * m_ns).sum() / 1000),
@@ -609,6 +634,109 @@ class Projection:
         return self
 
     # --- reporting -------------------------------------------------------------------------------
+    # --- behavioural responses ---------------------------------------------------------------------
+    def _init_behaviour(self, seed: int) -> None:
+        spec = self.econ.spec
+        self.law_cl = project_law(_cached("law", load_law), self.econ, self.end_year)   # current law, for gains
+        tk, rs = spec.get("takeup") or {}, spec.get("residency_switch") or {}
+        n = len(self.w0)
+        self.tk = tk if self.behaviour and tk.get("enabled") else None
+        self.claim_year = np.zeros(n, int)
+        # 2026 non-claimers' non-homestead taxable value: taken out of the roll's non-homestead base (they are
+        # owner households) at this amount grown with the county's base, the same in every run
+        self.hs0 = self.hs.copy()
+        nh0 = self.orig & ~self.hs0
+        self.own0 = {"county": np.where(nh0, self.a["taxable_county_prior"], 0.0),
+                     "school": np.where(nh0, self.a["taxable_school_prior"], 0.0)}
+        self.nh_base0 = {"county": self.rates._c["nh_county"].copy(), "school": self.rates._c["nh_school"].copy()}
+        self._tk_new = 0.0
+        if self.tk:
+            reason = self.units["non_claim_reason"] if "non_claim_reason" in self.units else pd.Series("", index=self.units.index)
+            self.tk_cand = (~self.hs) & self.orig & (reason.fillna("").to_numpy() == "possibly_eligible")
+            self.tk_u = np.random.default_rng(seed + 104729).random(n)
+            self.tk_k = -np.log(1 - float(tk["share_at_ref"][tk.get("use", "central")])) / float(tk["gain_ref"])
+        self.rs = rs if self.behaviour and rs.get("enabled") else None
+        self.sb_ex = {"county": np.zeros(len(self.rates.counties)), "school": np.zeros(len(self.rates.counties))}
+        if self.rs:
+            pool = _cached("second_homes", _second_homes)
+            if pool is None:
+                self.rs = None
+            else:
+                m = min(int(self.rs.get("sample", 20000)), len(pool))
+                smp = pool.sample(m, random_state=seed)
+                cpos = {k: i for i, k in enumerate(self.rates.counties.index)}
+                self.sb_ci = smp["county_fips"].map(cpos).fillna(-1).astype(int).to_numpy()
+                self.sb_w = len(pool) / m
+                self.sb_jv = smp["JV"].to_numpy(dtype=float)
+                self.sb_k = -np.log(1 - float(rs["share_at_ref"][rs.get("use", "central")])) / float(rs["gain_ref"])
+                self.sb_share = np.zeros(m)          # cumulative share of each sampled parcel switched
+                self.sb_cohorts = {}                 # year -> new share switched that year
+
+    @staticmethod
+    def _phase(y: int, years: int) -> float:
+        return min(1.0, (y - BASE_YEAR) / max(int(years), 1))
+
+    def _exempt_as_homestead(self, units: pd.DataFrame, av: np.ndarray, law, y: int, waiting=0.0) -> dict:
+        """Exempt value by levy if these units were homesteads assessed at `av` (first year: just value)."""
+        from ptm.engine.exemptions import apply_exemptions
+        df = units.assign(**{f"av_{c}": av for c in LEVIES}, homestead=True, new_resident_waiting=waiting)
+        t = apply_exemptions(df, law, y)
+        return {c: av - t[f"taxable_{c}"].to_numpy() for c in LEVIES}
+
+    def _takeup(self, y: int) -> None:
+        """Possibly-eligible non-claimers start claiming as the policy raises the gain from claiming."""
+        if not self.tk:
+            return
+        live = self.orig | ((self.cohort_year > 0) & (self.cohort_year <= y))
+        idx = np.where(self.tk_cand & ~self.hs & live)[0]
+        if len(idx) == 0:
+            return
+        sub, jv = self.units.iloc[idx], self.a["jv"][idx]
+        ep, ec = self._exempt_as_homestead(sub, jv, self.law, y), self._exempt_as_homestead(sub, jv, self.law_cl, y)
+        gain = sum((ep[c] - ec[c]) * self.mill[c][idx] for c in LEVIES) / 1000
+        p = (1 - np.exp(-self.tk_k * np.maximum(gain, 0))) * self._phase(y, self.tk.get("phase_in_years", 2))
+        new = idx[self.tk_u[idx] < p]
+        if len(new):
+            self.hs[new] = True
+            self.claim_year[new] = y
+        self._tk_new = float(self.w[self.claim_year > 0].sum())
+
+    def _residency_switch(self, y: int) -> None:
+        """Out-of-state second-home owners switch residence and claim: exempt value by county (local bases)."""
+        if not self.rs:
+            return
+        self.sb_jv = self.sb_jv * (1 + self.econ.rate("home_value", y))
+        base = pd.DataFrame(index=range(len(self.sb_jv)))
+        full_p, full_c = self._exempt_as_homestead(base, self.sb_jv, self.law, y), self._exempt_as_homestead(base, self.sb_jv, self.law_cl, y)
+        ci = np.maximum(self.sb_ci, 0)
+        m_ns = (self.mill_county_avg + self.mill_city_avg + self.mill_special_avg)[ci]
+        gain = ((full_p["county"] - full_c["county"]) * m_ns + (full_p["school"] - full_c["school"]) * self.mill_school_avg[ci]) / 1000
+        target = (1 - np.exp(-self.sb_k * np.maximum(gain, 0))) * self._phase(y, self.rs.get("phase_in_years", 3))
+        add = np.maximum(target - self.sb_share, 0)
+        self.sb_share = self.sb_share + add
+        self.sb_cohorts[y] = add
+        nr = self.law.rule("homestead_new_resident") if "homestead_new_resident" in self.law.rules else None
+        wait = float(nr.get("waiting_years", y, 0)) if nr is not None else 0.0
+        ref = int(nr.spec.get("reference_year", BASE_YEAR)) if nr is not None else BASE_YEAR
+        waiting = self._exempt_as_homestead(base, self.sb_jv, self.law, y, waiting=1.0) if wait > 0 else full_p
+        ex = {"county": np.zeros(len(self.sb_jv)), "school": np.zeros(len(self.sb_jv))}
+        for c, share in self.sb_cohorts.items():
+            w8 = (c > ref) and (y - c < wait)
+            for lev in ex:
+                ex[lev] += share * (waiting if w8 else full_p)[lev]
+        ok = self.sb_ci >= 0
+        nc = len(self.rates.counties)
+        self.sb_ex = {lev: np.bincount(self.sb_ci[ok], weights=(ex[lev] * self.sb_w)[ok], minlength=nc) for lev in ex}
+
+    def _county_avg_mills(self) -> None:
+        """Owner-weighted average rates by county (for the second-home pool's gains)."""
+        ci, ok, w = self.ci, self.ci_ok, self.w
+        nc = len(self.rates.counties)
+        wsum = np.bincount(ci[ok], weights=w[ok], minlength=nc)
+        avg = lambda m: np.where(wsum > 0, np.bincount(ci[ok], weights=(np.nan_to_num(m) * w)[ok], minlength=nc) / np.maximum(wsum, 1e-9), 0.0)
+        self.mill_county_avg, self.mill_city_avg = avg(self.mill["county"]), avg(self.mill["municipal"])
+        self.mill_special_avg, self.mill_school_avg = avg(self.mill["special"]), avg(self.mill["school"])
+
     def _init_levy_rates(self) -> None:
         """2026 rates for the millage cap: each county's general levy and its share of the county
         rate the model scales (owner-weighted average of millage_county_base), and each city's
@@ -709,7 +837,7 @@ class Projection:
         cols = {"WGTP", "SERIALNO", "PUMA", "tenure", "mh_rented_lot", "county_fips", "county_fips_tax", "municipality", "homestead",
                 "valp_jv_cal", "valp_market_cal", "hincp_aged", "HHLDRAGEP", "MV", "home_type", "HHT", "purchase_year",
                 f"av_sd_{BASE_YEAR}", f"av_nsd_{BASE_YEAR}", f"tax_model_{BASE_YEAR}",
-                "homestead_portion_share", "homestead_share"}
+                "homestead_portion_share", "homestead_share", "non_claim_reason"}
         cols |= set(econ.spec["income_growth"])
         cols |= {f"{x}_{c}" for x in ["millage", "taxable"] for c in LEVIES}
         cols |= {f"taxable_{c}_{BASE_YEAR}" for c in LEVIES} | {f"tax_{c}_{BASE_YEAR}" for c in LEVIES}

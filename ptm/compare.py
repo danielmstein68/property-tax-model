@@ -38,10 +38,10 @@ GROUPS = ["income_decile", "age_group", "homestead", "years_in_home", "home_type
 
 
 def _run(baseline, scenario, seed, law, end_year, rate_setting=None, rate_replay=None,
-         revenue_neutral=None, reimbursement=0.0, millage_cap=None, fc_offset=False) -> Projection:
+         revenue_neutral=None, reimbursement=0.0, millage_cap=None, fc_offset=False, behaviour=True) -> Projection:
     return Projection(baseline, scenario, seed=seed, law=law, rate_setting=rate_setting, rate_replay=rate_replay,
                       revenue_neutral=revenue_neutral, reimbursement=reimbursement,
-                      millage_cap=millage_cap, fc_offset=fc_offset).run(end_year)
+                      millage_cap=millage_cap, fc_offset=fc_offset, behaviour=behaviour).run(end_year)
 
 
 def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int = 2026,
@@ -74,7 +74,8 @@ def compare_runs(base: Projection, new: Projection, end_year: int, threshold: fl
 
     keep = ["owners", "tax_total", "avg_tax", "tax_school", "tax_county", "tax_municipal",
             "millage_school_avg", "millage_county_avg", "millage_municipal_avg", "homestead_assessed_to_just",
-            "nonowner_tax_nonschool", "nonowner_tax_school", "base_nonschool_nonhomestead", "state_offset"]
+            "nonowner_tax_nonschool", "nonowner_tax_school", "base_nonschool_nonhomestead", "state_offset",
+            "new_claimants", "second_homes_switched"]
     keep = [k for k in keep if k in base.summary and k in new.summary]
     sb, sp = base.summary[keep], new.summary[keep]
     levels = pd.concat({"current_law": sb, "policy": sp}, axis=1)

@@ -17,7 +17,12 @@ def main() -> None:
     data = (res / "fl_2026_status_quo.json").read_text(encoding="utf-8")
     proj = (res / "fl_projections.json").read_text(encoding="utf-8")
     page = (ROOT / "display" / "template.html").read_text(encoding="utf-8")
-    grid = (res / "fl_policy_grid.json").read_text(encoding="utf-8")
+    import json as _json
+    g = _json.loads((res / "fl_policy_grid.json").read_text(encoding="utf-8"))
+    for run in g.get("runs", {}).values():          # the static run is only used for yearly totals
+        if isinstance(run.get("none_static"), dict):
+            run["none_static"] = {"yearly": run["none_static"].get("yearly", [])}
+    grid = _json.dumps(g, separators=(",", ":"))
     import json
     import yaml
     fin = json.dumps(yaml.safe_load((ROOT / "inputs" / "fl_local_finance_fy2024.yaml").read_text(encoding="utf-8")))

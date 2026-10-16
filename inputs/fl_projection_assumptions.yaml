@@ -110,6 +110,35 @@ demography:
     (household_growth) = owners x Florida household growth (EEC), living in new homes at full value;
     characteristics of recent buyers, placed by county by 2026 new construction (DOR Data Book).
 
+# Behavioural responses to bigger homestead exemptions (only when a policy raises the gain from
+# claiming; zero under current law). `behaviour=False` in a run turns both off (static scoring,
+# like the state's Revenue Estimating Conference).
+#   takeup: owner-occupiers who look eligible but don't claim (baseline non_claim_reason
+#     'possibly_eligible', ~658k) start claiming with probability 1 - exp(-k x gain), gain = extra
+#     yearly tax saved by claiming vs current law; k set so the share at gain_ref is share_at_ref.
+#     Evidence: Florida's 2008 doubling (+$25k, worth ~$300-500/yr) shows no visible jump in
+#     homestead counts (Data Books: +2.4% 2007, +1.2% 2008, -0.7% 2009; housing crash), so the
+#     range is an assumption. Central 20%: Texas's first year with the $100k school exemption (2024,
+#     ~$600-680/yr gain) saw claims ~2 points above household growth, ~4-5.5% of likely-eligible
+#     non-claimers, i.e. ~16-21% at $2,500 (docs/research/texas_homestead_takeup.md).
+#   residency_switch: out-of-state owners of non-homestead homes (scripts/fl_second_homes_2026.py,
+#     728k parcels) make Florida their legal residence and claim; same form. Switchers after 2026
+#     are new residents under Amendment 3 (smaller exemption while they wait). Only local tax
+#     bases change (they aren't households in the model). A fixed sample of `sample` parcels.
+takeup:
+  enabled: true
+  gain_ref: 2500
+  share_at_ref: {low: 0.10, central: 0.20, high: 0.40}   # central from Texas 2024 (docs/research/texas_homestead_takeup.md)
+  use: central
+  phase_in_years: 2
+residency_switch:
+  enabled: true
+  gain_ref: 2500
+  share_at_ref: {low: 0.02, central: 0.05, high: 0.10}
+  use: central
+  phase_in_years: 3
+  sample: 20000
+
 # Who is a "new resident" (Amendment 3: not a Florida resident on Dec 31, 2026; law rule
 # homestead_new_resident). Only matters when a policy gives new residents a smaller exemption.
 new_residents:
