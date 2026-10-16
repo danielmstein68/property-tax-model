@@ -442,7 +442,9 @@ class Projection:
         ports = sold & self.hs & (self.rng.random(n) < port["share_of_homestead_sales"])
         died = self.rng.random(n) < self.p_death
         self._died = died & ~sold
-        return sold | died, np.where(ports, np.minimum(savings, port["max_transfer"]), 0.0)
+        # the law's limit (s. 193.155(8); a policy can change it); the engine applies it too
+        cap = float(self.law.rule("portability").get("max_transfer", self.year + 1, port["max_transfer"]))
+        return sold | died, np.where(ports, np.minimum(savings, cap), 0.0)
 
     # --- one year --------------------------------------------------------------------------------
     def step_year(self) -> None:

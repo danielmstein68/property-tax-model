@@ -139,6 +139,13 @@ tbody tr.total td { font-weight: 700; border-bottom: 0; background: var(--accent
 .sub-h { margin: 18px 0 8px; }
 .context { font-size: 17px; margin: 0; max-width: 820px; }
 .fig.lead { background: var(--accent); }
+.changed { margin-top: 18px; border-left: 4px solid var(--accent); background: var(--surface); border-radius: 0 14px 14px 0; padding: 14px 18px; display: grid; gap: 6px; }
+.changed h3 { margin: 0; font-size: 16px; }
+.changed ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.changed .none-msg { color: var(--ink); font-weight: 700; }
+.changed.flash { animation: flash 0.9s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: var(--surface); } }
+@media (prefers-reduced-motion: reduce) { .changed.flash { animation: none; } }
 .fig.lead .v, .fig.lead .l { color: var(--bg); }
 .tablebox.tall thead th { position: sticky; top: 0; background: var(--bg); }
 td.over { color: var(--lose2); font-weight: 700; }
@@ -347,6 +354,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <label class="check" for="pol-cap"><input type="checkbox" id="pol-cap" checked><div>Respect the 10-mill cap<span>Counties' general levies and city levies can't go above 10 mills (the Florida Constitution), or their current rate if already higher; what they can't raise stays lost. Untick to see what full replacement would take.</span></div></label>
         <label class="check" for="pol-fc"><input type="checkbox" id="pol-fc"><div>The state offsets fiscally constrained counties<span id="pol-fc-note">As Florida has for earlier amendments (s. 218.125 formula): the state pays 29 small, rural counties 95% of their lost taxable value times their rate, if the Legislature funds it. With the 10-mill cap on and no other reimbursement.</span></div></label>
       </div>
+      <div class="changed" id="pol-changed" aria-live="polite"></div>
     </section>
 
     <section>
@@ -372,36 +380,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     </section>
 
     <section>
-      <div class="eyebrow">2 · Owners</div>
-      <h2 id="pol-s1-title">Owner property tax under the policy</h2>
-      <div class="figures" id="pol-figures"></div>
-      <div class="tablebox"><table id="pol-t-levels"></table></div>
-    </section>
-
-    <section>
-      <div class="eyebrow">3 · Changes for owners</div>
-      <h2>How much changes, and for whom</h2>
-      <div class="charts">
-        <div class="chart">
-          <h3>Change in owner property tax by year</h3>
-          <p>Billions of dollars; below zero = owners pay less.</p>
-          <div id="pol-c-years"></div>
-          <div class="legend pol-legend"></div>
-        </div>
-        <div class="chart">
-          <h3>Average change per owner by income decile</h3>
-          <p id="pol-c-dec-sub">Dollars a year in the selected year.</p>
-          <div id="pol-c-dec"></div>
-          <div class="legend pol-legend"></div>
-        </div>
-      </div>
-      <div class="tabs" role="tablist" id="pol-group-tabs"></div>
-      <div class="tabletools"><button class="copy" data-table="pol-t-groups" id="copy-pol-groups">Copy table</button></div>
-      <div class="tablebox"><table id="pol-t-groups"></table></div>
-    </section>
-
-    <section>
-      <div class="eyebrow">4 · Winners and losers</div>
+      <div class="eyebrow">2 · Winners and losers</div>
       <h2 id="pol-s3-title">Who pays less and who pays more</h2>
       <p id="pol-s3-intro"></p>
       <div class="charts">
@@ -422,6 +401,35 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
       </div>
       <div class="legend" id="pol-w-legend"></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">3 · Owners</div>
+      <h2 id="pol-s1-title">Owner property tax under the policy</h2>
+      <div class="figures" id="pol-figures"></div>
+      <div class="tablebox"><table id="pol-t-levels"></table></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">4 · Changes for owners</div>
+      <h2>How much changes, and for whom</h2>
+      <div class="charts">
+        <div class="chart">
+          <h3>Change in owner property tax by year</h3>
+          <p>Billions of dollars; below zero = owners pay less.</p>
+          <div id="pol-c-years"></div>
+          <div class="legend pol-legend"></div>
+        </div>
+        <div class="chart">
+          <h3>Average change per owner by income decile</h3>
+          <p id="pol-c-dec-sub">Dollars a year in the selected year.</p>
+          <div id="pol-c-dec"></div>
+          <div class="legend pol-legend"></div>
+        </div>
+      </div>
+      <div class="tabs" role="tablist" id="pol-group-tabs"></div>
+      <div class="tabletools"><button class="copy" data-table="pol-t-groups" id="copy-pol-groups">Copy table</button></div>
+      <div class="tablebox"><table id="pol-t-groups"></table></div>
     </section>
 
     <section id="pol-gov" hidden>
@@ -828,6 +836,9 @@ const POL = { kind: "preset", id: G.presets[0].id, lever: G.sliders[0].id, idx: 
 Object.values(G.runs).forEach(run => Object.values(run).forEach(m => {
   if (m && Array.isArray(m.groups) && Array.isArray(m.groups[0])) m.groups = m.groups.map(r => Object.fromEntries(G.group_cols.map((c, i) => [c, r[i]])));
 }));
+// run keys are written by Python ("rate_limit=1.0"); JavaScript prints 1.0 as "1": add numeric-normalised keys
+Object.keys(G.runs).forEach(k => { const i = k.indexOf("="); if (i < 0) return;
+  const v = k.slice(i + 1), n = Number(v); if (v !== "none" && isFinite(n)) G.runs[`${k.slice(0, i)}=${n}`] = G.runs[k]; });
 const REIMB = [0, 0.25, 0.5, 0.75, 1];
 const fcOn = () => POL.fc && !POL.nocap && POL.reimb === 0;
 const nkeyFor = nocap => { if (!nocap && fcOn()) return "neutral_fc";
@@ -907,6 +918,7 @@ function renderPolicy() {
   $("pol-w-neutral-box").hidden = !POL.neutral;
 
   renderRevenue(run, y, M);
+  renderChanged(run, y, M);
 
   // 2. owners
   $("pol-s1-title").textContent = `Owner property tax under the policy, ${y}`;
@@ -1023,6 +1035,47 @@ function renderPolicy() {
   renderGov(run, y, N);
 }
 
+// "What changed": the key numbers next to the controls, and why a setting changes little or nothing
+const NO_EFFECT = 10e6;
+function noEffectReason(y) {
+  if (POL.kind !== "slider" || VIEW !== "policy") return "";
+  const sl = G.sliders.find(x => x.id === POL.lever), v = sl.settings[POL.idx];
+  if (sl.id === "soh_cap" && (v === "none" || v > sl.current))
+    return "The Save Our Homes cap is the lower of this rate and inflation. With inflation forecast below 3%, a higher ceiling changes nothing unless inflation rises.";
+  if (sl.id === "nonhomestead_cap" && (v === "none" || v > sl.current))
+    return "Few non-homestead owners' assessments rise faster than 10% a year at forecast growth, so a higher cap changes little.";
+  if (sl.id === "portability" && (v === "none" || v > sl.current))
+    return "Few movers carry more than $500,000 of Save Our Homes savings, so raising the limit helps only a small number of buyers.";
+  return "";
+}
+function renderChanged(run, y, M) {
+  const box = $("pol-changed");
+  if (!run) { box.innerHTML = `<h3>What changed, ${y}</h3><div class="none-msg">Nothing: this is current law. Pick a policy or move the slider.</div>`; flash(box); return; }
+  const yr = m => run[key(m)].yearly.find(r => r.year === y) || {};
+  const al = m => allRow(run, m, y) || {};
+  const N = yr("none"), R = yr("respond");
+  const items = [];
+  const lost = -N.all, lostR = -R.all;
+  items.push(Math.abs(lost) >= 5e6 ? `Local revenue ${lost >= 0 ? "lost" : "gained"}: ${bnAbs(lost)} with rates unchanged, ${bnAbs(lostR)} after governments respond.` :
+    Math.abs(lostR) >= 5e6 ? `Local revenue ${lostR >= 0 ? "lost" : "gained"} after governments respond: ${bnAbs(lostR)} (no change with rates unchanged).` : "Local revenue: about the same.");
+  M.forEach(m => { const Y = yr(m), A = al(m);
+    items.push(`${MODE[m].l}: owners pay ${bnS(Y.tax)} (${pctS(Y.pct)}); ${pct(A.share_pay_less || 0, 0)} pay less, ${pct(A.share_pay_more || 0, 0)} pay more.`); });
+  if (POL.neutral && !POL.nocap) { const held = govRows(run, y), h = held.county.concat(held.city).filter(q => q.capped);
+    if (h.length) items.push(`${h.length} ${h.length === 1 ? "government is" : "counties and cities are"} held at the 10-mill cap; about ${(t => t >= 5e6 ? bnAbs(t) : usd(t))(h.reduce((t, q) => t + q.short, 0))} can't be raised.`); }
+  const biggest = Math.max(...["none", "respond"].concat(POL.neutral ? ["neutral"] : []).map(m => Math.max(Math.abs(yr(m).tax || 0), Math.abs(yr(m).all || 0))));
+  let msg = "";
+  if (biggest < NO_EFFECT) {
+    const A = al("respond"), hh = (A.owners || 0) * ((A.share_pay_less || 0) + (A.share_pay_more || 0));
+    msg = `Little or no effect in ${y}: property tax changes by less than $10 million` + (hh >= 1000 ? `, for about ${Math.round(hh / 1000).toLocaleString("en-US")},000 owner households.` : hh > 0 ? ", for very few owner households." : ".") +
+      (noEffectReason(y) ? " " + noEffectReason(y) : " Few owners qualify for or are affected by this setting.");
+  } else if (Math.abs(N.tax || 0) < 1e6 && Math.abs(R.tax || 0) >= NO_EFFECT) {
+    msg = "This rule changes only how governments set their tax rates, so its effect shows under \"Governments respond\", not with rates unchanged.";
+  }
+  box.innerHTML = `<h3>What changed, ${y}</h3>` + (msg ? `<div class="none-msg">${msg}</div>` : "") + `<ul>${items.map(t => `<li>${t}</li>`).join("")}</ul>`;
+  flash(box);
+}
+function flash(el) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+
 // 1. revenue lost (all property)
 const FIN = __FIN__;
 const RYEARS = G.current_law.yearly.filter(r => r.year > 2026).map(r => r.year);
@@ -1035,10 +1088,11 @@ function renderRevenue(run, y, M) {
     $("pol-rev-where").textContent = ""; $("pol-c-rev").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; $("pol-c-split").innerHTML = ""; return;
   }
   const yr = (m, yy) => run[key(m)].yearly.find(r => r.year === yy) || {};
-  const N = yr("none", y), R = yr("respond", y), lost = -N.all, word = lost >= 0 ? "lost" : "gained";
+  const N0 = yr("none", y), R = yr("respond", y), viaRates = Math.abs(N0.all) < 5e6 && Math.abs(R.all) >= 5e6;
+  const N = viaRates ? R : N0, lost = -N.all, word = lost >= 0 ? "lost" : "gained";
   const cum = RYEARS.reduce((t, yy) => t - (yr("none", yy).all || 0), 0);
   $("pol-rev-figures").innerHTML = [
-    [bnS(-N.all).replace(/^[+−]/, ""), `${lost >= 0 ? "Lost by" : "Gained by"} Florida's local governments in ${y}, tax rates unchanged`, "lead"],
+    [bnS(-N.all).replace(/^[+−]/, ""), `${lost >= 0 ? "Lost by" : "Gained by"} Florida's local governments in ${y}, ${viaRates ? "after governments respond (this rule changes only how they set rates)" : "tax rates unchanged"}`, "lead"],
     [pct(Math.abs(lost) / allTax(y), 1), `Of all property tax in ${y}`],
     [bnS(cum).replace(/^[+−]/, ""), `Revenue ${cum >= 0 ? "lost" : "gained"} 2027–${RYEARS[RYEARS.length - 1]}, rates unchanged`],
     [bnS(-R.all).replace(/^[+−]/, ""), `Still ${-R.all >= 0 ? "lost" : "gained"} in ${y} after governments respond`],

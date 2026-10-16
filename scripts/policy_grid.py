@@ -207,6 +207,37 @@ def governments() -> dict:
     return {"counties": counties, "cities": cities}
 
 
+def rerun_only(ids: list[str], workers: int = 4) -> None:
+    """Re-run some entries (e.g. after a fix that leaves current law unchanged) and update the
+    existing grid file in place."""
+    menu = yaml.safe_load((ROOT / "inputs" / "policy_menu.yaml").read_text(encoding="utf-8"))
+    es = [e for e in entries(menu) if e["id"] in ids]
+    missing = set(ids) - {e["id"] for e in es}
+    if missing:
+        raise SystemExit(f"unknown entries: {sorted(missing)}")
+    dest = ROOT / "data" / "processed" / "results" / "fl_policy_grid.json"
+    g = json.loads(dest.read_text(encoding="utf-8"))
+    t = time.time()
+    with ProcessPoolExecutor(max_workers=min(workers, len(es))) as ex:
+        res = list(ex.map(run_entry, es))
+    for r in res:
+        g["runs"][r["id"]] = _clean({k: r[k] for k in MODES + ["rates"]})
+        n = [x for x in r["none"]["yearly"] if x["year"] == 2027][0]
+        print(f"  {r['id']:38s} 2027: none {n['tax'] / 1e6:+.1f}M")
+    dest.write_text(json.dumps(g), encoding="utf-8")
+    print(f"re-ran {len(res)} entries in {time.time() - t:.0f}s; updated {dest}")
+
+
+def _clean(o):
+    if isinstance(o, dict):
+        return {str(k): _clean(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_clean(v) for v in o]
+    if isinstance(o, float):
+        return None if not np.isfinite(o) else round(o, 4)
+    return o
+
+
 def main(workers: int = 4) -> None:
     from ptm.montecarlo import PREP, SLIM, _run_path, slim_baseline
     slim_baseline()
@@ -243,4 +274,8 @@ def main(workers: int = 4) -> None:
 
 
 if __name__ == "__main__":
-    main(*(int(a) for a in sys.argv[1:]))
+    args = sys.argv[1:]
+    if args and args[0] == "--only":       # python scripts/policy_grid.py --only id1 id2 ...
+        rerun_only(args[1:])
+    else:
+        main(*(int(a) for a in args))
