@@ -1,0 +1,8 @@
+# Amendment 3 (CS/HJR 1-F, 2026), part 3: non-homestead assessment caps (non-school levies) lowered
+# from 10% to 5% from 2027: residential with 9 units or fewer (s. 4(g)) and all other non-homestead
+# real property (s. 4(h)). Mostly affects local tax bases (rentals, businesses), not owner households.
+name: "Amendment 3: 5% cap on non-homestead property"
+description: Assessments of non-homestead homes, rentals and commercial property may rise at most 5% a year for county, city and special district taxes (10% under current law), from 2027.
+changes:
+  - {rule: nonhomestead_residential_cap, key: cap, value: 0.05, from: 2027}
+  - {rule: nonresidential_cap, key: cap, value: 0.05, from: 2027}

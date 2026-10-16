@@ -21,10 +21,16 @@ are fixed by statute (0.748 discretionary, up to 1.5 capital) and stay put.
 
 Each jurisdiction's taxable value is tracked in three parts, from the 2026 rolls and Data Book:
   homestead residential      grows like the model's own homestead owners in the county
-  non-homestead residential  grows with home values (school at just value; non-school 10% cap is
-                             rarely binding at forecast growth rates)
+  non-homestead residential  school: grows with home values (just value). Non-school: the
+                             assessment cap (nonhomestead_residential_cap, 10%; Amendment 3: 5%)
+                             applied to each county's 2026 roll blocks (scripts/fl_cap_blocks_2026.py):
+                             parcels below just value and at just value, each assessed at most
+                             cap x last year and never above just value; the county's 2025 sold
+                             share resets to just value each year
   non-residential (+ TPP)    grows with non-residential values; = county total (Data Book) minus
-                             residential (rolls); cities use their county's non-residential share
+                             residential (rolls); non-school: the same with nonresidential_cap (TPP
+                             moves with the roll blocks); cities use their county's non-residential
+                             share and their county's non-school growth
 Not modelled yet: the maximum millage tracking in ch. 2026-240, rate increases by referendum or
 unanimous vote, and new construction (it doesn't enter rolled-back rates).
 """
@@ -98,6 +104,14 @@ def _composition(base_year: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     nr_share = (c["nr_county"] / (c["hs_county"] + c["nh_county"]).replace(0, np.nan)).fillna(0)
     cities["nr"] = (cities["hs"] + cities["nh"]) * cities.index.get_level_values(0).map(nr_share).to_numpy()
     return c, cities
+
+
+def cap_blocks(base_year: int = 2026) -> pd.DataFrame | None:
+    """Non-homestead cap blocks by county (scripts/fl_cap_blocks_2026.py), or None if not built."""
+    path = ROOT / "data" / "processed" / f"fl_cap_blocks_{base_year}.csv"
+    if not path.exists():
+        return None
+    return pd.read_csv(path, dtype={"county_fips": str}).set_index("county_fips")
 
 
 def school_rle_2026() -> pd.Series:
@@ -185,6 +199,13 @@ class RateSetter:
         self.rle_draws = np.tile(self.rle_2026, (self.n_draws, 1))
         self.city_pos = {k: i for i, k in enumerate(self.cities.index)}   # (county, city) -> position
         self.paths = {}
+        blk = _cached(("cap_blocks", base_year), lambda: cap_blocks(base_year))
+        self.blocks = None
+        if blk is not None:
+            b = blk.reindex(self.counties.index)
+            col = lambda c: b[c].fillna(0).to_numpy(float)
+            self.blocks = {k: {"jc": col(f"{k}_jv_capped"), "ac": col(f"{k}_av_capped"), "ju": col(f"{k}_jv_at"),
+                               "au": col(f"{k}_av_at"), "sold": col(f"{k}_sold_share")} for k in ["nh", "nr"]}
 
     @property
     def ratio_county(self) -> pd.Series:
@@ -224,11 +245,23 @@ class RateSetter:
                          hs_growth_county.reindex(idx).to_numpy(dtype=float),
                          home_value_growth, nonres_growth, year)
 
+    def _capped_growth(self, k: str, growth: float, cap: float) -> np.ndarray:
+        """Advance class k's cap blocks one year; return each county's non-school assessed growth."""
+        b = self.blocks[k]
+        before = b["ac"] + b["au"]
+        for part in ("c", "u"):
+            jv = b["j" + part] * growth
+            av = np.minimum(jv, b["a" + part] * (1 + cap))
+            b["j" + part], b["a" + part] = jv, b["sold"] * jv + (1 - b["sold"]) * av
+        with np.errstate(divide="ignore", invalid="ignore"):
+            return np.where(before > 0, (b["ac"] + b["au"]) / before, growth)
+
     def step_arrays(self, gs: np.ndarray, gc: np.ndarray, home_value_growth: float, nonres_growth: float,
                     year: int | None = None, nc_rates: tuple | None = None,
-                    cap_multiple: float | None = None) -> None:
+                    cap_multiple: float | None = None, caps: tuple | None = None) -> None:
         """step() on arrays aligned to self.counties (NaN = use the median). cap_multiple overrides
-        the settings' limit for this year (from the law spec). nc_rates = new
+        the settings' limit for this year (from the law spec). caps = (non-homestead residential,
+        non-residential) assessment caps for non-school levies this year (default 10%). nc_rates = new
         construction as a share of each part (homestead, non-homestead residential,
         non-residential): excluded from this year's rolled-back rates, added to the base after."""
         if cap_multiple is not None:
@@ -239,8 +272,13 @@ class RateSetter:
             return np.where(np.isfinite(g), g, med)
         gs, gc = fill(gs), fill(gc)
         c, hv, nr = self._c, 1 + home_value_growth, 1 + nonres_growth
+        if self.blocks is not None:
+            cap_nh, cap_nr = caps if caps is not None else (0.10, 0.10)
+            f_nh, f_nr = self._capped_growth("nh", hv, cap_nh), self._capped_growth("nr", nr, cap_nr)
+        else:
+            f_nh, f_nr = np.full(len(gc), hv), np.full(len(gc), nr)
         new = {"hs_school": c["hs_school"] * gs, "nh_school": c["nh_school"] * hv, "nr_school": c["nr_school"] * nr,
-               "hs_county": c["hs_county"] * gc, "nh_county": c["nh_county"] * hv, "nr_county": c["nr_county"] * nr}
+               "hs_county": c["hs_county"] * gc, "nh_county": c["nh_county"] * f_nh, "nr_county": c["nr_county"] * f_nr}
         g_school = (new["hs_school"] + new["nh_school"] + new["nr_school"]) / (c["hs_school"] + c["nh_school"] + c["nr_school"])
         g_county = (new["hs_county"] + new["nh_county"] + new["nr_county"]) / (c["hs_county"] + c["nh_county"] + c["nr_county"])
         g_school = np.where(np.isfinite(g_school), g_school, 1.0)
@@ -257,11 +295,17 @@ class RateSetter:
             for k, r in [("hs_school", nh_), ("nh_school", nn_), ("nr_school", nr_),
                          ("hs_county", nh_), ("nh_county", nn_), ("nr_county", nr_)]:
                 new[k] = new[k] * (1 + r)
+            if self.blocks is not None:   # new construction enters at just value
+                for k, r in [("nh", nn_), ("nr", nr_)]:
+                    b = self.blocks[k]
+                    add = np.asarray(r) * (b["jc"] + b["ju"])
+                    b["ju"], b["au"] = b["ju"] + add, b["au"] + add
         self._c = new
 
         yv, cc = self._y, self._city_county
         gcy = np.where(cc >= 0, gc[np.maximum(cc, 0)], np.nanmedian(gc))
-        newy = {"hs": yv["hs"] * gcy, "nh": yv["nh"] * hv, "nr": yv["nr"] * nr}
+        by_county = lambda f: np.where(cc >= 0, f[np.maximum(cc, 0)], np.nanmedian(f))
+        newy = {"hs": yv["hs"] * gcy, "nh": yv["nh"] * by_county(f_nh), "nr": yv["nr"] * by_county(f_nr)}
         before = yv["hs"] + yv["nh"] + yv["nr"]
         with np.errstate(divide="ignore", invalid="ignore"):
             g_city = np.where(before > 0, (newy["hs"] + newy["nh"] + newy["nr"]) / before, 1.0)

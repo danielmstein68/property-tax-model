@@ -249,8 +249,9 @@ class Projection:
             j = self.yi if rid.endswith("municipal") else self.ci
             self.offered[rid] = np.isin(j, np.unique(j[claim & (j >= 0)]))
         self._init_new_residents(seed)
-        self.rows = [self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
-                               self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES})]
+        self.rows = [{**self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
+                                  self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES}),
+                      **self._nonowner()}]
 
     def _prepare_cached(self, baseline: pd.DataFrame) -> dict:
         """_prepare, saved to disk when the baseline says where (Monte Carlo workers load it)."""
@@ -488,7 +489,7 @@ class Projection:
         self.history[f"av_school_{y}"] = av_school
         for c in LEVIES:
             self.history[f"tax_{c}_{y}"] = tax[c]
-        self.rows.append(self._row(y, sold, total, av_school, tax))
+        self.rows.append({**self._row(y, sold, total, av_school, tax), **self._nonowner()})
         a["av_school_prior"] = av_school
         a["av_nonschool_prior"] = res["av_county"].to_numpy()
         a["taxable_school_prior"] = taxable["school"]
@@ -521,9 +522,10 @@ class Projection:
             self.rates.paths[y] = {"county": self.rates.county_draws, "city": self.rates.city_draws,
                                    "rle": self.rates.rle_draws, "tv": {k: v.copy() for k, v in tv.items()}}
         elif self.rate_replay is not None:          # "no response": the other run's rate decisions
+            self._step_rates(growth, y)             # this run's taxable bases (draws discarded)
             rp = self.rate_replay[y]
             self.rates.county_draws, self.rates.city_draws, self.rates.rle_draws = rp["county"], rp["city"], rp["rle"]
-            self.rates.paths[y] = rp
+            self.rates.paths[y] = {**rp, "tv": {k: v.copy() for k, v in self.rates.tv.items()}}
         else:
             self._step_rates(growth, y)
         self._apply_rates()
@@ -536,7 +538,24 @@ class Projection:
             cap = None
         self.rates.step_arrays(growth["school"], growth["county"],
                                self.econ.rate("home_value", y), self.econ.rate("nonresidential_value", y), y,
-                               nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]), cap_multiple=cap)
+                               nc_rates=None if nc is None else (nc["hs"], nc["nh"], nc["nr"]), cap_multiple=cap,
+                               caps=(float(self.law.rule("nonhomestead_residential_cap").get("cap", y)),
+                                     float(self.law.rule("nonresidential_cap").get("cap", y))))
+
+    def _nonowner(self) -> dict:
+        """Estimated tax on non-homestead residential and non-residential property (rentals, second
+        homes, businesses; not households in the model): each county's taxable bases x the
+        owner-weighted average rates in the county this year."""
+        ci, ok, w = self.ci, self.ci_ok, self.w
+        nc = len(self.rates.counties)
+        wsum = np.bincount(ci[ok], weights=w[ok], minlength=nc)
+        avg = lambda m: np.where(wsum > 0, np.bincount(ci[ok], weights=(m * w)[ok], minlength=nc) / np.maximum(wsum, 1e-9), 0.0)
+        m_ns = avg(self.mill["county"] + self.mill["municipal"] + np.nan_to_num(self.mill["special"]))
+        m_s = avg(self.mill["school"])
+        c = self.rates._c
+        return {"nonowner_tax_nonschool": float(((c["nh_county"] + c["nr_county"]) * m_ns).sum() / 1000),
+                "nonowner_tax_school": float(((c["nh_school"] + c["nr_school"]) * m_s).sum() / 1000),
+                "base_nonschool_nonhomestead": float((c["nh_county"] + c["nr_county"]).sum())}
 
     def _apply_rates(self) -> None:
         ci = self.ci

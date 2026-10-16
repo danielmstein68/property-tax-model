@@ -1,0 +1,13 @@
+# Amendment 3 (CS/HJR 1-F, 2026) as written: parts 1-3 (the use-of-revenue limit is not modelled).
+# Larger non-school homestead exemption (first $150,000 in 2027, $250,000 in 2028, CPI after);
+# new residents (not Florida residents on Dec 31, 2026) at $50,000 until their fifth year of
+# exemption; 5% cap on non-homestead assessments for non-school levies.
+name: "Amendment 3 (as written)"
+description: The larger homestead exemption, the four-year wait for new residents and the 5% cap on non-homestead property, from 2027.
+changes:
+  - {rule: homestead_nonschool_total, key: amount, values: {2027: 150000, 2028: 250000}}
+  - {rule: homestead_second, key: amount, value: 0, from: 2027}
+  - {rule: homestead_new_resident, key: amount, value: 50000, from: 2027}
+  - {rule: homestead_new_resident, key: waiting_years, value: 4, from: 2027}
+  - {rule: nonhomestead_residential_cap, key: cap, value: 0.05, from: 2027}
+  - {rule: nonresidential_cap, key: cap, value: 0.05, from: 2027}

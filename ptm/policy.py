@@ -37,6 +37,7 @@ LIVE = {
     ("soh_cap", "max_rate"): "Save Our Homes cap ceiling (cap = lesser of this and CPI)",
     ("soh_cap", "cap"): "Save Our Homes cap by year (future years follow max_rate and CPI)",
     ("nonhomestead_residential_cap", "cap"): "Non-homestead residential cap (non-school levies)",
+    ("nonresidential_cap", "cap"): "Cap on commercial and other non-homestead property (non-school levies; local tax bases)",
     ("portability", "max_transfer"): "Most Save Our Homes savings a mover can carry to a new homestead",
     ("homestead_first", "amount"): "First homestead exemption (all levies)",
     ("homestead_second", "amount"): "Second homestead exemption (non-school levies)",

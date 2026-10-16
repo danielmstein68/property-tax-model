@@ -152,6 +152,27 @@ assessment:
     cap: {2024: 0.10}
     max_units: 9
 
+  nonresidential_cap:
+    description: >
+      Non-homestead real property other than 9-or-fewer-unit residential (commercial,
+      industrial, residential with 10+ units, vacant non-residential land): for all levies
+      except school, assessed value rises at most 10% a year and never above just value; resets
+      to just value after a qualifying improvement or a change of ownership or control. School
+      levies use just value. Applied to each county's and city's tax base in ptm.rate_setting
+      (the model has no such parcels as households).
+    citation: "Fla. Const. Art. VII s. 4(h); s. 193.1555, F.S."
+    source_text: >
+      "For all levies other than school district levies, assessments of real property that is not
+      subject to the assessment limitations set forth in subsections (a) through (d) and (g) ...
+      shall not exceed ten percent (10%) of the assessment for the prior year." (Const. s. 4(h))
+    source_url: https://www.flsenate.gov/Laws/Statutes/2026/193.1555
+    confidence: high
+    notes: >
+      Amendment 3 (CS/HJR 1-F) lowers this cap and the s. 4(g) cap (nonhomestead_residential_cap)
+      to 5% beginning January 1, 2027.
+    applies_to: [county, municipal, special]
+    cap: {2024: 0.10}
+
   school_assessed_just_value_nonhomestead:
     description: >
       For non-homestead property, school levies are assessed at just value (no cap).

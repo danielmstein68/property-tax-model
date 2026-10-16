@@ -71,11 +71,16 @@ def compare_runs(base: Projection, new: Projection, end_year: int, threshold: fl
     """Levels, changes, changes by group and winners/losers from two finished runs."""
 
     keep = ["owners", "tax_total", "avg_tax", "tax_school", "tax_county", "tax_municipal",
-            "millage_school_avg", "millage_county_avg", "millage_municipal_avg", "homestead_assessed_to_just"]
+            "millage_school_avg", "millage_county_avg", "millage_municipal_avg", "homestead_assessed_to_just",
+            "nonowner_tax_nonschool", "nonowner_tax_school", "base_nonschool_nonhomestead"]
+    keep = [k for k in keep if k in base.summary and k in new.summary]
     sb, sp = base.summary[keep], new.summary[keep]
     levels = pd.concat({"current_law": sb, "policy": sp}, axis=1)
     changes = (sp - sb).drop(columns=["owners"])
     changes["tax_total_pct"] = sp["tax_total"] / sb["tax_total"] - 1
+    if "nonowner_tax_nonschool" in changes:   # all property tax: owners + estimated non-owner property
+        changes["tax_all_property"] = (changes["tax_total"] + changes["nonowner_tax_nonschool"]
+                                       + changes["nonowner_tax_school"])
 
     hb, hp = base.household_results, new.household_results
     groups = household_groups(base.units)
