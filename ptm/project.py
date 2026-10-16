@@ -53,7 +53,7 @@ import pandas as pd
 from ptm.economy import Economy
 from ptm.engine.step import step
 from ptm.law import Law, load_law
-from ptm.rate_setting import RateSetter, _city_key, school_rle_2026
+from ptm.rate_setting import RateSetter, _city_key, general_levy_2026, school_rle_2026
 from ptm.results import owner_mask
 
 BASE_YEAR = 2026
@@ -177,11 +177,19 @@ class Projection:
     def __init__(self, baseline: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
                  seed: int = 2026, law: Law | None = None, rate_setting: dict | None = None,
                  end_year: int = 2036, demography: dict | None = None, rate_replay: dict | None = None,
-                 revenue_neutral: dict | None = None, reimbursement: float = 0.0):
+                 revenue_neutral: dict | None = None, reimbursement: float = 0.0,
+                 millage_cap: float | None = None, fc_offset: bool = False):
         self.rate_replay = rate_replay    # {year: rate draws} from another run: rates don't respond
         # {year: rate draws and taxable bases} from the current-law run: each government re-solves its
         # rate to raise the same revenue (less any state reimbursement of the lost revenue)
         self.revenue_neutral, self.reimbursement = revenue_neutral, float(reimbursement)
+        # revenue-neutral only: no county general levy or city levy above this many mills (Art. VII
+        # s. 9(b): 10), or its current-law rate if already higher; what it can't raise stays lost
+        self.millage_cap = millage_cap
+        # revenue-neutral only: the state offsets fiscally constrained counties' losses (law rule
+        # fiscally_constrained_offset); their county taxing units raise only the rest
+        self.fc_offset = fc_offset
+        self._fc_now = 0.0
         self.econ = Economy(scenario, overrides)
         self.turnover = self.econ.spec["turnover"]
         self.rate_settings = {**self.econ.spec["rate_setting"], **(rate_setting or {})}
@@ -249,9 +257,10 @@ class Projection:
             j = self.yi if rid.endswith("municipal") else self.ci
             self.offered[rid] = np.isin(j, np.unique(j[claim & (j >= 0)]))
         self._init_new_residents(seed)
+        self._init_levy_rates()
         self.rows = [{**self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                   self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES}),
-                      **self._nonowner(self.a["taxable_school_prior"], self.a["taxable_county_prior"])}]
+                      **self._nonowner(self.a["taxable_school_prior"], self.a["taxable_county_prior"]), "state_offset": 0.0}]
 
     def _prepare_cached(self, baseline: pd.DataFrame) -> dict:
         """_prepare, saved to disk when the baseline says where (Monte Carlo workers load it)."""
@@ -489,7 +498,8 @@ class Projection:
         self.history[f"av_school_{y}"] = av_school
         for c in LEVIES:
             self.history[f"tax_{c}_{y}"] = tax[c]
-        self.rows.append({**self._row(y, sold, total, av_school, tax), **self._nonowner(taxable["school"], taxable["county"])})
+        self.rows.append({**self._row(y, sold, total, av_school, tax), **self._nonowner(taxable["school"], taxable["county"]),
+                          "state_offset": self._fc_now})
         a["av_school_prior"] = av_school
         a["av_nonschool_prior"] = res["av_county"].to_numpy()
         a["taxable_school_prior"] = taxable["school"]
@@ -516,8 +526,21 @@ class Projection:
                 with np.errstate(divide="ignore", invalid="ignore"):
                     return np.where(p > 0, (b - r * (b - p)) / p, 1.0)
             fixed = self.rates.school_fixed[None, :]
-            self.rates.county_draws = bp["county"] * ratio(bp["tv"]["county"], tv["county"])[None, :]
-            self.rates.city_draws = bp["city"] * ratio(bp["tv"]["city"], tv["city"])[None, :]
+            rho_c, rho_y = ratio(bp["tv"]["county"], tv["county"]), ratio(bp["tv"]["city"], tv["city"])
+            self._fc_now = 0.0
+            if self.fc_offset and self.fc_mask.any():
+                # state pays share x lost value x min(base-year rate, current rate); counties raise the rest
+                spec = self.law.rule("fiscally_constrained_offset").spec
+                b, p = bp["tv"]["county"], tv["county"]
+                ratio_cl = bp["county"].mean(axis=0)           # current-law rate / 2026 rate
+                e = np.where(self.fc_mask, float(spec["share_of_value"]) * np.maximum(b - p, 0) * np.minimum(1.0, 1 / ratio_cl), 0.0)
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    rho_c = np.where(p > 0, (b - e - r * (b - p - e)) / p, 1.0)
+                self._fc_now = float((e * self.county_rate_2026 * ratio_cl).sum() / 1000)
+            if self.millage_cap is not None:
+                rho_c, rho_y = self._cap_ratios(rho_c, rho_y, bp)
+            self.rates.county_draws = bp["county"] * rho_c[None, :]
+            self.rates.city_draws = bp["city"] * rho_y[None, :]
             self.rates.rle_draws = np.maximum((fixed + bp["rle"]) * ratio(bp["tv"]["school"], tv["school"])[None, :] - fixed, 0)
             self.rates.paths[y] = {"county": self.rates.county_draws, "city": self.rates.city_draws,
                                    "rle": self.rates.rle_draws, "tv": {k: v.copy() for k, v in tv.items()}}
@@ -584,6 +607,44 @@ class Projection:
         return self
 
     # --- reporting -------------------------------------------------------------------------------
+    def _init_levy_rates(self) -> None:
+        """2026 rates for the millage cap: each county's general levy and its share of the county
+        rate the model scales (owner-weighted average of millage_county_base), and each city's
+        rate (median over its owners)."""
+        u, nc, ny = self.units, len(self.rates.counties), len(self.rates.cities)
+        ci, ok, w = self.ci, self.ci_ok & self.orig, self.w0
+        mc = np.nan_to_num(u["millage_county_base"].to_numpy(dtype=float))
+        wsum = np.bincount(ci[ok], weights=w[ok], minlength=nc)
+        cls = np.where(wsum > 0, np.bincount(ci[ok], weights=(mc * w)[ok], minlength=nc) / np.maximum(wsum, 1e-9), np.nan)
+        self.general_2026 = _cached("general_levy", lambda: general_levy_2026(self.rates.counties.index))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            self.general_share = np.clip(np.nan_to_num(self.general_2026 / cls), 0, 1)
+        mm = u["millage_municipal_base"].to_numpy(dtype=float)
+        sel = (self.yi >= 0) & self.orig & (mm > 0)
+        med = pd.Series(mm[sel]).groupby(self.yi[sel]).median()
+        self.city_rate_2026 = med.reindex(range(ny)).to_numpy(dtype=float)
+        self.county_rate_2026 = np.nan_to_num(cls)
+        self.fc_mask = np.zeros(nc, bool)
+        if "fiscally_constrained_offset" in self.law_base.rules:
+            from ptm.millage import county_fips_by_name
+            f = county_fips_by_name()
+            names = self.law_base.rule("fiscally_constrained_offset").spec["counties"]
+            self.fc_mask = self.rates.counties.index.isin([f[n] for n in names if n in f])
+
+    def _cap_ratios(self, rho_c: np.ndarray, rho_y: np.ndarray, bp: dict) -> tuple[np.ndarray, np.ndarray]:
+        """Revenue-neutral rate ratios (vs current law) after the millage cap: the general levy part
+        of each county rate and each city levy rise at most to max(cap, current-law rate)."""
+        cap = float(self.millage_cap)
+        g_cl = self.general_2026 * bp["county"].mean(axis=0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            lim_c = np.where(g_cl > 0, np.maximum(cap, g_cl) / g_cl, np.inf)
+            s = self.general_share
+            rho_c = np.where(np.isfinite(g_cl), s * np.minimum(rho_c, lim_c) + (1 - s) * rho_c, rho_c)
+            r_cl = self.city_rate_2026 * bp["city"].mean(axis=0)
+            lim_y = np.where(r_cl > 0, np.maximum(cap, r_cl) / r_cl, np.inf)
+            rho_y = np.where(np.isfinite(r_cl), np.minimum(rho_y, lim_y), rho_y)
+        return rho_c, rho_y
+
     def _init_new_residents(self, seed: int) -> None:
         """Per-record chance that a buyer is new to Florida (direct, by age) and the rent-first add-on."""
         nr = self.econ.spec.get("new_residents") or {}

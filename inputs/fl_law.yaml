@@ -678,6 +678,36 @@ taxable:
     confidence: high
     caps_mills: {county: 10.0, municipal: 10.0, school: 10.0, wmd_northwest: 0.05, wmd_other: 1.0}
 
+  fiscally_constrained_offset:
+    description: >
+      State payments to fiscally constrained counties for ad valorem revenue lost to revisions of
+      Art. VII of the Constitution: 95% of the reduction in taxable value directly attributable to
+      the revision, for all county taxing jurisdictions (county, MSTUs, dependent districts; not
+      cities or schools), times the lesser of the base-year millage or the current millage. Paid
+      only if the Legislature appropriates it (it has for earlier amendments: $76.9M projected for
+      FY 2026-27 across ss. 218.12, 218.125, 218.136). Off by default; a page setting in the
+      revenue-neutral mode ("the state offsets fiscally constrained counties as before").
+    citation: "ss. 218.12(2), 218.125(2), 218.136(2), 218.67, F.S. (re-enacted by ch. 2026-240)"
+    source_text: >
+      "...each fiscally constrained county's reduction in ad valorem tax revenue shall be
+      calculated as 95 percent of the estimated reduction in taxable value multiplied by the lesser
+      of the 2010 applicable millage rate or the applicable millage rate for each county taxing
+      jurisdiction in the current year." (s. 218.125(2)). Fiscally constrained: "Each county that is
+      entirely within a rural area of opportunity ... or each county for which the value of a mill
+      will raise no more than $5 million in revenue..." (s. 218.67(1)).
+    source_url: https://www.flsenate.gov/Session/Bill/2026F/4F
+    confidence: medium
+    notes: >
+      Counties: the 29 entirely within the three rural areas of opportunity (North Central,
+      Northwest, South Central). 24 of them raise $5M or less per mill (2026 school taxable value);
+      Columbia, Putnam, Hendry, Highlands and Okeechobee are above $5M but inside a rural area —
+      29 in all, matching EDR's FY 2025-26 count (House Select Committee on Property Taxes,
+      Sept 22, 2025). Base-year millage for a new amendment: 2026 (assumption). Who is
+      constrained is held at 2026.
+    counties: [Baker, Bradford, Columbia, Dixie, Gilchrist, Hamilton, Jefferson, Lafayette, Levy, Madison, Putnam, Suwannee, Taylor, Union, Calhoun, Franklin, Gadsden, Gulf, Holmes, Jackson, Liberty, Wakulla, Washington, DeSoto, Glades, Hardee, Hendry, Highlands, Okeechobee]
+    share_of_value: 0.95
+    millage_base_year: 2026
+
 rates:
 
   rolled_back_rate:
@@ -705,7 +735,7 @@ rates:
       is the rolled-back rate; up to 110% of the rolled-back rate needs a two-thirds vote; above
       110% needs a unanimous vote (or three-fourths if the board has nine or more members) or a
       referendum. Constitutional caps (10 mills county / city / school) still apply.
-    citation: "s. 200.065(5)(a), F.S., as amended by ch. 2026-239 and ch. 2026-240"
+    citation: "s. 200.065(5)(a), F.S., as amended by ch. 2026-239 and ch. 2026-240 (CS/SB 4-F, approved June 24, 2026)"
     source_text: >
       "The maximum millage rate that a county, municipality, special district dependent to a county
       or municipality ... is the rolled-back rate computed pursuant to subsection (1)." "A rate of
@@ -714,15 +744,20 @@ rates:
       membership of the governing body ... or by a three-fourths vote of the membership of the
       governing body if the governing body has nine or more members"
     source_url: http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0200-0299/0200/Sections/0200.065.html
-    confidence: medium
+    confidence: high
     applies_to: [county, municipal, special]
     majority_vote_max_of_rolled_back: {2026: 1.00}
     two_thirds_vote_max_of_rolled_back: {2026: 1.10}
     notes: >
-      2026 Florida Statutes text; ch. 2026-239 is described as "remedial and clarifying". Before
-      2026 the majority-vote maximum was the rolled-back rate adjusted for the change in per
-      capita personal income (s. 200.185) — earlier years not encoded yet. Medium confidence only
-      because the 2026 session laws themselves haven't been read; check effective date.
+      2026 Florida Statutes text; ch. 2026-240 (enrolled CS/SB 4-F, read 2026-10-16) applies the
+      limits to counties, municipalities, dependent districts, MSTUs and independent special
+      districts and takes effect on becoming law (June 24, 2026). Before 2026 the majority-vote
+      maximum was the rolled-back rate adjusted for the change in per capita personal income
+      (s. 200.185) — earlier years not encoded yet. Because the rolled-back rate is last year's
+      levy over this year's taxable value, a government can replace revenue lost to an exemption
+      by majority vote; the binding legal limit on replacement is the 10-mill cap (millage_caps).
+      The act also re-enacts ss. 218.12, 218.125 and 218.136 (state offsets for fiscally
+      constrained counties' losses from constitutional amendments, subject to appropriation).
 
   school_required_local_effort:
     description: >

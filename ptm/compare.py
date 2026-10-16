@@ -38,14 +38,16 @@ GROUPS = ["income_decile", "age_group", "homestead", "years_in_home", "home_type
 
 
 def _run(baseline, scenario, seed, law, end_year, rate_setting=None, rate_replay=None,
-         revenue_neutral=None, reimbursement=0.0) -> Projection:
+         revenue_neutral=None, reimbursement=0.0, millage_cap=None, fc_offset=False) -> Projection:
     return Projection(baseline, scenario, seed=seed, law=law, rate_setting=rate_setting, rate_replay=rate_replay,
-                      revenue_neutral=revenue_neutral, reimbursement=reimbursement).run(end_year)
+                      revenue_neutral=revenue_neutral, reimbursement=reimbursement,
+                      millage_cap=millage_cap, fc_offset=fc_offset).run(end_year)
 
 
 def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int = 2026,
             baseline: pd.DataFrame | None = None, threshold: float = 10.0, years: list[int] | None = None,
-            response: str = "history", reimbursement: float = 0.0) -> dict:
+            response: str = "history", reimbursement: float = 0.0, millage_cap: float | None = 10.0,
+            fc_offset: bool = False) -> dict:
     from ptm.montecarlo import _baseline, slim_baseline
     if baseline is None:
         slim_baseline()
@@ -58,7 +60,7 @@ def compare(policy, scenario: str = "central", end_year: int = 2036, seed: int =
         new = _run(baseline, scenario, seed, law1, end_year, rate_replay=base.rates.paths)
     elif response == "revenue_neutral":   # each government re-solves its rate to keep its revenue
         new = _run(baseline, scenario, seed, law1, end_year, revenue_neutral=base.rates.paths,
-                   reimbursement=reimbursement)
+                   reimbursement=reimbursement, millage_cap=millage_cap, fc_offset=fc_offset)
     else:
         new = _run(baseline, scenario, seed, law1, end_year, pol.get("rate_response"))
     out = compare_runs(base, new, end_year, threshold, years)
@@ -72,7 +74,7 @@ def compare_runs(base: Projection, new: Projection, end_year: int, threshold: fl
 
     keep = ["owners", "tax_total", "avg_tax", "tax_school", "tax_county", "tax_municipal",
             "millage_school_avg", "millage_county_avg", "millage_municipal_avg", "homestead_assessed_to_just",
-            "nonowner_tax_nonschool", "nonowner_tax_school", "base_nonschool_nonhomestead"]
+            "nonowner_tax_nonschool", "nonowner_tax_school", "base_nonschool_nonhomestead", "state_offset"]
     keep = [k for k in keep if k in base.summary and k in new.summary]
     sb, sp = base.summary[keep], new.summary[keep]
     levels = pd.concat({"current_law": sb, "policy": sp}, axis=1)

@@ -106,6 +106,18 @@ def _composition(base_year: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     return c, cities
 
 
+def general_levy_2026(index: pd.Index) -> np.ndarray:
+    """Each county's 2026 general levy (BCC / county general, mills), aligned to `index` (county
+    FIPS); NaN where not known (Duval: consolidated with Jacksonville, a city levy)."""
+    from ptm.millage import county_fips_by_name
+    fips = county_fips_by_name()
+    norm = lambda n: str(n).lower().replace("st. ", "saint ").replace("st ", "saint ").replace("-", " ").strip()
+    by_norm = {norm(k): v for k, v in fips.items()}
+    rep = pd.read_csv(ROOT / "data" / "processed" / "baseline_fl_2026_rates_2026_report.csv")
+    rep["fips"] = rep["county"].map(lambda n: fips.get(n, by_norm.get(norm(n))))
+    return rep.dropna(subset=["fips"]).set_index("fips")["mill_2026"].reindex(index).to_numpy(dtype=float)
+
+
 def cap_blocks(base_year: int = 2026) -> pd.DataFrame | None:
     """Non-homestead cap blocks by county (scripts/fl_cap_blocks_2026.py), or None if not built."""
     path = ROOT / "data" / "processed" / f"fl_cap_blocks_{base_year}.csv"

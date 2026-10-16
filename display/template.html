@@ -340,6 +340,8 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <label class="field-label" for="pol-reimb" id="pol-reimb-label">State reimburses: 0% of lost revenue</label>
         <input type="range" id="pol-reimb" min="0" max="4" step="1" value="0">
         <div class="slider-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100% (= no response)</span></div>
+        <label class="check" for="pol-cap"><input type="checkbox" id="pol-cap" checked><div>Respect the 10-mill cap<span>Counties' general levies and city levies can't go above 10 mills (the Florida Constitution), or their current rate if already higher; what they can't raise stays lost. Untick to see what full replacement would take.</span></div></label>
+        <label class="check" for="pol-fc"><input type="checkbox" id="pol-fc"><div>The state offsets fiscally constrained counties<span id="pol-fc-note">As Florida has for earlier amendments (s. 218.125 formula): the state pays 29 small, rural counties 95% of their lost taxable value times their rate, if the Legislature funds it. With the 10-mill cap on and no other reimbursement.</span></div></label>
       </div>
     </section>
 
@@ -434,7 +436,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
           <li><b>Revenue lost</b> is property tax on all property, homes, rentals, second homes and businesses, compared with current law, with every government's tax rate where it would be under current law (how the state's economists score tax changes). Tax on property other than owner-occupied homes is estimated from each county's 2026 tax roll and average rates. "After governments respond" nets out the rate increases governments have made in similar years.</li>
           <li><b>Two versions of every result.</b> "Governments respond": counties, cities and school districts set rates the way Florida governments have in comparable years since the 1990s, within the 2026 limit of 110% of the rolled-back rate; when a policy shrinks their tax base, some raise rates, so owners who don't benefit can pay more. "No response": rates follow exactly the path they would under current law, showing the policy's direct effect. Tick "Localities replace lost revenue" for a third version: every county, city and school district resets its rate so it raises the same revenue as under current law, so a tax cut for some owners is paid for by higher rates on everyone else in that place (school districts keep the state-set required rate and adjust their local part). The slider sets how much of the lost revenue the state pays back to local governments, as Maine does for its homestead exemption; local rates rise only to cover the rest. With this ticked, section 4 lists every county, city and school district's rate.</li>
           <li><b>One change at a time.</b> Each slider changes one number (or a set that moves together), with everything else at current law. The listed policies combine changes. Free combinations need a live engine, planned for later.</li>
-          <li><b>Revenue replaced is a check, not a forecast.</b> It shows who would pay if no local government cut spending. Each government's tax base follows its homesteads in the model and its other property from the 2026 rolls (including the non-homestead assessment caps). It ignores legal rate limits (10 mills for counties, cities and schools' local part), which large policies would exceed in some places.</li>
+          <li><b>Revenue replaced is a check, not a forecast.</b> It shows who would pay if no local government cut spending. Each government's tax base follows its homesteads in the model and its other property from the 2026 rolls (including the non-homestead assessment caps). By default it respects the Florida Constitution's 10-mill caps on county general levies and city levies: a government at the cap can't raise more, and what it can't raise stays lost (section 5 lists them). Untick the cap to see what full replacement would take. County taxing units (MSTUs) and special districts have their own limits, not modelled; they rise in full. Florida law lets a government replace lost revenue by majority vote (the rolled-back rate is last year's taxes over this year's value; ch. 2026-240), so the 10-mill cap is the binding limit. "The state offsets fiscally constrained counties" applies the formula the state has used for earlier amendments (ss. 218.12, 218.125, 218.136): 95% of each of the 29 counties' lost taxable value times the lower of its 2026 or current rate, if the Legislature funds it.</li>
           <li><b>Big policies are outside history.</b> Rate responses are drawn from ordinary years; for policies that remove most of a government's homestead base, treat the "respond" figures as indicative only.</li>
           <li><b>Owners only.</b> Renters' share through rent isn't modelled yet. "About the same" means within $10 a year.</li>
         </ul>
@@ -822,7 +824,11 @@ Object.values(G.runs).forEach(run => Object.values(run).forEach(m => {
   if (m && Array.isArray(m.groups) && Array.isArray(m.groups[0])) m.groups = m.groups.map(r => Object.fromEntries(G.group_cols.map((c, i) => [c, r[i]])));
 }));
 const REIMB = [0, 0.25, 0.5, 0.75, 1];
-const nkey = () => POL.reimb === 0 ? "neutral" : POL.reimb === 4 ? "none" : `neutral_${Math.round(100 * REIMB[POL.reimb])}`;
+const fcOn = () => POL.fc && !POL.nocap && POL.reimb === 0;
+const nkeyFor = nocap => { if (!nocap && fcOn()) return "neutral_fc";
+  const b = nocap ? "neutral_nocap" : "neutral";
+  return POL.reimb === 0 ? b : POL.reimb === 4 ? "none" : `${b}_${Math.round(100 * REIMB[POL.reimb])}`; };
+const nkey = () => nkeyFor(POL.nocap);
 const key = m => m === "neutral" ? nkey() : m;
 const fmtSetting = (sl, v) => {
   if (v === "none") return sl.id === "senior_nonschool_age" ? "None (current law)" : "No limit";
@@ -1035,7 +1041,11 @@ function renderRevenue(run, y, M) {
     `With tax rates unchanged, local governments collect ${bnAbs(lost)} ${lost >= 0 ? "less" : "more"} in ${y}. If governments respond as they have in similar years, rate changes ${lost >= 0 ? "win back" : "give back"} ${bnAbs(lost + R.all)} and ${bnAbs(R.all)} stays ${lost >= 0 ? "lost" : "gained"}.`;
   if (POL.neutral && Math.abs(lost) >= 5e6) {
     const r = REIMB[POL.reimb], X = yr("neutral", y), own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
-    where += ` If localities replace all of it${r ? `, the state pays ${bnAbs(r * lost)} (${pct(r, 0)}) and` : ","} higher local rates raise ${bnAbs(own + oth)}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses.`;
+    const off = fcOn() ? (X.state_offset || 0) : 0;
+    const held = govRows(run, y).county.concat(govRows(run, y).city).filter(q => q.capped);   // same numbers as section 5
+    const nHeld = held.length, short = held.reduce((t, q) => t + q.short, 0);
+    where += ` If localities replace what they can${r ? `, the state pays ${bnAbs(r * lost)} (${pct(r, 0)}) and` : off ? `, the state offsets fiscally constrained counties with ${bnAbs(off)} and` : ","} higher local rates raise ${bnAbs(own + oth)}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses.` +
+      (POL.nocap ? " (This version ignores the 10-mill cap.)" : nHeld ? ` About ${short >= 5e6 ? bnAbs(short) : usd(short)} can't be raised because ${nHeld} ${nHeld === 1 ? "government is" : "counties and cities are"} held at the 10-mill cap; it stays lost.` : " No county or city hits the 10-mill cap.");
   }
   $("pol-rev-where").textContent = where;
   // chart: revenue lost by year, each response
@@ -1074,22 +1084,36 @@ const GOV_TABS = [["county", "Counties (general levy)"], ["city", "Cities"], ["s
 $("pol-gov-tabs").innerHTML = GOV_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgov-${g}">${l}</button>`).join("");
 $("pol-gov-tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.gov = b.dataset.g; renderPolicy(); });
 const CNAME = Object.fromEntries(G.governments.counties.map(c => [c.fips, c.name]));
-function renderGov(run, y, N) {
-  $("pol-gov").hidden = !POL.neutral;
-  if (!POL.neutral) return;
-  document.querySelectorAll("#pol-gov-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === POL.gov));
+const CAP = 10;
+function govRows(run, y) {
   const r = REIMB[POL.reimb], k = 1 - r, ys = String(y), d = run && run.rates ? run.rates[ys] : null;
-  $("pol-gov-title").textContent = `How each government's tax rate changes, ${y}`;
   const rows = { county: [], city: [], school: [] };
   G.governments.counties.forEach((c, i) => {
     const dc = d ? d.county[i] : 0, ds = d ? d.school[i] : 0;
     const lostOf = (rate, tv, dd) => rate * tv * dd / (1 + dd) / 1000;   // rate x (current-law base - policy base)
-    if (c.general) rows.county.push({ name: c.name, county: "", cur: c.general[ys], d: k * dc, lost: lostOf(c.general[ys], c.tv[ys], dc), share: dc / (1 + dc) });
-    rows.school.push({ name: c.name, county: "", cur: c.school[ys], d: k * ds, lost: lostOf(c.school[ys], c.tv_school[ys], ds), share: ds / (1 + ds) });
+    // state offset (fiscally constrained): 95% of the lost value x min(2026 rate, current rate) is paid by the state
+    const off = fcOn() && c.fc && c.general_2026 ? 0.95 * Math.max(dc, 0) * Math.min(1, c.general_2026 / c.general[ys]) : 0;
+    if (c.general) rows.county.push({ name: c.name + (fcOn() && c.fc ? " (state offset)" : ""), county: "", cur: c.general[ys], d: k * dc - off, d0: dc, tv: c.tv[ys], lost: lostOf(c.general[ys], c.tv[ys], dc), share: dc / (1 + dc) });
+    rows.school.push({ name: c.name, county: "", cur: c.school[ys], d: k * ds, d0: ds, tv: c.tv_school[ys], lost: lostOf(c.school[ys], c.tv_school[ys], ds), share: ds / (1 + ds) });
   });
   G.governments.cities.forEach(c => { const dd = d ? d.city[c.i] : 0;
-    rows.city.push({ name: c.name, county: CNAME[c.county] || "", cur: c.rate[ys], d: k * dd, lost: c.rate[ys] * c.tv[ys] * dd / (1 + dd) / 1000, share: dd / (1 + dd) }); });
-  Object.values(rows).forEach(list => list.forEach(x => { x.pol = x.cur * (1 + x.d); }));
+    rows.city.push({ name: c.name, county: CNAME[c.county] || "", cur: c.rate[ys], d: k * dd, d0: dd, tv: c.tv[ys], lost: c.rate[ys] * c.tv[ys] * dd / (1 + dd) / 1000, share: dd / (1 + dd) }); });
+  // the rate each would need (want) and, with the cap, the rate it can set; the gap stays lost
+  Object.entries(rows).forEach(([g, list]) => list.forEach(x => {
+    x.want = x.cur * (1 + x.d);
+    x.capped = g !== "school" && !POL.nocap && x.want > Math.max(CAP, x.cur) + 0.0005;
+    x.pol = x.capped ? Math.max(CAP, x.cur) : x.want;
+    x.short = x.capped ? (x.want - x.pol) * x.tv / (1 + x.d0) / 1000 : 0;   // on the policy base
+  }));
+  return rows;
+}
+function renderGov(run, y, N) {
+  $("pol-gov").hidden = !POL.neutral;
+  if (!POL.neutral) return;
+  document.querySelectorAll("#pol-gov-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === POL.gov));
+  const r = REIMB[POL.reimb];
+  $("pol-gov-title").textContent = `How each government's tax rate changes, ${y}`;
+  const rows = govRows(run, y);
   const over = list => list.filter(x => x.pol > 10.0005);
   const newly = list => list.filter(x => x.pol > 10.0005 && x.cur <= 10.0005);
   const up = list => list.filter(x => x.d > 0.0005);
@@ -1098,19 +1122,27 @@ function renderGov(run, y, N) {
   $("pol-gov-intro").textContent = !run ? "Current law: no rate changes." :
     `Each government's rate if it raises the same revenue as under current law${r ? ` after the state pays back ${pct(r, 0)} of what it loses` : ""}. ` +
     (r && lost ? `The state's payments would be about ${bnS(r * lost).replace("+", "")} in ${y} (${pct(r, 0)} of the ${bnS(lost).replace("+", "")} that owners stop paying). ` : "") +
-    "General levies and city rates are capped at 10 mills by the Florida Constitution; this check ignores the cap, so rates above 10 show where a government could not replace its revenue this way.";
+    (POL.nocap ? "County general levies and city rates are capped at 10 mills by the Florida Constitution; this version ignores the cap, so rates above 10 show where a government could not legally replace its revenue." :
+      "County general levies and city rates are capped at 10 mills by the Florida Constitution (or stay at their current rate if already higher); a government at the cap can't raise the rest, and that revenue stays lost.");
   const sumLost = list => list.reduce((t, x) => t + (x.lost || 0), 0);
   $("pol-gov-intro").textContent += run ? ` With rates unchanged, county general levies would lose ${bnAbs(sumLost(rows.county))} in ${y}, city levies ${bnAbs(sumLost(rows.city))} and school districts ${bnAbs(sumLost(rows.school))}.` : "";
   $("pol-gov-figures").innerHTML = [
     [`${up(rows.county).length} of ${rows.county.length}`, "Counties raising their general rate"],
     [pctS(med(rows.county), 1), "Median county rate change"],
+  ].concat(POL.nocap ? [
     [String(newly(rows.county).length + newly(rows.city).length), "Counties and cities pushed above the 10-mill cap"],
     [`${up(rows.city).length} of ${rows.city.length}`, "Cities raising their rate"],
-  ].map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  ] : [
+    [String(rows.county.concat(rows.city).filter(x => x.capped).length), "Counties and cities held at the 10-mill cap"],
+    [bnS(rows.county.concat(rows.city).reduce((t, x) => t + x.short, 0)).replace(/^[+−]/, ""), `Revenue they can't raise under the cap, ${y}`],
+  ]).map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
   const list = rows[POL.gov].slice().sort((a, b) => b.d - a.d || a.name.localeCompare(b.name));
   const capped = POL.gov !== "school";
-  const head = `<thead><tr><th>${POL.gov === "city" ? "City" : "County"}</th>${POL.gov === "city" ? "<th>County</th>" : ""}<th>Current law (mills)</th><th>Policy (mills)</th><th>Change (mills)</th><th>% change</th>${capped ? "<th>Above 10 mills</th>" : ""}<th>Revenue lost, rates unchanged</th><th>Share of levy lost</th></tr></thead>`;
-  const body = list.map(x => `<tr><td>${x.name}</td>${POL.gov === "city" ? `<td>${x.county}</td>` : ""}<td>${x.cur.toFixed(3)}</td><td>${x.pol.toFixed(3)}</td><td>${signed(x.pol - x.cur, v => v.toFixed(3))}</td><td>${pctS(x.d, 1)}</td>${capped ? `<td class="${x.pol > 10.0005 ? "over" : ""}">${x.pol > 10.0005 ? (x.cur > 10.0005 ? "Yes (already)" : "Yes") : ""}</td>` : ""}<td>${x.lost < 0 ? "Gains " : ""}${usd(Math.abs(x.lost))}</td><td>${pct(x.share, 1)}</td></tr>`).join("");
+  const capHead = POL.nocap ? "<th>Above 10 mills</th>" : "<th>At the 10-mill cap</th><th>Can't be raised under the cap</th>";
+  const capCells = x => POL.nocap ? `<td class="${x.pol > 10.0005 ? "over" : ""}">${x.pol > 10.0005 ? (x.cur > 10.0005 ? "Yes (already)" : "Yes") : ""}</td>` :
+    `<td class="${x.capped ? "over" : ""}">${x.capped ? `Yes (needs ${x.want.toFixed(2)})` : ""}</td><td>${x.short > 0 ? usd(x.short) : ""}</td>`;
+  const head = `<thead><tr><th>${POL.gov === "city" ? "City" : "County"}</th>${POL.gov === "city" ? "<th>County</th>" : ""}<th>Current law (mills)</th><th>Policy (mills)</th><th>Change (mills)</th><th>% change</th>${capped ? capHead : ""}<th>Revenue lost, rates unchanged</th><th>Share of levy lost</th></tr></thead>`;
+  const body = list.map(x => `<tr><td>${x.name}</td>${POL.gov === "city" ? `<td>${x.county}</td>` : ""}<td>${x.cur.toFixed(3)}</td><td>${x.pol.toFixed(3)}</td><td>${signed(x.pol - x.cur, v => v.toFixed(3))}</td><td>${pctS(x.pol / x.cur - 1, 1)}</td>${capped ? capCells(x) : ""}<td>${x.lost < 0 ? "Gains " : ""}${usd(Math.abs(x.lost))}</td><td>${pct(x.share, 1)}</td></tr>`).join("");
   $("pol-t-gov").innerHTML = head + "<tbody>" + body + "</tbody>";
 }
 
@@ -1140,7 +1172,14 @@ try { POL.neutral = localStorage.getItem("ptm-neutral") === "1"; } catch (e) { P
 $("pol-neutral").checked = POL.neutral;
 const syncReimb = () => { $("pol-reimb-box").hidden = !POL.neutral; $("pol-reimb-label").textContent = `State reimburses: ${pct(REIMB[POL.reimb], 0)} of lost revenue`; };
 $("pol-neutral").addEventListener("change", e => { POL.neutral = e.target.checked; try { localStorage.setItem("ptm-neutral", POL.neutral ? "1" : "0"); } catch (x) {} syncReimb(); renderPolicy(); });
-$("pol-reimb").addEventListener("input", e => { POL.reimb = +e.target.value; syncReimb(); renderPolicy(); });
+$("pol-reimb").addEventListener("input", e => { POL.reimb = +e.target.value; syncReimb(); if (typeof syncFc === "function") syncFc(); renderPolicy(); });
+POL.nocap = false;
+$("pol-cap").addEventListener("change", e => { POL.nocap = !e.target.checked; syncFc(); renderPolicy(); });
+POL.fc = false;
+function syncFc() { const ok = !POL.nocap && POL.reimb === 0; $("pol-fc").disabled = !ok;
+  $("pol-fc").closest("label").style.opacity = ok ? 1 : 0.55; }
+$("pol-fc").addEventListener("change", e => { POL.fc = e.target.checked; renderPolicy(); });
+syncFc();
 syncReimb();
 
 // 2026 context: all property

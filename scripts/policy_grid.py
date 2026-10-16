@@ -37,7 +37,9 @@ YEARS = [2027, 2031, 2036]
 BIG = 1e9           # "none": no cap / no limit
 GROUPS_OUT = ["income_decile", "age_group", "homestead", "region"]
 REIMBURSE = [0.25, 0.5, 0.75]
-MODES = ["respond", "none", "neutral"] + [f"neutral_{round(100 * r)}" for r in REIMBURSE]
+MODES = (["respond", "none", "neutral"] + [f"neutral_{round(100 * r)}" for r in REIMBURSE]
+         + ["neutral_nocap"] + [f"neutral_nocap_{round(100 * r)}" for r in REIMBURSE]   # neutral: 10-mill cap
+         + ["neutral_fc"])   # cap, and the state offsets fiscally constrained counties
 GCOLS = ["year", "grouping", "group", "owners", "avg_change", "pct_change", "change_share_of_income", "total_change",
          "share_pay_less", "share_pay_more", "gain_more_5pct", "gain_less_5pct", "no_change", "lose_less_5pct",
          "lose_more_5pct", "avg_gain_if_less", "avg_loss_if_more"]
@@ -105,7 +107,8 @@ def summarize(r: dict) -> dict:
                "mill_county": float(ch.loc[y, "millage_county_avg"]), "mill_school": float(ch.loc[y, "millage_school_avg"]),
                "nonowner": float(ch.loc[y, "nonowner_tax_nonschool"] + ch.loc[y, "nonowner_tax_school"]),
                "nonowner_school": float(ch.loc[y, "nonowner_tax_school"]),
-               "all": float(ch.loc[y, "tax_all_property"])}
+               "all": float(ch.loc[y, "tax_all_property"]),
+               "state_offset": float(ch.loc[y, "state_offset"]) if "state_offset" in ch else 0.0}
               for y in ch.index if y > 2026]
     g, w = r["by_group"], r["winners"]
     m = g.merge(w, on=["year", "grouping", "group", "owners"])
@@ -140,9 +143,11 @@ def run_entry(e: dict) -> dict:
         new = _run(B["b"], SCENARIO, SEED, law1, END,
                    rate_replay=B["run"].rates.paths if resp == "none" else None,
                    revenue_neutral=B["run"].rates.paths if neutral else None,
-                   reimbursement=int(resp.split("_")[1]) / 100 if "_" in resp else 0.0)
+                   reimbursement=int(resp.split("_")[-1]) / 100 if resp.split("_")[-1].isdigit() else 0.0,
+                   millage_cap=10.0 if neutral and "nocap" not in resp else None,
+                   fc_offset=resp == "neutral_fc")
         out[resp] = summarize(compare_runs(B["run"], new, END, years=YEARS))
-        if resp == "neutral":
+        if resp == "neutral_nocap":   # desired (uncapped) rate changes; the page applies the cap
             out["rates"] = rate_changes(B["run"], new)
     out["seconds"] = time.time() - t
     return out
@@ -172,19 +177,20 @@ def governments() -> dict:
     rep26 = pd.read_csv(ROOT / "data" / "processed" / "baseline_fl_2026_rates_2026_report.csv")
     rep26["fips"] = rep26["county"].map(lambda n: fips.get(n, by_norm.get(norm(n))))
     name = {v: k for k, v in fips.items()}
-    gen = rep26.set_index("fips")["mill_2026"]
+    gen = pd.Series(B["run"].general_2026, index=rs.counties.index)    # same rates the cap uses
     from ptm.project import owner_mask
     own = b[owner_mask(b)]
     own = own[own["municipality"].notna() & own["millage_municipal"].gt(0)]
     keys = list(zip(own["county_fips_tax"], own["municipality"].map(_city_key)))
     own = own.assign(k=keys)
-    city_mill = own.groupby("k")["millage_municipal"].median()
+    city_mill = pd.Series(B["run"].city_rate_2026, index=rs.cities.index)
     city_name = own.groupby("k")["municipality"].agg(lambda s: s.mode().iloc[0])
     path = {y: rs.paths[y] for y in YEARS}
     counties = []
     for i, f in enumerate(rs.counties.index):
         g = float(gen.get(f, np.nan))
-        counties.append({"fips": f, "name": name.get(f, f),
+        counties.append({"fips": f, "name": name.get(f, f), "fc": bool(B["run"].fc_mask[i]),
+                         "general_2026": None if not np.isfinite(gen.get(f, np.nan)) else round(float(gen.get(f)), 4),
                          "general": {str(y): round(g * float(path[y]["county"][:, i].mean()), 4) for y in YEARS} if np.isfinite(g) else None,
                          "school": {str(y): round(float(rs.school_fixed[i] + path[y]["rle"][:, i].mean()), 4) for y in YEARS},
                          "tv": {str(y): round(float(path[y]["tv"]["county"][i])) for y in YEARS},
