@@ -88,6 +88,9 @@ svg .bar-label { fill: var(--bar-ink); font: 600 11px var(--body); }
 .fig { background: var(--surface); border-radius: 16px; padding: 20px 22px; display: grid; gap: 6px; align-content: start; }
 .fig .v { font: 700 30px/1.1 var(--body); letter-spacing: -0.02em; color: var(--accent); font-variant-numeric: tabular-nums; }
 .fig .l { font-size: 14px; color: var(--muted); line-height: 1.4; }
+.fig.fig-suits { background: var(--lose1); }
+.fig.fig-suits .v { color: var(--lose2); font-size: 38px; }
+.fig.fig-suits .l { color: var(--lose2); opacity: 0.82; }
 @media (max-width: 760px) { .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
@@ -1250,12 +1253,12 @@ const range = r => r.income_to == null ? "Over " + k(r.income_from) : (r.income_
 $("lede").textContent = `Florida's ${mil(H.owners)} owner households will pay an estimated ${bn(H.owner_tax_total)} in property tax on their homes in 2026, about ${pct(all.tax_share_of_income)} of their combined income. Measured against income the tax is regressive; measured against home value it rises with income.`;
 
 const figs = [
+  [H.suits_index.toFixed(2), "Suits index — how regressive the tax is. Ranges from −1 (fully regressive) to +1 (fully progressive); 0 = flat rate. Property taxes routinely score below 0.", "fig-suits"],
   [bn(H.owner_tax_total), "Property tax paid by owner households"],
   [usd(all.avg_tax), "Average per owner (median " + usd(H.median_tax) + ")"],
   [pct(all.tax_share_of_income), "Of owner income, all owners together"],
-  [H.suits_index.toFixed(2), "Suits index (0 = proportional to income; below 0 = regressive)"],
 ];
-$("figures").innerHTML = figs.map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+$("figures").innerHTML = figs.map(([v, l, cls]) => `<div class="fig${cls ? " " + cls : ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
 
 const d1 = dec[0], d10 = dec[9];
 $("decile-intro").textContent = `The typical owner in the bottom tenth of households pays ${pct(d1.median_tax_share_of_income, 0)} of their income in property tax; the typical owner in the top tenth pays ${pct(d10.median_tax_share_of_income)}. The top tenth still pays the most in dollars: ${usd(d10.avg_tax)} on average and ${pct(d10.share_of_owner_tax, 0)} of all owner tax.`;
@@ -1604,6 +1607,29 @@ const modes = () => POL.neutral ? ["respond", "none", "neutral"] : ["respond", "
 function grp(run, mode, y, grouping) { return run[key(mode)].groups.filter(r => r.year === y && r.grouping === grouping); }
 function allRow(run, mode, y) { return run[key(mode)].groups.find(r => r.year === y && r.grouping === "all"); }
 function yrow(run, mode, y) { return run[key(mode)].yearly.find(r => r.year === y); }
+// Approximate Suits index from income-decile rows. Uses baseline income shares (stable across policies)
+// and policy-adjusted tax per decile. Returns null if data is missing or total tax ≤ 0.
+function approxSuits(policyDecileRows) {
+  const base = D.by_decile.filter(d => d.group !== "All owners").sort((a, b) => +a.group - +b.group);
+  const pol = policyDecileRows.slice().sort((a, b) => +a.group.replace(/\D/g,'') - +b.group.replace(/\D/g,''));
+  if (base.length !== pol.length || base.length < 2) return null;
+  let totalIncome = 0, totalTax = 0;
+  const rows = base.map((bd, i) => {
+    const inc = bd.owners * bd.avg_income;
+    const tax = bd.owners * (bd.avg_tax + (pol[i] ? pol[i].avg_change : 0));
+    totalIncome += inc; totalTax += tax;
+    return { inc, tax };
+  });
+  if (totalTax <= 0) return null;
+  let cumInc = 0, cumTax = 0, area = 0;
+  for (const r of rows) {
+    const dI = r.inc / totalIncome, dT = r.tax / totalTax;
+    const prevCumTax = cumTax;
+    cumInc += dI; cumTax += dT;
+    area += (prevCumTax + cumTax) / 2 * dI;
+  }
+  return 1 - 2 * area;
+}
 
 function renderPolicy() {
   const { run, label, desc } = currentRun(), y = POL.year;
@@ -1623,7 +1649,14 @@ function renderPolicy() {
 
   // 2. owners
   $("pol-s1-title").textContent = `Owner property tax under the policy, ${y}`;
+  const polDecR = run ? grp(run, "respond", y, "income_decile") : null;
+  const polSuits = polDecR ? approxSuits(polDecR) : null;
+  const suitsBase = D.headline.suits_index;
+  const suitsTile = polSuits != null
+    ? [`${polSuits.toFixed(2)}`, `Suits index under policy (current law: ${suitsBase.toFixed(2)}; change: ${(polSuits - suitsBase) >= 0 ? "+" : ""}${(polSuits - suitsBase).toFixed(2)}). Below 0 = regressive.`, "fig-suits"]
+    : [`${suitsBase.toFixed(2)}`, "Suits index — current law (policy unchanged from baseline)", "fig-suits"];
   $("pol-figures").innerHTML = [
+    suitsTile,
     [bnS(R.tax), `Change in owner tax in ${y} if governments respond (${pctS(R.pct)})`],
     [bnS(N.tax), `Change with no response (${pctS(N.pct)})`],
   ].concat(POL.neutral ? [
@@ -1632,7 +1665,7 @@ function renderPolicy() {
   ] : [
     [aR ? pct(aR.share_pay_less, 0) : "0%", "Owners paying less (governments respond)"],
     [aR ? pct(aR.share_pay_more, 0) : "0%", "Owners paying more (governments respond)"],
-  ]).map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  ]).map(([v, l, cls]) => `<div class="fig${cls ? " " + cls : ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
   const lv = (b, d) => b + d;
   $("pol-t-levels").innerHTML = `<thead><tr><th>${y}</th><th>Current law</th>${M.map(m => `<th>Policy, ${MODE[m].l.toLowerCase()}</th>`).join("")}</tr></thead><tbody>` +
     [["Owner property tax", "tax_total", "tax", bn], ["School district", "school", "school", bn],
@@ -1649,7 +1682,7 @@ function renderPolicy() {
     const PTS = Object.fromEntries(M.map(m => [m, run[key(m)].yearly.filter(ok).map(r => ({ year: r.year, v: r.tax / 1e9 }))])), ptsR = PTS.respond;
     const vals = M.flatMap(m => PTS[m].map(p => p.v)).concat([0]);
     let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.1 || 0.1; lo -= pad; hi += pad;
-    const W = 520, H = 280, L = 56, R_ = 12, T = 14, B = 30, years = ptsR.map(p => p.year);
+    const W = 520, H = 280, L = 72, R_ = 12, T = 14, B = 30, years = ptsR.map(p => p.year);
     const s = svg(W, H), x = yv => L + (W - L - R_) * (yv - years[0]) / (years[years.length - 1] - years[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
     s.setAttribute("aria-label", "Change in owner tax by year, with and without government responses");
     for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, (v >= 0 ? "" : "−") + "$" + Math.abs(v).toFixed(Math.abs(hi - lo) < 2 ? 2 : 1) + "B"); }
@@ -1898,7 +1931,7 @@ function renderA3() {
 
 // views: 2026 today / policy comparisons / Amendment 3
 const VIEWS = {
-  today: { eyebrow: "Florida · Tax year 2026 · Current law", h1: "Who pays Florida's property tax on owner-occupied homes" },
+  today: { eyebrow: "Florida · Tax year 2026 · Current law", h1: "Florida's property tax falls hardest on low-income homeowners" },
   policy: { eyebrow: "Florida · Policy comparisons · From 2027", h1: "What a property tax policy would change, and for whom" },
   a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom" },
 };
