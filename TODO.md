@@ -28,7 +28,7 @@ Steps we're working through one at a time. Each gets discussed before it's built
 - [ ] Local options: counties/cities raising the exemption; shortening the newcomer wait from 2030.
 - [ ] County map of revenue lost and rate increases.
 - [ ] (optional) Compare county/city/special district impacts with REC's per-government tables (impact0710.pdf pages 5-18).
-- [ ] Tests for 2026-10-15/16 features (Amendment 3 exemption, new residents, cap blocks, 10-mill cap, state offsets, take-up/residency switch).
+- [x] Tests for 2026-10-15/16 features: `tests/test_policy_features.py` (10 tests; suite 78).
 
 **Bigger**
 - [ ] Live engine so users can combine changes freely (replaces the pre-computed grid).

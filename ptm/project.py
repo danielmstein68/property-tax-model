@@ -85,6 +85,20 @@ def project_law(law: Law, econ: Economy, last_year: int) -> Law:
     return law
 
 
+def claim_probability(gain: np.ndarray, share_at_ref: float, gain_ref: float) -> np.ndarray:
+    """Chance of responding (claiming, or switching residence) to a yearly gain: 1 - exp(-k x gain),
+    with k set so the chance at gain_ref is share_at_ref. No gain (or a loss): 0."""
+    k = -np.log(1 - float(share_at_ref)) / float(gain_ref)
+    return 1 - np.exp(-k * np.maximum(np.asarray(gain, dtype=float), 0))
+
+
+def fc_offset_value(b: np.ndarray, p: np.ndarray, ratio_cl: np.ndarray, share: float, mask: np.ndarray) -> np.ndarray:
+    """Taxable value the state pays for in fiscally constrained counties (s. 218.125 formula): share
+    x lost value x min(base-year rate, current rate) / current rate. b, p: current-law and policy
+    taxable value; ratio_cl: current-law rate / base-year rate."""
+    return np.where(mask, float(share) * np.maximum(b - p, 0) * np.minimum(1.0, 1 / ratio_cl), 0.0)
+
+
 def lock_in_factor(savings: np.ndarray, per_100k: float, floor: float) -> np.ndarray:
     return np.maximum(1 + per_100k * np.maximum(savings, 0) / 100_000, floor)
 
@@ -553,7 +567,7 @@ class Projection:
                 spec = self.law.rule("fiscally_constrained_offset").spec
                 b, p = bp["tv"]["county"], tv["county"]
                 ratio_cl = bp["county"].mean(axis=0)           # current-law rate / 2026 rate
-                e = np.where(self.fc_mask, float(spec["share_of_value"]) * np.maximum(b - p, 0) * np.minimum(1.0, 1 / ratio_cl), 0.0)
+                e = fc_offset_value(b, p, ratio_cl, spec["share_of_value"], self.fc_mask)
                 with np.errstate(divide="ignore", invalid="ignore"):
                     rho_c = np.where(p > 0, (b - e - r * (b - p - e)) / p, 1.0)
                 self._fc_now = float((e * self.county_rate_2026 * ratio_cl).sum() / 1000)
@@ -654,7 +668,7 @@ class Projection:
             reason = self.units["non_claim_reason"] if "non_claim_reason" in self.units else pd.Series("", index=self.units.index)
             self.tk_cand = (~self.hs) & self.orig & (reason.fillna("").to_numpy() == "possibly_eligible")
             self.tk_u = np.random.default_rng(seed + 104729).random(n)
-            self.tk_k = -np.log(1 - float(tk["share_at_ref"][tk.get("use", "central")])) / float(tk["gain_ref"])
+            self.tk_share = float(tk["share_at_ref"][tk.get("use", "central")])
         self.rs = rs if self.behaviour and rs.get("enabled") else None
         self.sb_ex = {"county": np.zeros(len(self.rates.counties)), "school": np.zeros(len(self.rates.counties))}
         if self.rs:
@@ -668,7 +682,7 @@ class Projection:
                 self.sb_ci = smp["county_fips"].map(cpos).fillna(-1).astype(int).to_numpy()
                 self.sb_w = len(pool) / m
                 self.sb_jv = smp["JV"].to_numpy(dtype=float)
-                self.sb_k = -np.log(1 - float(rs["share_at_ref"][rs.get("use", "central")])) / float(rs["gain_ref"])
+                self.sb_share_ref = float(rs["share_at_ref"][rs.get("use", "central")])
                 self.sb_share = np.zeros(m)          # cumulative share of each sampled parcel switched
                 self.sb_cohorts = {}                 # year -> new share switched that year
 
@@ -694,7 +708,7 @@ class Projection:
         sub, jv = self.units.iloc[idx], self.a["jv"][idx]
         ep, ec = self._exempt_as_homestead(sub, jv, self.law, y), self._exempt_as_homestead(sub, jv, self.law_cl, y)
         gain = sum((ep[c] - ec[c]) * self.mill[c][idx] for c in LEVIES) / 1000
-        p = (1 - np.exp(-self.tk_k * np.maximum(gain, 0))) * self._phase(y, self.tk.get("phase_in_years", 2))
+        p = claim_probability(gain, self.tk_share, self.tk["gain_ref"]) * self._phase(y, self.tk.get("phase_in_years", 2))
         new = idx[self.tk_u[idx] < p]
         if len(new):
             self.hs[new] = True
@@ -711,7 +725,7 @@ class Projection:
         ci = np.maximum(self.sb_ci, 0)
         m_ns = (self.mill_county_avg + self.mill_city_avg + self.mill_special_avg)[ci]
         gain = ((full_p["county"] - full_c["county"]) * m_ns + (full_p["school"] - full_c["school"]) * self.mill_school_avg[ci]) / 1000
-        target = (1 - np.exp(-self.sb_k * np.maximum(gain, 0))) * self._phase(y, self.rs.get("phase_in_years", 3))
+        target = claim_probability(gain, self.sb_share_ref, self.rs["gain_ref"]) * self._phase(y, self.rs.get("phase_in_years", 3))
         add = np.maximum(target - self.sb_share, 0)
         self.sb_share = self.sb_share + add
         self.sb_cohorts[y] = add
