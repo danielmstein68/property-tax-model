@@ -17,7 +17,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 **Projections**
 - [ ] Inflation: average CBO, SS Trustees, Philadelphia Fed SPF; expose an inflation control.
 - [ ] Regional/type variation in appreciation (condos, Southwest Florida).
-- [ ] Check first projected years against REC taxable value forecasts.
+- [x] Check first projected years against REC taxable value forecasts (2026-10-16, `docs/checks/projection_vs_rec_2026.md`): school bases close (+1.8% by 2031); county (non-school) bases too fast (+5.2% by 2031).
+- [ ] Fix non-school base growth: split cap blocks by depth of gap (catch-up too fast); explain homestead growth +1.4 pts in 2027. Then re-run the grid.
 - [ ] Faster Monte Carlo (batch paths); new development reweighting each projection year.
 
 **Behavioural responses**
