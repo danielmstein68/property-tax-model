@@ -156,3 +156,4 @@ Modelled on the Maine property tax model's "Municipality Engine" (it re-solves e
 - [ ] Separate 10-mill caps for county-dependent districts and MSTUs (needs per-authority rates).
 
 - [x] Revenue section: headline 'lost by Florida's local governments' and a 'for scale' line from statewide county and city Annual Financial Reports, FY 2023-24 (inputs/fl_local_finance_fy2024.yaml) (2026-10-16). Per-government revenue shares dropped: unadjusted county AFR files mix in custodial (pass-through) taxes.
+- [ ] (optional) Compare Amendment 3 county/city/special district impacts with REC's per-government tables (impact0710.pdf pages 5-18) to see where the model differs.
