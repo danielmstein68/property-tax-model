@@ -123,6 +123,13 @@ tbody tr.total td { font-weight: 700; border-bottom: 0; background: var(--accent
 .reimb { margin: 10px 0 0 28px; max-width: 520px; display: grid; gap: 8px; }
 .reimb input[type=range] { width: 100%; accent-color: var(--neutral); }
 .tablebox.tall { max-height: 520px; overflow-y: auto; }
+.a3-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .a3-parts { grid-template-columns: 1fr; } }
+.a3-part { background: var(--surface); border-radius: 16px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+.a3-part h3 { margin: 0; }
+.a3-part p { margin: 0; }
+.a3-part.off { background: transparent; border: 1.5px dashed var(--rule); }
+.sub-h { margin: 18px 0 8px; }
 .tablebox.tall thead th { position: sticky; top: 0; background: var(--bg); }
 td.over { color: var(--lose2); font-weight: 700; }
 .tabs button { font: 700 14px var(--body); padding: 7px 16px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
@@ -143,7 +150,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <div class="hero">
   <div class="hero-in">
     <nav class="views" aria-label="Views" id="views">
-      <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button>
+      <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button><button data-v="a3" id="view-btn-a3">Amendment 3</button>
     </nav>
     <div class="eyebrow" id="eyebrow">Florida · Tax year 2026 · Current law</div>
     <h1 id="h1">Who pays Florida's property tax on owner-occupied homes</h1>
@@ -315,6 +322,10 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
           <p class="muted-p" id="pol-lever-note"></p>
         </div>
       </div>
+    </section>
+
+    <div id="pol-results" class="wrap-inner">
+    <section>
       <div class="pol-chosen" id="pol-chosen"></div>
       <div class="tabs" role="radiogroup" aria-label="Year" id="pol-years"></div>
       <label class="check" for="pol-neutral"><input type="checkbox" id="pol-neutral"><div>Localities replace lost revenue<span>Also show results if every county, city and school district resets its tax rate to raise the same revenue as under current law.</span></div></label>
@@ -394,7 +405,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <ul>
           <li><b>Two versions of every result.</b> "Governments respond": counties, cities and school districts set rates the way Florida governments have in comparable years since the 1990s, within the 2026 limit of 110% of the rolled-back rate; when a policy shrinks their tax base, some raise rates, so owners who don't benefit can pay more. "No response": rates follow exactly the path they would under current law, showing the policy's direct effect. Tick "Localities replace lost revenue" for a third version: every county, city and school district resets its rate so it raises the same revenue as under current law, so a tax cut for some owners is paid for by higher rates on everyone else in that place (school districts keep the state-set required rate and adjust their local part). The slider sets how much of the lost revenue the state pays back to local governments, as Maine does for its homestead exemption; local rates rise only to cover the rest. With this ticked, section 4 lists every county, city and school district's rate.</li>
           <li><b>One change at a time.</b> Each slider changes one number (or a set that moves together), with everything else at current law. The listed policies combine changes. Free combinations need a live engine, planned for later.</li>
-          <li><b>Revenue replaced is a check, not a forecast.</b> It shows who would pay if no local government cut spending. Only homestead value changes feed the local tax bases, so for the non-homestead cap the rate response is understated. It ignores legal rate limits (10 mills for counties, cities and schools' local part), which large policies would exceed in some places.</li>
+          <li><b>Revenue replaced is a check, not a forecast.</b> It shows who would pay if no local government cut spending. Each government's tax base follows its homesteads in the model and its other property from the 2026 rolls (including the non-homestead assessment caps). It ignores legal rate limits (10 mills for counties, cities and schools' local part), which large policies would exceed in some places.</li>
           <li><b>Big policies are outside history.</b> Rate responses are drawn from ordinary years; for policies that remove most of a government's homestead base, treat the "respond" figures as indicative only.</li>
           <li><b>Owners only.</b> Renters' share through rent isn't modelled yet. "About the same" means within $10 a year.</li>
         </ul>
@@ -409,6 +420,40 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </ul>
       </div>
     </section>
+    </div>
+  </div>
+
+  <div id="view-a3" class="wrap-inner" hidden>
+    <section>
+      <div class="eyebrow">On the ballot November 3, 2026 · needs 60% of the vote · would take effect January 1, 2027</div>
+      <h2>What Amendment 3 does</h2>
+      <p>The Legislature's proposal (<a href="https://www.flsenate.gov/Session/Bill/2026F/1F">CS/HJR 1-F</a>, 2026), titled "Save Our Homes from Excessive Property Taxes", changes the State Constitution in four ways. The model covers the first three.</p>
+      <div class="a3-parts">
+        <div class="a3-part"><h3>1 · A larger homestead exemption</h3><p>For county, city and special district taxes, the first $150,000 of a homestead's assessed value is exempt in 2027 and the first $250,000 from 2028, rising with inflation from 2029. Today it is $25,000 plus a second exemption worth up to about $26,000. School taxes keep the $25,000 exemption.</p></div>
+        <div class="a3-part"><h3>2 · New residents wait</h3><p>People who were not Florida residents on December 31, 2026 get the first $50,000 exempt (rising with inflation from 2028) until their fifth year with the exemption. From 2030 a county or city can shorten the wait by a two-thirds vote. A similar wait was struck down by the Florida Supreme Court in 1982, so this page also shows the amendment without it.</p></div>
+        <div class="a3-part"><h3>3 · A 5% cap on other property</h3><p>For non-school taxes, assessments of non-homestead homes, rentals, commercial and other property can rise at most 5% a year, down from 10%. Most of this goes to rentals and businesses, which the model counts as local tax base, not as households.</p></div>
+        <div class="a3-part off"><h3>4 · Limits on spending (not modelled)</h3><p>Counties and cities could use property tax only for public safety, education, infrastructure, natural resources and flood control, bonds and debt, employee retirement, and the operations of county officers, commissions and city governments. The last category is broad, so the model assumes no change in what they levy.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Choose a version</div>
+      <h2>The whole amendment, or one part</h2>
+      <div class="tabs" role="radiogroup" aria-label="Part of the amendment" id="a3-parts"></div>
+      <h3 class="sub-h">Five-year rule for new residents</h3>
+      <div class="tabs" role="radiogroup" aria-label="Five-year rule" id="a3-court"></div>
+      <p class="muted-p" id="a3-court-note"></p>
+    </section>
+
+    <section>
+      <div class="eyebrow">Revenue</div>
+      <h2 id="a3-rev-title">How much less property tax</h2>
+      <p id="a3-rev-intro"></p>
+      <div class="tabletools"><button class="copy" data-table="a3-t-rev" id="copy-a3-rev">Copy table</button></div>
+      <div class="tablebox"><table id="a3-t-rev"></table></div>
+    </section>
+
+    <div id="a3-results-slot" class="wrap-inner"></div>
   </div>
 
   <footer id="foot"></footer>
@@ -762,7 +807,12 @@ const bnS = v => signed(v, x => "$" + (x / 1e9).toFixed(x >= 1e10 ? 1 : 2) + "B"
 const usdS = v => signed(v, x => "$" + Math.round(x).toLocaleString("en-US"));
 const pctS = (v, d = 1) => signed(v, x => (100 * x).toFixed(d) + "%");
 
+let VIEW = "today";
+const A3 = { part: "full", court: "written" };
+const a3id = () => A3.part === "cap" ? "a3_cap" : `a3_${A3.part}${A3.court === "struck" ? "_nowait" : ""}`;
 function currentRun() {
+  if (VIEW === "a3") { const e = G.amendment3.find(a => a.id === a3id());
+    return { run: G.runs[e.id], label: `Amendment 3 · ${e.label}`, desc: e.description }; }
   if (POL.kind === "preset") return { run: G.runs[POL.id], label: G.presets.find(p => p.id === POL.id).label,
     desc: G.presets.find(p => p.id === POL.id).description };
   const sl = G.sliders.find(s => s.id === POL.lever), v = sl.settings[POL.idx];
@@ -971,20 +1021,55 @@ $("pol-neutral").addEventListener("change", e => { POL.neutral = e.target.checke
 $("pol-reimb").addEventListener("input", e => { POL.reimb = +e.target.value; syncReimb(); renderPolicy(); });
 syncReimb();
 
-// views: 2026 today / policy comparisons
+// Amendment 3 page
+const A3_PARTS = [["full", "Whole amendment"], ["exempt", "Larger homestead exemption"], ["cap", "5% cap on other property"]];
+const A3_COURT = [["written", "As written"], ["struck", "Struck down by the courts"]];
+$("a3-parts").innerHTML = A3_PARTS.map(([k, l]) => `<button role="radio" data-k="${k}" id="a3p-${k}">${l}</button>`).join("");
+$("a3-court").innerHTML = A3_COURT.map(([k, l]) => `<button role="radio" data-k="${k}" id="a3c-${k}">${l}</button>`).join("");
+$("a3-parts").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; A3.part = b.dataset.k; renderA3(); });
+$("a3-court").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; A3.court = b.dataset.k; renderA3(); });
+function renderA3() {
+  document.querySelectorAll("#a3-parts button").forEach(b => b.setAttribute("aria-checked", b.dataset.k === A3.part));
+  document.querySelectorAll("#a3-court button").forEach(b => { b.setAttribute("aria-checked", b.dataset.k === A3.court); b.disabled = A3.part === "cap"; });
+  $("a3-court-note").textContent = A3.part === "cap" ? "The five-year rule doesn't affect the cap." :
+    A3.court === "written" ? "As written: owners who move to Florida after 2026 get the first $50,000 exempt for four years, then the full amount. Who is new: Census survey (ACS 2024) share of recent buyers who came from another state or abroad (23%, more at older ages), plus newcomers who rent first and buy later." :
+    "If courts strike the residency rule, new residents get the full exemption straight away.";
+  const e = G.amendment3.find(a => a.id === a3id()), run = G.runs[e.id];
+  const rows = run.none.yearly.filter(r => r.all !== null && r.all !== undefined), resp = run.respond.yearly;
+  const r27 = rows.find(r => r.year === 2027), r31 = rows.find(r => r.year === 2031);
+  const lessB = v => "$" + (Math.abs(v) / 1e9).toFixed(1) + " billion";
+  $("a3-rev-title").textContent = `How much less property tax: ${e.label.toLowerCase()}`;
+  $("a3-rev-intro").textContent = `With local tax rates unchanged, this ${A3.part === "full" ? "amendment" : "part"} lowers property tax on all property by about ${lessB(r27.all)} in 2027 and ${lessB(r31.all)} in 2031; owners' share is ${lessB(r27.tax)} and ${lessB(r31.tax)}. ` +
+    (A3.part === "full" ? "State economists estimate about $5 billion in the first year and as much as $12 billion a year when fully in effect. " : "") +
+    "Other property (rentals, second homes, businesses) is estimated from each county's tax base and average rates. If governments respond, some of the cut comes back through higher rates; if localities replace the lost revenue, total collections stay the same and the tax moves between payers.";
+  $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Owners (rates unchanged)</th><th>Other property, est.</th><th>All property (rates unchanged)</th><th>All property, governments respond</th></tr></thead><tbody>` +
+    rows.map(r => { const g = resp.find(x => x.year === r.year) || {};
+      return `<tr><td>${r.year}</td><td>${bnS(r.tax)}</td><td>${bnS(r.nonowner)}</td><td>${bnS(r.all)}</td><td>${g.all !== undefined && g.all !== null ? bnS(g.all) : ""}</td></tr>`; }).join("") + "</tbody>";
+  renderPolicy();
+}
+
+// views: 2026 today / policy comparisons / Amendment 3
 const VIEWS = {
   today: { eyebrow: "Florida · Tax year 2026 · Current law", h1: "Who pays Florida's property tax on owner-occupied homes" },
   policy: { eyebrow: "Florida · Policy comparisons · From 2027", h1: "What a property tax policy would change, and for whom" },
+  a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom" },
 };
 const LEDE_TODAY = $("lede").textContent;
 function showView(v) {
+  VIEW = v;
   $("view-today").hidden = v !== "today";
   $("view-policy").hidden = v !== "policy";
+  $("view-a3").hidden = v !== "a3";
+  if (v === "a3") $("a3-results-slot").appendChild($("pol-results"));
+  if (v === "policy") $("view-policy").appendChild($("pol-results"));
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1;
-  $("lede").textContent = v === "today" ? LEDE_TODAY : "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
+  $("lede").textContent = v === "today" ? LEDE_TODAY : v === "a3" ?
+    "Amendment 3 would raise the homestead exemption for county, city and special district taxes to $250,000, make newcomers to Florida wait for it, and cap yearly assessment increases on other property at 5%. Every result is compared with current law on the same households and economy." :
+    "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
   if (v === "policy") renderPolicy();
+  if (v === "a3") renderA3();
 }
 $("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
-showView(location.hash === "#policy" ? "policy" : "today");
+showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : "today");
 </script>

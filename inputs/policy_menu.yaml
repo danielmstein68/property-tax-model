@@ -187,3 +187,27 @@ presets:
     changes:
       - {rule: soh_cap, key: max_rate, value: 0.02, from: 2027}
       - {rule: nonhomestead_residential_cap, key: cap, value: 0.05, from: 2027}
+
+# Amendment 3 page (CS/HJR 1-F, 2026). `file`: a policy in inputs/policies; `also`: extra changes.
+amendment3:
+  - id: a3_full
+    label: Whole amendment
+    description: The larger homestead exemption, the four-year wait for new residents and the 5% cap on non-homestead property.
+    file: inputs/policies/amendment3.yaml
+  - id: a3_full_nowait
+    label: Whole amendment, five-year rule struck down
+    description: As written, but new residents get the full exemption at once (if courts strike the residency rule).
+    file: inputs/policies/amendment3.yaml
+    also: [{rule: homestead_new_resident, key: waiting_years, value: 0, from: 2027}]
+  - id: a3_exempt
+    label: Larger homestead exemption
+    description: Non-school homestead exemption on the first $150,000 (2027) and $250,000 (2028, indexed after); new residents wait four years at $50,000.
+    file: inputs/policies/amendment3_new_residents.yaml
+  - id: a3_exempt_nowait
+    label: Larger homestead exemption, five-year rule struck down
+    description: Non-school homestead exemption on the first $150,000 (2027) and $250,000 (2028, indexed after) for everyone.
+    file: inputs/policies/amendment3_exemption.yaml
+  - id: a3_cap
+    label: 5% cap on non-homestead property
+    description: Non-school assessments of non-homestead homes, rentals and commercial property rise at most 5% a year (10% now).
+    file: inputs/policies/amendment3_cap.yaml

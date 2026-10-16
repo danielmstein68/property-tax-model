@@ -148,5 +148,7 @@ Modelled on the Maine property tax model's "Municipality Engine" (it re-solves e
 - Estimate: 3-4 hours. Check Maine's model documentation for definitions to match (MVR fields, reimbursement rules).
 
 ## Amendment 3 page — requested 2026-10-15
-- [ ] A separate page (or view) with every change Amendment 3 makes, modelled against current law: read the amendment and implementing bill text, encode each provision as policy changes/levers, show the three outputs (new situation, changes, winners/losers) per provision and combined. Revenue-neutral mode (above) is relevant: local governments would need to replace lost revenue.
+- [x] (2026-10-16: "Amendment 3" view: whole amendment, larger exemption, 5% cap; five-year rule as written / struck down; revenue vs state estimate; policies in inputs/policies/amendment3*.yaml) A separate page (or view) with every change Amendment 3 makes, modelled against current law: read the amendment and implementing bill text, encode each provision as policy changes/levers, show the three outputs (new situation, changes, winners/losers) per provision and combined. Revenue-neutral mode (above) is relevant: local governments would need to replace lost revenue.
+- [ ] Amendment 3: check SB 4-F (ch. 2026-240) implementing details (administration of the five-year rule, any elimination schedule the ballot summary mentions); local options (counties/cities raising the exemption; 2030 shortening of the wait).
+- [ ] Remove the double count of non-claimer owner-occupied homes in the non-owner tax estimate.
 

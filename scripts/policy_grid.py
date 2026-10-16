@@ -91,6 +91,9 @@ def entries(menu: dict) -> list[dict]:
             out.append({"id": f"{sl['id']}={v}", "slider": sl["id"], "setting": v, "changes": ch})
     for pr in menu["presets"]:
         out.append({"id": pr["id"], "preset": pr["id"], "changes": pr["changes"]})
+    for a in menu.get("amendment3", []):
+        pol = yaml.safe_load((ROOT / a["file"]).read_text(encoding="utf-8"))
+        out.append({"id": a["id"], "amendment3": a["id"], "changes": pol["changes"] + a.get("also", [])})
     return out
 
 
@@ -99,7 +102,9 @@ def summarize(r: dict) -> dict:
     yearly = [{"year": int(y), "tax": float(ch.loc[y, "tax_total"]), "school": float(ch.loc[y, "tax_school"]),
                "county": float(ch.loc[y, "tax_county"]), "city": float(ch.loc[y, "tax_municipal"]),
                "pct": float(ch.loc[y, "tax_total_pct"]), "avg_tax": float(ch.loc[y, "avg_tax"]),
-               "mill_county": float(ch.loc[y, "millage_county_avg"]), "mill_school": float(ch.loc[y, "millage_school_avg"])}
+               "mill_county": float(ch.loc[y, "millage_county_avg"]), "mill_school": float(ch.loc[y, "millage_school_avg"]),
+               "nonowner": float(ch.loc[y, "nonowner_tax_nonschool"] + ch.loc[y, "nonowner_tax_school"]),
+               "all": float(ch.loc[y, "tax_all_property"])}
               for y in ch.index if y > 2026]
     g, w = r["by_group"], r["winners"]
     m = g.merge(w, on=["year", "grouping", "group", "owners"])
@@ -148,7 +153,8 @@ def base_levels() -> dict:
     return {"yearly": [{"year": int(y), "tax_total": float(r.tax_total), "avg_tax": float(r.avg_tax),
                         "owners": float(r.owners), "school": float(r.tax_school), "county": float(r.tax_county),
                         "city": float(r.tax_municipal), "mill_county": float(r.millage_county_avg),
-                        "mill_school": float(r.millage_school_avg), "mill_city": float(r.millage_municipal_avg)}
+                        "mill_school": float(r.millage_school_avg), "mill_city": float(r.millage_municipal_avg),
+                        "nonowner": float(r.nonowner_tax_nonschool + r.nonowner_tax_school)}
                        for y, r in s.iterrows()]}
 
 
@@ -203,6 +209,7 @@ def main(workers: int = 4) -> None:
         res = list(ex.map(run_entry, es))
     out = {"scenario": SCENARIO, "years": YEARS, "from": menu["from"], "generated": pd.Timestamp.now().strftime("%Y-%m-%d"),
            "current_law": base_levels(), "sliders": menu["sliders"], "presets": menu["presets"],
+           "amendment3": [{k: a[k] for k in ("id", "label", "description")} for a in menu.get("amendment3", [])],
            "group_cols": GCOLS, "reimburse": REIMBURSE, "governments": governments(),
            "runs": {r["id"]: {k: r[k] for k in MODES + ["rates"]} for r in res}}
     dest = ROOT / "data" / "processed" / "results" / "fl_policy_grid.json"
