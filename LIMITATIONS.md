@@ -66,4 +66,4 @@ The model is **static**: it applies the rules to households as they are. It does
 - A check, not a forecast: assumes no government cuts spending and every one can raise its rate as needed. Ignores the 10-mill caps and the vote requirements of s. 200.065, which large policies would exceed in some places.
 - Only homestead value changes feed each government's tax base; non-homestead and non-residential bases follow the economy paths, so the rate response to a non-homestead cap change is understated.
 - School districts keep the state-set required local effort rate fixed relative to current law and adjust their local part to keep the total school levy.
-
+- Government table: county general levy from the 2026 adopted/predicted rates; city rates are the median rate of the model's owners in each city (310 cities with owners); special districts and MSTUs move with their county's general levy, so only the general levy is checked against the 10-mill cap. State payments are estimated as the reimbursed share of what owners stop paying with no response.

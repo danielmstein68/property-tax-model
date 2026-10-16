@@ -6,9 +6,14 @@ Usage:
 Reads inputs/policy_menu.yaml (sliders: one number at a time; presets). Each entry is compared
 with current law (central economic scenario) three ways: with governments' rate responses (history
 rule), with none (rates follow current law's path), and revenue-neutral (each county, city and
-school district re-solves its rate to raise the same revenue as under current law). Current law runs once per worker.
-Output per entry: yearly changes (total and by levy), and for the reporting years: changes and
-winners/losers by income decile and by age, homestead and region.
+school district re-solves its rate to raise the same revenue as under current law), also with the
+state reimbursing 25%, 50% or 75% of the lost revenue (100% = no response). Current law runs once
+per worker.
+Output per entry and mode: yearly changes (total and by levy), and for the reporting years: changes
+and winners/losers by income decile and by age, homestead and region (packed as columns + rows).
+Per entry, for the revenue-neutral mode: each government's rate change, (current-law taxable value
+- policy taxable value) / policy taxable value, by reporting year; with reimbursement r the change is
+(1 - r) times that, exactly. `governments` has each one's current-law rates for the page.
 """
 
 import json
@@ -31,6 +36,12 @@ END, SEED, SCENARIO = 2036, 2026, "central"
 YEARS = [2027, 2031, 2036]
 BIG = 1e9           # "none": no cap / no limit
 GROUPS_OUT = ["income_decile", "age_group", "homestead", "region"]
+REIMBURSE = [0.25, 0.5, 0.75]
+MODES = ["respond", "none", "neutral"] + [f"neutral_{round(100 * r)}" for r in REIMBURSE]
+GCOLS = ["year", "grouping", "group", "owners", "avg_change", "pct_change", "change_share_of_income", "total_change",
+         "share_pay_less", "share_pay_more", "gain_more_5pct", "gain_less_5pct", "no_change", "lose_less_5pct",
+         "lose_more_5pct", "avg_gain_if_less", "avg_loss_if_more"]
+DOLLARS = {"owners", "avg_change", "total_change", "avg_gain_if_less", "avg_loss_if_more"}
 _BASE = {}
 
 
@@ -93,12 +104,22 @@ def summarize(r: dict) -> dict:
     g, w = r["by_group"], r["winners"]
     m = g.merge(w, on=["year", "grouping", "group", "owners"])
     m = m[m.grouping.isin(["all"] + GROUPS_OUT)]
-    cols = ["avg_change", "pct_change", "change_share_of_income", "total_change", "share_pay_less", "share_pay_more",
-            "gain_more_5pct", "gain_less_5pct", "no_change", "lose_less_5pct", "lose_more_5pct",
-            "avg_gain_if_less", "avg_loss_if_more"]
-    rows = [{"year": int(x.year), "grouping": x.grouping, "group": x.group, "owners": float(x.owners),
-             **{c: float(getattr(x, c)) for c in cols}} for x in m.itertuples()]
+    def num(c, v):
+        v = float(v)
+        return None if not np.isfinite(v) else round(v, 1 if c in DOLLARS else 4)
+    rows = [[int(x.year), x.grouping, x.group] + [num(c, getattr(x, c)) for c in GCOLS[3:]] for x in m.itertuples()]
     return {"yearly": yearly, "groups": rows}
+
+
+def rate_changes(base, new) -> dict:
+    """Each government's revenue-neutral rate change (before reimbursement) in the reporting years."""
+    out = {}
+    for y in YEARS:
+        b, p = base.rates.paths[y]["tv"], new.rates.paths[y]["tv"]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            d = {k: np.where(p[k] > 0, (b[k] - p[k]) / p[k], 0.0) for k in ["county", "city", "school"]}
+        out[str(y)] = {k: [round(float(v), 4) for v in d[k]] for k in d}
+    return out
 
 
 def run_entry(e: dict) -> dict:
@@ -108,11 +129,15 @@ def run_entry(e: dict) -> dict:
     t = time.time()
     law1 = apply_policy(B["law"], {"name": e["id"], "changes": e["changes"]})
     out = {"id": e["id"]}
-    for resp in ["respond", "none", "neutral"]:
+    for resp in MODES:
+        neutral = resp.startswith("neutral")
         new = _run(B["b"], SCENARIO, SEED, law1, END,
                    rate_replay=B["run"].rates.paths if resp == "none" else None,
-                   revenue_neutral=B["run"].rates.paths if resp == "neutral" else None)
+                   revenue_neutral=B["run"].rates.paths if neutral else None,
+                   reimbursement=int(resp.split("_")[1]) / 100 if "_" in resp else 0.0)
         out[resp] = summarize(compare_runs(B["run"], new, END, years=YEARS))
+        if resp == "neutral":
+            out["rates"] = rate_changes(B["run"], new)
     out["seconds"] = time.time() - t
     return out
 
@@ -127,6 +152,44 @@ def base_levels() -> dict:
                        for y, r in s.iterrows()]}
 
 
+def governments() -> dict:
+    """Each county (general levy, school total) and city: current-law rate in the reporting years."""
+    from ptm.millage import county_fips_by_name
+    from ptm.rate_setting import _city_key
+    B = _base()
+    rs, b = B["run"].rates, B["b"]
+    fips = county_fips_by_name()
+    norm = lambda n: str(n).lower().replace("st. ", "saint ").replace("st ", "saint ").replace("-", " ").strip()
+    by_norm = {norm(k): v for k, v in fips.items()}
+    rep26 = pd.read_csv(ROOT / "data" / "processed" / "baseline_fl_2026_rates_2026_report.csv")
+    rep26["fips"] = rep26["county"].map(lambda n: fips.get(n, by_norm.get(norm(n))))
+    name = {v: k for k, v in fips.items()}
+    gen = rep26.set_index("fips")["mill_2026"]
+    from ptm.project import owner_mask
+    own = b[owner_mask(b)]
+    own = own[own["municipality"].notna() & own["millage_municipal"].gt(0)]
+    keys = list(zip(own["county_fips_tax"], own["municipality"].map(_city_key)))
+    own = own.assign(k=keys)
+    city_mill = own.groupby("k")["millage_municipal"].median()
+    city_name = own.groupby("k")["municipality"].agg(lambda s: s.mode().iloc[0])
+    path = {y: rs.paths[y] for y in YEARS}
+    counties = []
+    for i, f in enumerate(rs.counties.index):
+        g = float(gen.get(f, np.nan))
+        counties.append({"fips": f, "name": name.get(f, f),
+                         "general": {str(y): round(g * float(path[y]["county"][:, i].mean()), 4) for y in YEARS} if np.isfinite(g) else None,
+                         "school": {str(y): round(float(rs.school_fixed[i] + path[y]["rle"][:, i].mean()), 4) for y in YEARS}})
+    cities = []
+    for j, k in enumerate(rs.cities.index):
+        m = city_mill.get(k)
+        if m is None or not np.isfinite(m):
+            continue
+        nm = str(city_name.get(k)).title().replace("Of ", "of ")
+        cities.append({"i": j, "county": k[0], "name": nm,
+                       "rate": {str(y): round(float(m) * float(path[y]["city"][:, j].mean()), 4) for y in YEARS}})
+    return {"counties": counties, "cities": cities}
+
+
 def main(workers: int = 4) -> None:
     from ptm.montecarlo import PREP, SLIM, _run_path, slim_baseline
     slim_baseline()
@@ -134,13 +197,14 @@ def main(workers: int = 4) -> None:
         _run_path((SCENARIO, SEED, 2027, None, False))
     menu = yaml.safe_load((ROOT / "inputs" / "policy_menu.yaml").read_text(encoding="utf-8"))
     es = entries(menu)
-    print(f"{len(es)} policies x 3 responses, {workers} workers")
+    print(f"{len(es)} policies x {len(MODES)} responses, {workers} workers")
     t = time.time()
     with ProcessPoolExecutor(max_workers=workers) as ex:
         res = list(ex.map(run_entry, es))
     out = {"scenario": SCENARIO, "years": YEARS, "from": menu["from"], "generated": pd.Timestamp.now().strftime("%Y-%m-%d"),
            "current_law": base_levels(), "sliders": menu["sliders"], "presets": menu["presets"],
-           "runs": {r["id"]: {"respond": r["respond"], "none": r["none"], "neutral": r["neutral"]} for r in res}}
+           "group_cols": GCOLS, "reimburse": REIMBURSE, "governments": governments(),
+           "runs": {r["id"]: {k: r[k] for k in MODES + ["rates"]} for r in res}}
     dest = ROOT / "data" / "processed" / "results" / "fl_policy_grid.json"
 
     def clean(o):

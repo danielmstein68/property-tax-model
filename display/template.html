@@ -120,6 +120,11 @@ tbody tr.total td { font-weight: 700; border-bottom: 0; background: var(--accent
 .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-weight: 700; cursor: pointer; }
 .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--neutral); flex: none; }
 .check span { font-weight: 400; color: var(--muted); display: block; font-size: 14px; }
+.reimb { margin: 10px 0 0 28px; max-width: 520px; display: grid; gap: 8px; }
+.reimb input[type=range] { width: 100%; accent-color: var(--neutral); }
+.tablebox.tall { max-height: 520px; overflow-y: auto; }
+.tablebox.tall thead th { position: sticky; top: 0; background: var(--bg); }
+td.over { color: var(--lose2); font-weight: 700; }
 .tabs button { font: 700 14px var(--body); padding: 7px 16px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
   border-radius: 999px; cursor: pointer; }
 .tabs button:hover { background: var(--accent-soft); }
@@ -313,6 +318,11 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="pol-chosen" id="pol-chosen"></div>
       <div class="tabs" role="radiogroup" aria-label="Year" id="pol-years"></div>
       <label class="check" for="pol-neutral"><input type="checkbox" id="pol-neutral"><div>Localities replace lost revenue<span>Also show results if every county, city and school district resets its tax rate to raise the same revenue as under current law.</span></div></label>
+      <div class="reimb" id="pol-reimb-box" hidden>
+        <label class="field-label" for="pol-reimb" id="pol-reimb-label">State reimburses: 0% of lost revenue</label>
+        <input type="range" id="pol-reimb" min="0" max="4" step="1" value="0">
+        <div class="slider-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100% (= no response)</span></div>
+      </div>
     </section>
 
     <section>
@@ -368,11 +378,21 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="legend" id="pol-w-legend"></div>
     </section>
 
+    <section id="pol-gov" hidden>
+      <div class="eyebrow">4 · Local tax rates</div>
+      <h2 id="pol-gov-title">How each government's tax rate changes</h2>
+      <p id="pol-gov-intro"></p>
+      <div class="figures" id="pol-gov-figures"></div>
+      <div class="tabs" role="tablist" id="pol-gov-tabs"></div>
+      <div class="tabletools"><button class="copy" data-table="pol-t-gov" id="copy-pol-gov">Copy table</button></div>
+      <div class="tablebox tall"><table id="pol-t-gov"></table></div>
+    </section>
+
     <section class="notes">
       <div>
         <h3>How to read this</h3>
         <ul>
-          <li><b>Two versions of every result.</b> "Governments respond": counties, cities and school districts set rates the way Florida governments have in comparable years since the 1990s, within the 2026 limit of 110% of the rolled-back rate; when a policy shrinks their tax base, some raise rates, so owners who don't benefit can pay more. "No response": rates follow exactly the path they would under current law, showing the policy's direct effect. Tick "Localities replace lost revenue" for a third version: every county, city and school district resets its rate so it raises the same revenue as under current law, so a tax cut for some owners is paid for by higher rates on everyone else in that place (school districts keep the state-set required rate and adjust their local part).</li>
+          <li><b>Two versions of every result.</b> "Governments respond": counties, cities and school districts set rates the way Florida governments have in comparable years since the 1990s, within the 2026 limit of 110% of the rolled-back rate; when a policy shrinks their tax base, some raise rates, so owners who don't benefit can pay more. "No response": rates follow exactly the path they would under current law, showing the policy's direct effect. Tick "Localities replace lost revenue" for a third version: every county, city and school district resets its rate so it raises the same revenue as under current law, so a tax cut for some owners is paid for by higher rates on everyone else in that place (school districts keep the state-set required rate and adjust their local part). The slider sets how much of the lost revenue the state pays back to local governments, as Maine does for its homestead exemption; local rates rise only to cover the rest. With this ticked, section 4 lists every county, city and school district's rate.</li>
           <li><b>One change at a time.</b> Each slider changes one number (or a set that moves together), with everything else at current law. The listed policies combine changes. Free combinations need a live engine, planned for later.</li>
           <li><b>Revenue replaced is a check, not a forecast.</b> It shows who would pay if no local government cut spending. Only homestead value changes feed the local tax bases, so for the non-homestead cap the rate response is understated. It ignores legal rate limits (10 mills for counties, cities and schools' local part), which large policies would exceed in some places.</li>
           <li><b>Big policies are outside history.</b> Rate responses are drawn from ordinary years; for policies that remove most of a government's homestead base, treat the "respond" figures as indicative only.</li>
@@ -723,7 +743,13 @@ $("view-proj").addEventListener("toggle", () => { if ($("view-proj").open) openO
 if (location.hash === "#baseline" || location.hash === "#projections") { $("view-proj").open = true; }
 // ---------------- Policy comparisons ----------------
 const G = __GRID__;
-const POL = { kind: "preset", id: G.presets[0].id, lever: G.sliders[0].id, idx: 0, year: G.years[0], group: "age_group" };
+const POL = { kind: "preset", id: G.presets[0].id, lever: G.sliders[0].id, idx: 0, year: G.years[0], group: "age_group", reimb: 0, gov: "county" };
+Object.values(G.runs).forEach(run => Object.values(run).forEach(m => {
+  if (m && Array.isArray(m.groups) && Array.isArray(m.groups[0])) m.groups = m.groups.map(r => Object.fromEntries(G.group_cols.map((c, i) => [c, r[i]])));
+}));
+const REIMB = [0, 0.25, 0.5, 0.75, 1];
+const nkey = () => POL.reimb === 0 ? "neutral" : POL.reimb === 4 ? "none" : `neutral_${Math.round(100 * REIMB[POL.reimb])}`;
+const key = m => m === "neutral" ? nkey() : m;
 const fmtSetting = (sl, v) => {
   if (v === "none") return sl.id === "senior_nonschool_age" ? "None (current law)" : "No limit";
   if (sl.unit === "dollars") return usd(v);
@@ -749,9 +775,9 @@ const MODE = { respond: { l: "Governments respond", s: "respond", c: "var(--acce
   none: { l: "No response", s: "no response", c: "var(--county)", d: "6 4" },
   neutral: { l: "Localities replace lost revenue", s: "revenue replaced", c: "var(--neutral)", d: "2 3" } };
 const modes = () => POL.neutral ? ["respond", "none", "neutral"] : ["respond", "none"];
-function grp(run, mode, y, grouping) { return run[mode].groups.filter(r => r.year === y && r.grouping === grouping); }
-function allRow(run, mode, y) { return run[mode].groups.find(r => r.year === y && r.grouping === "all"); }
-function yrow(run, mode, y) { return run[mode].yearly.find(r => r.year === y); }
+function grp(run, mode, y, grouping) { return run[key(mode)].groups.filter(r => r.year === y && r.grouping === grouping); }
+function allRow(run, mode, y) { return run[key(mode)].groups.find(r => r.year === y && r.grouping === "all"); }
+function yrow(run, mode, y) { return run[key(mode)].yearly.find(r => r.year === y); }
 
 function renderPolicy() {
   const { run, label, desc } = currentRun(), y = POL.year;
@@ -762,6 +788,7 @@ function renderPolicy() {
   const zero = { tax: 0, avg_tax: 0, mill_county: 0, mill_school: 0, school: 0, county: 0, city: 0, pct: 0 };
   const R = run ? yrow(run, "respond", y) : zero, N = run ? yrow(run, "none", y) : zero;
   const aR = run ? allRow(run, "respond", y) : null, aN = run ? allRow(run, "none", y) : null;
+  MODE.neutral.l = "Localities replace lost revenue" + (POL.reimb ? ` (state pays ${pct(REIMB[POL.reimb], 0)})` : "");
   const M = modes(), Y = Object.fromEntries(M.map(m => [m, run ? yrow(run, m, y) : zero])), A = Object.fromEntries(M.map(m => [m, run ? allRow(run, m, y) : null]));
   document.querySelectorAll(".pol-legend").forEach(d => d.innerHTML = M.map(m => `<span><i style="background:${MODE[m].c}"></i>${MODE[m].l}</span>`).join(""));
   $("pol-w-neutral-box").hidden = !POL.neutral;
@@ -791,7 +818,7 @@ function renderPolicy() {
   (function () {
     if (!run) { $("pol-c-years").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; return; }
     const ok = r => r.tax !== null && r.tax !== undefined && isFinite(r.tax);
-    const PTS = Object.fromEntries(M.map(m => [m, run[m].yearly.filter(ok).map(r => ({ year: r.year, v: r.tax / 1e9 }))])), ptsR = PTS.respond;
+    const PTS = Object.fromEntries(M.map(m => [m, run[key(m)].yearly.filter(ok).map(r => ({ year: r.year, v: r.tax / 1e9 }))])), ptsR = PTS.respond;
     const vals = M.flatMap(m => PTS[m].map(p => p.v)).concat([0]);
     let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.1 || 0.1; lo -= pad; hi += pad;
     const W = 520, H = 280, L = 56, R_ = 12, T = 14, B = 30, years = ptsR.map(p => p.year);
@@ -850,7 +877,7 @@ function renderPolicy() {
   $("pol-w-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
   $("pol-s3-title").textContent = `Who pays less and who pays more, ${y}`;
   $("pol-s3-intro").textContent = run ? `If governments respond, ${pct(aR.share_pay_less, 0)} of owners pay less (on average ${usd(aR.avg_gain_if_less)} a year) and ${pct(aR.share_pay_more, 0)} pay more (on average ${usd(aR.avg_loss_if_more)}). With no response, ${pct(aN.share_pay_less, 0)} pay less and ${pct(aN.share_pay_more, 0)} pay more.` +
-    (POL.neutral ? ` If localities replace the lost revenue, ${pct(A.neutral.share_pay_less, 0)} pay less and ${pct(A.neutral.share_pay_more, 0)} pay more (on average ${usd(A.neutral.avg_loss_if_more)}).` : "") : "Current law: nobody's bill changes.";
+    (POL.neutral ? ` If localities replace the lost revenue${POL.reimb ? ` the state doesn't pay back (it pays ${pct(REIMB[POL.reimb], 0)})` : ""}, ${pct(A.neutral.share_pay_less, 0)} pay less and ${pct(A.neutral.share_pay_more, 0)} pay more (on average ${usd(A.neutral.avg_loss_if_more)}).` : "") : "Current law: nobody's bill changes.";
   M.forEach(mode => {
     const target = $(`pol-w-${mode}`);
     if (!run) { target.innerHTML = '<p class="muted-p">No change.</p>'; return; }
@@ -870,6 +897,49 @@ function renderPolicy() {
     [0, 0.25, 0.5, 0.75, 1].forEach(t => el(s, "text", { x: L + (W - L - R_) * t, y: H - 2, "text-anchor": "middle" }, Math.round(t * 100) + "%"));
     target.innerHTML = ""; target.appendChild(s);
   });
+  document.querySelector("#pol-w-neutral-box h3").textContent = MODE.neutral.l;
+  renderGov(run, y, N);
+}
+
+// 4. each government's rate (revenue-neutral, with reimbursement)
+const GOV_TABS = [["county", "Counties (general levy)"], ["city", "Cities"], ["school", "School districts"]];
+$("pol-gov-tabs").innerHTML = GOV_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgov-${g}">${l}</button>`).join("");
+$("pol-gov-tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.gov = b.dataset.g; renderPolicy(); });
+const CNAME = Object.fromEntries(G.governments.counties.map(c => [c.fips, c.name]));
+function renderGov(run, y, N) {
+  $("pol-gov").hidden = !POL.neutral;
+  if (!POL.neutral) return;
+  document.querySelectorAll("#pol-gov-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === POL.gov));
+  const r = REIMB[POL.reimb], k = 1 - r, ys = String(y), d = run && run.rates ? run.rates[ys] : null;
+  $("pol-gov-title").textContent = `How each government's tax rate changes, ${y}`;
+  const rows = { county: [], city: [], school: [] };
+  G.governments.counties.forEach((c, i) => {
+    const dc = d ? d.county[i] : 0, ds = d ? d.school[i] : 0;
+    if (c.general) rows.county.push({ name: c.name, county: "", cur: c.general[ys], d: k * dc });
+    rows.school.push({ name: c.name, county: "", cur: c.school[ys], d: k * ds });
+  });
+  G.governments.cities.forEach(c => rows.city.push({ name: c.name, county: CNAME[c.county] || "", cur: c.rate[ys], d: k * (d ? d.city[c.i] : 0) }));
+  Object.values(rows).forEach(list => list.forEach(x => { x.pol = x.cur * (1 + x.d); }));
+  const over = list => list.filter(x => x.pol > 10.0005);
+  const newly = list => list.filter(x => x.pol > 10.0005 && x.cur <= 10.0005);
+  const up = list => list.filter(x => x.d > 0.0005);
+  const med = list => { const v = list.map(x => x.d).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : 0; };
+  const lost = N && N.tax < 0 ? -N.tax : 0;
+  $("pol-gov-intro").textContent = !run ? "Current law: no rate changes." :
+    `Each government's rate if it raises the same revenue as under current law${r ? ` after the state pays back ${pct(r, 0)} of what it loses` : ""}. ` +
+    (r && lost ? `The state's payments would be about ${bnS(r * lost).replace("+", "")} in ${y} (${pct(r, 0)} of the ${bnS(lost).replace("+", "")} that owners stop paying). ` : "") +
+    "General levies and city rates are capped at 10 mills by the Florida Constitution; this check ignores the cap, so rates above 10 show where a government could not replace its revenue this way.";
+  $("pol-gov-figures").innerHTML = [
+    [`${up(rows.county).length} of ${rows.county.length}`, "Counties raising their general rate"],
+    [pctS(med(rows.county), 1), "Median county rate change"],
+    [String(newly(rows.county).length + newly(rows.city).length), "Counties and cities pushed above the 10-mill cap"],
+    [`${up(rows.city).length} of ${rows.city.length}`, "Cities raising their rate"],
+  ].map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const list = rows[POL.gov].slice().sort((a, b) => b.d - a.d || a.name.localeCompare(b.name));
+  const capped = POL.gov !== "school";
+  const head = `<thead><tr><th>${POL.gov === "city" ? "City" : "County"}</th>${POL.gov === "city" ? "<th>County</th>" : ""}<th>Current law (mills)</th><th>Policy (mills)</th><th>Change (mills)</th><th>% change</th>${capped ? "<th>Above 10 mills</th>" : ""}</tr></thead>`;
+  const body = list.map(x => `<tr><td>${x.name}</td>${POL.gov === "city" ? `<td>${x.county}</td>` : ""}<td>${x.cur.toFixed(3)}</td><td>${x.pol.toFixed(3)}</td><td>${signed(x.pol - x.cur, v => v.toFixed(3))}</td><td>${pctS(x.d, 1)}</td>${capped ? `<td class="${x.pol > 10.0005 ? "over" : ""}">${x.pol > 10.0005 ? (x.cur > 10.0005 ? "Yes (already)" : "Yes") : ""}</td>` : ""}</tr>`).join("");
+  $("pol-t-gov").innerHTML = head + "<tbody>" + body + "</tbody>";
 }
 
 // builder controls
@@ -896,7 +966,10 @@ $("pol-group-tabs").addEventListener("click", e => { const b = e.target.closest(
 setLever(POL.lever);
 try { POL.neutral = localStorage.getItem("ptm-neutral") === "1"; } catch (e) { POL.neutral = false; }
 $("pol-neutral").checked = POL.neutral;
-$("pol-neutral").addEventListener("change", e => { POL.neutral = e.target.checked; try { localStorage.setItem("ptm-neutral", POL.neutral ? "1" : "0"); } catch (x) {} renderPolicy(); });
+const syncReimb = () => { $("pol-reimb-box").hidden = !POL.neutral; $("pol-reimb-label").textContent = `State reimburses: ${pct(REIMB[POL.reimb], 0)} of lost revenue`; };
+$("pol-neutral").addEventListener("change", e => { POL.neutral = e.target.checked; try { localStorage.setItem("ptm-neutral", POL.neutral ? "1" : "0"); } catch (x) {} syncReimb(); renderPolicy(); });
+$("pol-reimb").addEventListener("input", e => { POL.reimb = +e.target.value; syncReimb(); renderPolicy(); });
+syncReimb();
 
 // views: 2026 today / policy comparisons
 const VIEWS = {
