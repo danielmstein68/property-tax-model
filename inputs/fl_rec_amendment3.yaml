@@ -1,0 +1,8 @@
+# Revenue Estimating Conference, CS/HJR 1F (Amendment 3), adopted July 10, 2026 (reviewed June 12 and July 10).
+# Non-school local revenue impact if approved (school: 0). Fiscal years run Oct-Sep, so FY 2027-28 is the 2027 tax roll.
+# Millions of dollars; cash by year, recurring = fully in effect. Method: parcel-level 2025 NAL, 2025 millage held,
+# grown with the Ad Valorem Estimating Conference; in-migrant offset for the five-year rule (none in 2027).
+source_url: https://edr.state.fl.us/Content/conferences/revenueimpact/archives/2026F/_pdf/impact0710.pdf
+adopted: "2026-07-10"
+by_roll_year: {2027: -4929.5, 2028: -8714.5, 2029: -9647.9, 2030: -10710.2}
+recurring: -11834.7

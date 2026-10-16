@@ -1085,6 +1085,7 @@ function flash(el) { el.classList.remove("flash"); void el.offsetWidth; el.class
 
 // 1. revenue lost (all property)
 const FIN = __FIN__;
+const REC = __REC__;   // Revenue Estimating Conference, Amendment 3 (millions, by tax roll year)
 const RYEARS = G.current_law.yearly.filter(r => r.year > 2026).map(r => r.year);
 const allTax = y => { const b = G.current_law.yearly.find(r => r.year === y); return b.tax_total + b.nonowner; };
 const bnAbs = v => "$" + (Math.abs(v) / 1e9).toFixed(Math.abs(v) >= 1e10 ? 1 : 2) + " billion";
@@ -1296,7 +1297,7 @@ syncReimb();
   const r100 = v => "$" + (Math.round(Math.abs(v) / 10) * 10).toLocaleString("en-US");
   $("a3-findings").innerHTML = `<h2>Key findings: Amendment 3 as written</h2><ol>
     <li><b>Florida's local governments would lose ${B(-yr(2027).all)} in 2027, ${B(-yr(2031).all)} by 2031, and ${B(cum)} over ${ys[0]}–${last}</b>, with tax rates unchanged.
-      <div class="note">That is close to the state economists' estimate of about $5 billion in the first year and as much as $12 billion a year when fully in effect (as reported).</div></li>
+      <div class="note">The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${B(REC.by_roll_year[2027] * 1e6)} for the 2027 tax year, ${B(REC.by_roll_year[2028] * 1e6)} for 2028 and ${B(REC.recurring * 1e6)} a year when fully in effect. This model's figures are ${pct(1 - yr(2027).all / (REC.by_roll_year[2027] * 1e6), 0)}–${pct(1 - yr(2030).all / (REC.by_roll_year[2030] * 1e6), 0)} lower (2027–2030).</div></li>
     <li><b>${pct(all(2027).share_pay_less, 0)} of homeowners would pay less: about ${r100(all(2027).avg_gain_if_less)} a year in 2027 and ${r100(all(2031).avg_gain_if_less)} by 2031</b> on average among those who gain.</li>
     <li><b>Homeowners in the highest-income fifth of Florida households would get ${pct(topFifth, 0)} of the cut.</b> The top tenth by income would save about ${r100(D[10].avg_change)} a year on average, the bottom tenth about ${r100(D[1].avg_change)} (2027); the bottom half of households get ${pct(bottomHalf, 0)}.</li>
     ${(() => { // 7 and 8: if local governments replace the revenue (10-mill cap, no state reimbursement), 2027
@@ -1331,13 +1332,14 @@ function renderA3() {
   const lessB = v => "$" + (Math.abs(v) / 1e9).toFixed(1) + " billion";
   $("a3-rev-title").textContent = `How much less property tax: ${e.label.toLowerCase()}`;
   $("a3-rev-intro").textContent = `With local tax rates unchanged, this ${A3.part === "full" ? "amendment" : "part"} lowers property tax on all property by about ${lessB(r27.all)} in 2027 and ${lessB(r31.all)} in 2031; owners' share is ${lessB(r27.tax)} and ${lessB(r31.tax)}. ` +
-    (A3.part === "full" ? "State economists estimate about $5 billion in the first year and as much as $12 billion a year when fully in effect. " : "") +
+    (A3.part === "full" ? `The state's Revenue Estimating Conference (July 10, 2026) estimates ${lessB(REC.by_roll_year[2027] * 1e6)} for the 2027 tax year and ${lessB(REC.recurring * 1e6)} a year when fully in effect; its figures are in the table. ` : "") +
     "Other property (rentals, second homes, businesses) is estimated from each county's tax base and average rates. If governments respond, some of the cut comes back through higher rates; if localities replace the lost revenue, total collections stay the same and the tax moves between payers.";
-  $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Owners (rates unchanged)</th><th>Other property, est.</th><th>All property (rates unchanged)</th><th>All property, governments respond</th></tr></thead><tbody>` +
-    rows.map(r => { const g = resp.find(x => x.year === r.year) || {};
-      return `<tr><td>${r.year}</td><td>${bnS(r.tax)}</td><td>${bnS(r.nonowner)}</td><td>${bnS(r.all)}</td><td>${g.all !== undefined && g.all !== null ? bnS(g.all) : ""}</td></tr>`; }).join("") +
+  const recCol = A3.part === "full";
+  $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Owners (rates unchanged)</th><th>Other property, est.</th><th>All property (rates unchanged)</th>${recCol ? "<th>State estimate (REC)</th>" : ""}<th>All property, governments respond</th></tr></thead><tbody>` +
+    rows.map(r => { const g = resp.find(x => x.year === r.year) || {}, rc = REC.by_roll_year[r.year];
+      return `<tr><td>${r.year}</td><td>${bnS(r.tax)}</td><td>${bnS(r.nonowner)}</td><td>${bnS(r.all)}</td>${recCol ? `<td>${rc !== undefined ? bnS(rc * 1e6) : ""}</td>` : ""}<td>${g.all !== undefined && g.all !== null ? bnS(g.all) : ""}</td></tr>`; }).join("") +
     (() => { const t = f => rows.reduce((a, r) => a + (f(r) || 0), 0), tg = resp.filter(x => x.year > 2026).reduce((a, x) => a + (x.all || 0), 0);
-      return `<tr class="total"><td>${rows[0].year}–${rows[rows.length - 1].year}</td><td>${bnS(t(r => r.tax))}</td><td>${bnS(t(r => r.nonowner))}</td><td>${bnS(t(r => r.all))}</td><td>${bnS(tg)}</td></tr>`; })() + "</tbody>";
+      return `<tr class="total"><td>${rows[0].year}–${rows[rows.length - 1].year}</td><td>${bnS(t(r => r.tax))}</td><td>${bnS(t(r => r.nonowner))}</td><td>${bnS(t(r => r.all))}</td>${recCol ? "<td></td>" : ""}<td>${bnS(tg)}</td></tr>`; })() + "</tbody>";
   renderPolicy();
 }
 
