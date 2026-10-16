@@ -104,6 +104,7 @@ def summarize(r: dict) -> dict:
                "pct": float(ch.loc[y, "tax_total_pct"]), "avg_tax": float(ch.loc[y, "avg_tax"]),
                "mill_county": float(ch.loc[y, "millage_county_avg"]), "mill_school": float(ch.loc[y, "millage_school_avg"]),
                "nonowner": float(ch.loc[y, "nonowner_tax_nonschool"] + ch.loc[y, "nonowner_tax_school"]),
+               "nonowner_school": float(ch.loc[y, "nonowner_tax_school"]),
                "all": float(ch.loc[y, "tax_all_property"])}
               for y in ch.index if y > 2026]
     g, w = r["by_group"], r["winners"]
@@ -154,7 +155,8 @@ def base_levels() -> dict:
                         "owners": float(r.owners), "school": float(r.tax_school), "county": float(r.tax_county),
                         "city": float(r.tax_municipal), "mill_county": float(r.millage_county_avg),
                         "mill_school": float(r.millage_school_avg), "mill_city": float(r.millage_municipal_avg),
-                        "nonowner": float(r.nonowner_tax_nonschool + r.nonowner_tax_school)}
+                        "nonowner": float(r.nonowner_tax_nonschool + r.nonowner_tax_school),
+                        "nonowner_school": float(r.nonowner_tax_school)}
                        for y, r in s.iterrows()]}
 
 
@@ -184,7 +186,9 @@ def governments() -> dict:
         g = float(gen.get(f, np.nan))
         counties.append({"fips": f, "name": name.get(f, f),
                          "general": {str(y): round(g * float(path[y]["county"][:, i].mean()), 4) for y in YEARS} if np.isfinite(g) else None,
-                         "school": {str(y): round(float(rs.school_fixed[i] + path[y]["rle"][:, i].mean()), 4) for y in YEARS}})
+                         "school": {str(y): round(float(rs.school_fixed[i] + path[y]["rle"][:, i].mean()), 4) for y in YEARS},
+                         "tv": {str(y): round(float(path[y]["tv"]["county"][i])) for y in YEARS},
+                         "tv_school": {str(y): round(float(path[y]["tv"]["school"][i])) for y in YEARS}})
     cities = []
     for j, k in enumerate(rs.cities.index):
         m = city_mill.get(k)
@@ -192,7 +196,8 @@ def governments() -> dict:
             continue
         nm = str(city_name.get(k)).title().replace("Of ", "of ")
         cities.append({"i": j, "county": k[0], "name": nm,
-                       "rate": {str(y): round(float(m) * float(path[y]["city"][:, j].mean()), 4) for y in YEARS}})
+                       "rate": {str(y): round(float(m) * float(path[y]["city"][:, j].mean()), 4) for y in YEARS},
+                       "tv": {str(y): round(float(path[y]["tv"]["city"][j])) for y in YEARS}})
     return {"counties": counties, "cities": cities}
 
 

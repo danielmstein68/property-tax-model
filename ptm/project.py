@@ -251,7 +251,7 @@ class Projection:
         self._init_new_residents(seed)
         self.rows = [{**self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                   self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES}),
-                      **self._nonowner()}]
+                      **self._nonowner(self.a["taxable_school_prior"], self.a["taxable_county_prior"])}]
 
     def _prepare_cached(self, baseline: pd.DataFrame) -> dict:
         """_prepare, saved to disk when the baseline says where (Monte Carlo workers load it)."""
@@ -489,7 +489,7 @@ class Projection:
         self.history[f"av_school_{y}"] = av_school
         for c in LEVIES:
             self.history[f"tax_{c}_{y}"] = tax[c]
-        self.rows.append({**self._row(y, sold, total, av_school, tax), **self._nonowner()})
+        self.rows.append({**self._row(y, sold, total, av_school, tax), **self._nonowner(taxable["school"], taxable["county"])})
         a["av_school_prior"] = av_school
         a["av_nonschool_prior"] = res["av_county"].to_numpy()
         a["taxable_school_prior"] = taxable["school"]
@@ -542,20 +542,27 @@ class Projection:
                                caps=(float(self.law.rule("nonhomestead_residential_cap").get("cap", y)),
                                      float(self.law.rule("nonresidential_cap").get("cap", y))))
 
-    def _nonowner(self) -> dict:
+    def _nonowner(self, own_school: np.ndarray, own_county: np.ndarray) -> dict:
         """Estimated tax on non-homestead residential and non-residential property (rentals, second
         homes, businesses; not households in the model): each county's taxable bases x the
-        owner-weighted average rates in the county this year."""
+        owner-weighted average rates in the county this year. The model's own owner-occupied homes
+        without a homestead exemption are in the roll's non-homestead base too: their taxable value
+        (own_* this year) is taken out so they aren't counted twice."""
         ci, ok, w = self.ci, self.ci_ok, self.w
         nc = len(self.rates.counties)
+        nh_own = ok & ~self.hs
+        own_s = np.bincount(ci[nh_own], weights=(own_school * w)[nh_own], minlength=nc)
+        own_c = np.bincount(ci[nh_own], weights=(own_county * w)[nh_own], minlength=nc)
         wsum = np.bincount(ci[ok], weights=w[ok], minlength=nc)
         avg = lambda m: np.where(wsum > 0, np.bincount(ci[ok], weights=(m * w)[ok], minlength=nc) / np.maximum(wsum, 1e-9), 0.0)
         m_ns = avg(self.mill["county"] + self.mill["municipal"] + np.nan_to_num(self.mill["special"]))
         m_s = avg(self.mill["school"])
         c = self.rates._c
-        return {"nonowner_tax_nonschool": float(((c["nh_county"] + c["nr_county"]) * m_ns).sum() / 1000),
-                "nonowner_tax_school": float(((c["nh_school"] + c["nr_school"]) * m_s).sum() / 1000),
-                "base_nonschool_nonhomestead": float((c["nh_county"] + c["nr_county"]).sum())}
+        b_ns = np.maximum(c["nh_county"] - own_c, 0) + c["nr_county"]
+        b_s = np.maximum(c["nh_school"] - own_s, 0) + c["nr_school"]
+        return {"nonowner_tax_nonschool": float((b_ns * m_ns).sum() / 1000),
+                "nonowner_tax_school": float((b_s * m_s).sum() / 1000),
+                "base_nonschool_nonhomestead": float(b_ns.sum())}
 
     def _apply_rates(self) -> None:
         ci = self.ci

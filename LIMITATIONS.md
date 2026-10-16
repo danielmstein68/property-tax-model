@@ -71,6 +71,6 @@ The model is **static**: it applies the rules to households as they are. It does
 ## Amendment 3
 - New residents: who moved from out of state is drawn from ACS PUMS 2024 (householder lived in another state or abroad a year before moving in; 22.8% of recent buyers) plus an assumption for newcomers who rent first (20% of renter arrivals buy within five years; 10-35% range). The amendment counts years of exemption; heirs are treated as residents; local governments shortening the wait from 2030 is not modelled.
 - The use-of-revenue limits (Art. VII s. 9(a)(2)) are not modelled: the last permitted use (operations of county officers, commissions and municipalities) is broad.
-- Tax on non-owner property is an estimate: county non-homestead and non-residential taxable value x the owner-weighted average rates in the county. About 0.9M owner-occupied homes without a homestead exemption are in both the owner model and the roll's non-homestead base, so 2026 total tax ($65.8B) is somewhat above the actual levy.
+- Tax on non-owner property is an estimate: county non-homestead and non-residential taxable value x the owner-weighted average rates in the county. The model's own owner-occupied homes without a homestead exemption are taken out of the roll's non-homestead base (each year, per county) so they aren't counted twice; 2026 total: $61.4B ($25.3B owners, $36.1B other property).
 - Local options in the amendment (counties and cities raising the exemption further; special districts by referendum) are not modelled.
 
