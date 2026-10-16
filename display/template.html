@@ -61,7 +61,11 @@ section { display: grid; gap: 18px; min-width: 0; }
 .builder select { font: 500 15px var(--body); padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 10px;
   background: var(--bg); color: var(--ink); max-width: 100%; }
 .builder input[type=range] { width: 100%; accent-color: var(--accent); }
-.slider-scale { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+/* tick labels sit under their stops: a range thumb's centre runs from 8px to width - 8px */
+.slider-scale { position: relative; font-size: 12.5px; color: var(--muted); min-height: 1.4em; }
+.slider-scale span { position: absolute; top: 0; transform: translateX(-50%); text-align: center; line-height: 1.25; }
+.slider-scale span:first-child { transform: translateX(-8px); text-align: left; }
+.slider-scale span:last-child:not(:first-child) { transform: translateX(calc(-100% + 8px)); text-align: right; }
 .slider-scale .cur { color: var(--accent); font-weight: 700; }
 .pol-chosen { border-left: 4px solid var(--accent); padding: 4px 0 4px 16px; display: grid; gap: 4px; }
 .chosen-title { font: 700 20px/1.3 var(--display); color: var(--ink); letter-spacing: -0.02em; }
@@ -339,7 +343,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="reimb" id="pol-reimb-box" hidden>
         <label class="field-label" for="pol-reimb" id="pol-reimb-label">State reimburses: 0% of lost revenue</label>
         <input type="range" id="pol-reimb" min="0" max="4" step="1" value="0">
-        <div class="slider-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100% (= no response)</span></div>
+        <div class="slider-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
         <label class="check" for="pol-cap"><input type="checkbox" id="pol-cap" checked><div>Respect the 10-mill cap<span>Counties' general levies and city levies can't go above 10 mills (the Florida Constitution), or their current rate if already higher; what they can't raise stays lost. Untick to see what full replacement would take.</span></div></label>
         <label class="check" for="pol-fc"><input type="checkbox" id="pol-fc"><div>The state offsets fiscally constrained counties<span id="pol-fc-note">As Florida has for earlier amendments (s. 218.125 formula): the state pays 29 small, rural counties 95% of their lost taxable value times their rate, if the Legislature funds it. With the 10-mill cap on and no other reimbursement.</span></div></label>
       </div>
@@ -1169,8 +1173,12 @@ function setLever(id, keepIdx) {
   if (!keepIdx) POL.idx = cur >= 0 ? cur : 0;
   const r = $("pol-slider"); r.max = sl.settings.length - 1; r.value = POL.idx;
   $("pol-slider-label").textContent = `Setting: ${fmtSetting(sl, sl.settings[POL.idx])}`;
-  $("pol-scale").innerHTML = sl.settings.map((v, i) => `<span class="${i === cur ? "cur" : ""}">${fmtSetting(sl, v)}${i === cur ? " (current law)" : ""}</span>`).join("");
+  const narrow = ($("pol-scale").clientWidth || 600) / sl.settings.length < 80;   // phones: short labels
+  const short = v => !narrow ? fmtSetting(sl, v) : v === "none" ? (sl.id === "senior_nonschool_age" ? "None" : "No cap") :
+    sl.unit === "dollars" && +v >= 1e6 ? "$" + (+v / 1e6) + "M" : sl.unit === "dollars" && +v >= 1000 ? "$" + Math.round(v / 1000) + "k" : fmtSetting(sl, v);
+  $("pol-scale").innerHTML = sl.settings.map((v, i) => `<span class="${i === cur ? "cur" : ""}">${short(v)}${i === cur ? (narrow ? "<br>(now)" : "<br>(current law)") : ""}</span>`).join("");
   $("pol-lever-note").textContent = sl.note || "";
+  if (typeof placeTicks === "function") placeTicks($("pol-scale"));
 }
 $("pol-lever").addEventListener("change", e => { setLever(e.target.value); POL.kind = "slider"; renderPolicy(); });
 $("pol-slider").addEventListener("input", e => { POL.idx = +e.target.value; POL.kind = "slider"; setLever(POL.lever, true); renderPolicy(); });
@@ -1182,7 +1190,19 @@ $("pol-group-tabs").addEventListener("click", e => { const b = e.target.closest(
 setLever(POL.lever);
 try { POL.neutral = localStorage.getItem("ptm-neutral") === "1"; } catch (e) { POL.neutral = false; }
 $("pol-neutral").checked = POL.neutral;
-const syncReimb = () => { $("pol-reimb-box").hidden = !POL.neutral; $("pol-reimb-label").textContent = `State reimburses: ${pct(REIMB[POL.reimb], 0)} of lost revenue`; };
+const syncReimb = () => { $("pol-reimb-box").hidden = !POL.neutral; $("pol-reimb-label").textContent = `State reimburses: ${pct(REIMB[POL.reimb], 0)} of lost revenue${POL.reimb === 4 ? " (= no response)" : ""}`;
+  placeTicks(document.querySelector("#pol-reimb-box .slider-scale")); };
+// put each tick label under its slider stop; wrap long labels and size the row to fit
+function placeTicks(el) {
+  if (!el) return;
+  const kids = [...el.children], n = kids.length;
+  kids.forEach((k, i) => { k.style.left = n > 1 ? `calc(8px + (100% - 16px) * ${i / (n - 1)})` : "8px";
+    k.style.width = "max-content"; k.style.maxWidth = n > 1 ? `calc((100% - 16px) / ${n - 1})` : "100%"; });
+  const h = Math.max(0, ...kids.map(k => k.offsetHeight));   // 0 while hidden: keep the CSS minimum
+  el.style.height = h ? h + "px" : "";
+}
+window.addEventListener("resize", () => { if (typeof setLever === "function") setLever(POL.lever, true);
+  document.querySelectorAll(".slider-scale").forEach(placeTicks); });
 $("pol-neutral").addEventListener("change", e => { POL.neutral = e.target.checked; try { localStorage.setItem("ptm-neutral", POL.neutral ? "1" : "0"); } catch (x) {} syncReimb(); renderPolicy(); });
 $("pol-reimb").addEventListener("input", e => { POL.reimb = +e.target.value; syncReimb(); if (typeof syncFc === "function") syncFc(); renderPolicy(); });
 POL.nocap = false;
@@ -1249,8 +1269,9 @@ function showView(v) {
   $("lede").textContent = v === "today" ? LEDE_TODAY : v === "a3" ?
     "Amendment 3 would raise the homestead exemption for county, city and special district taxes to $250,000, make newcomers to Florida wait for it, and cap yearly assessment increases on other property at 5%. Every result is compared with current law on the same households and economy." :
     "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
-  if (v === "policy") renderPolicy();
+  if (v === "policy") { setLever(POL.lever, true); renderPolicy(); }
   if (v === "a3") renderA3();
+  document.querySelectorAll(".slider-scale").forEach(placeTicks);   // sizes need the view visible
 }
 $("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
 showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : "today");
