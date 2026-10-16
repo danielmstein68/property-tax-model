@@ -36,6 +36,12 @@ Each year (owners only; renters come with pass-through):
      exemption while eligible; newly eligible households claim at 2026 take-up rates, where their
      county or city offers it.
 
+  4c. new residents (only matters under a policy like Amendment 3): each home sold and each new
+     owner from the year after homestead_new_resident's reference_year is a newcomer to Florida with
+     the PUMS share of recent buyers who came from out of state (by age), plus arrivals who rented
+     first (new_residents settings). A newcomer's homestead is flagged new_resident_waiting for its
+     first `waiting_years` years of exemption.
+
 Not yet: homestead status changes.
 """
 
@@ -242,6 +248,7 @@ class Projection:
             # offered where any 2026 claimant lives in the same county (county rules) or city (city rules)
             j = self.yi if rid.endswith("municipal") else self.ci
             self.offered[rid] = np.isin(j, np.unique(j[claim & (j >= 0)]))
+        self._init_new_residents(seed)
         self.rows = [self._row(BASE_YEAR, np.zeros(len(self.w), bool), prep["tax_2026"],
                                self.a["av_school_prior"], {c: prep[f"tax_{c}_2026"] for c in LEVIES})]
 
@@ -459,6 +466,9 @@ class Projection:
         self.history[f"income_{y}"] = self._income()
         sold, transfer = self._draw_sales()
         flags = self._update_flags(y)
+        waiting = self._new_residents(y, (sold & ~self._died) | entering)
+        flags["new_resident_waiting"] = waiting
+        self._waiting = waiting
         df = self.units.assign(**flags, jv=a["jv"], av_school_prior=a["av_school_prior"],
                                av_nonschool_prior=a["av_nonschool_prior"],
                                homestead_prior=self.hs & ~entering,
@@ -548,6 +558,35 @@ class Projection:
         return self
 
     # --- reporting -------------------------------------------------------------------------------
+    def _init_new_residents(self, seed: int) -> None:
+        """Per-record chance that a buyer is new to Florida (direct, by age) and the rent-first add-on."""
+        nr = self.econ.spec.get("new_residents") or {}
+        self.nr_start = np.zeros(len(self.w0), int)      # first exemption year of a newcomer (0 = resident)
+        self.nr_rng = np.random.default_rng(seed + 7919)  # own stream: identical draws in every run
+        if not nr:
+            self.nr_direct = np.zeros(len(self.w0))
+            self.nr_rent_first = 0.0
+            return
+        sh = nr["direct_share_by_age"]
+        age = np.nan_to_num(self.age.astype(float), nan=50)
+        edges = [(35, "under_35"), (45, "35_44"), (55, "45_54"), (65, "55_64"), (75, "65_74"), (999, "75_plus")]
+        self.nr_direct = np.select([age < e for e, _ in edges], [float(sh[k]) for _, k in edges])
+        self.nr_rent_first = float(nr["renter_arrivals_per_buyer"]) * float(nr["buy_within_5_years"][nr.get("use", "central")])
+        self.nr_phase = int(nr.get("phase_in_years", 5))
+
+    def _new_residents(self, y: int, bought: np.ndarray) -> np.ndarray:
+        """Update who is a newcomer after this year's sales and new owners; return the waiting flag."""
+        u = self.nr_rng.random(len(self.w0))
+        r = self.law.rule("homestead_new_resident") if "homestead_new_resident" in self.law.rules else None
+        if r is None:
+            return np.zeros(len(self.w0), bool)
+        ref = int(r.spec.get("reference_year", BASE_YEAR))
+        k = y - ref
+        p = self.nr_direct + self.nr_rent_first * min(max(k - 1, 0), self.nr_phase) / self.nr_phase if k > 0 else 0.0
+        self.nr_start = np.where(bought, np.where(u < p, y, 0), self.nr_start)
+        wait = float(r.get("waiting_years", y, 0))
+        return self.hs & (self.nr_start > 0) & (y - self.nr_start < wait)
+
     def _row(self, y, sold, tax, av, classes) -> dict:
         w, hs, jv = self.w, self.hs, self.a["jv"]
         wsum, whs = w.sum(), w[hs].sum()
@@ -558,6 +597,7 @@ class Projection:
                "share_sold": (sold * w).sum() / wsum, "homestead_share_sold": (sold * w)[hs].sum() / whs,
                "homestead_share_death_transfer": (getattr(self, "_died", np.zeros(len(w), bool)) * w)[hs].sum() / whs,
                "new_owner_share": w[self.cohort_year > 0].sum() / wsum if hasattr(self, "cohort_year") else 0.0,
+               "homestead_new_resident_share": (getattr(self, "_waiting", np.zeros(len(w), bool)) * w)[hs].sum() / whs,
                "share_owners_75_plus": w[np.isin(self.age_band, ["75_79", "80_84", "85_plus"])].sum() / wsum}
         for c, t in classes.items():
             row[f"tax_{c}"] = (np.nan_to_num(t) * w).sum()

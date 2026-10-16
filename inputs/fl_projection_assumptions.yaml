@@ -110,6 +110,25 @@ demography:
     (household_growth) = owners x Florida household growth (EEC), living in new homes at full value;
     characteristics of recent buyers, placed by county by 2026 new construction (DOR Data Book).
 
+# Who is a "new resident" (Amendment 3: not a Florida resident on Dec 31, 2026; law rule
+# homestead_new_resident). Only matters when a policy gives new residents a smaller exemption.
+new_residents:
+  # Share of each year's buyers (homes sold, and new-owner households) whose householder lived in
+  # another state or abroad a year earlier, by householder age. ACS PUMS 2024 1-year, Florida owner
+  # households that moved in within 12 months (MV = 1), householder MIG = 2, or MIG = 3 and
+  # MIGSP != 12; weighted (419,063 such households, 22.8% from out of state).
+  direct_share_by_age: {under_35: 0.157, "35_44": 0.164, "45_54": 0.215, "55_64": 0.299, "65_74": 0.307, "75_plus": 0.256}
+  # Arrivals who rent first and buy later: out-of-state renter arrivals per buyer (PUMS 2024:
+  # 164,864 renter households with an out-of-state householder a year earlier / 419,063 buyers)
+  # x the share of them who buy within five years (assumption; low / central / high), phased in
+  # over five years from 2027 as post-2026 arrivals build up.
+  renter_arrivals_per_buyer: 0.39
+  buy_within_5_years: {low: 0.10, central: 0.20, high: 0.35}
+  use: central
+  phase_in_years: 5
+  note: Death transfers (heirs) count as residents. Records keep their age; a sold home's buyer is
+    drawn as new or not each time. Draws use their own random stream, the same in every run.
+
 # How governments set millage each year (ptm/rate_setting.py). Options:
 #   history      draw each government's yearly rate change from what Florida governments of the
 #                same type did in years with similar base growth (counties 1996-2025, cities

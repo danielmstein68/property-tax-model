@@ -244,7 +244,7 @@ exemptions:
     description: >
       Policy lever (Amendment 3 shape): non-school homestead exemption on the first `amount` of
       assessed value for owners who were not Florida residents on December 31, 2026, until their
-      fifth year of exemption (then homestead_nonschool_total). `waiting_years` = years at this
+      fifth year of exemption (then homestead_nonschool_total). `waiting_years` = years at this (0 under current law; Amendment 3: 4)
       amount (4: full amount from the fifth year; 0: no waiting, e.g. if struck down).
       `reference_year`: residents on December 31 of this year are not new residents.
       Who is a new resident: projection settings `new_residents` (PUMS movers from out of state).
@@ -268,7 +268,7 @@ exemptions:
     applies_to: [county, municipal, special]
     band_start: 25000
     amount: {2024: 0, 2026: 0}
-    waiting_years: {2024: 4}
+    waiting_years: {2024: 0}
     reference_year: 2026
     projection: [{key: amount, method: index_cpi, cpi_lag: 1, floor_zero: true, round: 1}]
     indexed: "CPI-U, positive changes only, after the last scheduled year"

@@ -1,0 +1,10 @@
+# Amendment 3 (CS/HJR 1-F, 2026), parts 1 + 2: the larger non-school exemption, with new residents
+# (not Florida residents on Dec 31, 2026) exempt on the first $50,000 (indexed from 2028) until
+# their fifth year of exemption. Who is new: inputs/fl_projection_assumptions.yaml `new_residents`.
+name: "Amendment 3: larger exemption, new residents wait"
+description: As the larger homestead exemption, but owners who move to Florida after 2026 get the first $50,000 exempt from non-school taxes for four years, then the full amount.
+changes:
+  - {rule: homestead_nonschool_total, key: amount, values: {2027: 150000, 2028: 250000}}
+  - {rule: homestead_second, key: amount, value: 0, from: 2027}
+  - {rule: homestead_new_resident, key: amount, value: 50000, from: 2027}
+  - {rule: homestead_new_resident, key: waiting_years, value: 4, from: 2027}
