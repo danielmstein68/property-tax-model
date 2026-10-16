@@ -16,7 +16,9 @@ Columns that are missing count as "not eligible" (listed in the result's `missin
 Order (s. 196.031(8), s. 196.082(6), F.S. — rule `exemption_order` in the spec):
   1. total exemptions: taxable 0 in the levy classes they apply to;
   2. 'fixed' and 'band' homestead exemptions measured on the raw assessed value
-     (homestead_first, homestead_second);
+     (homestead_first, homestead_second; the Amendment 3 levers homestead_nonschool_total and
+     homestead_new_resident, whose `amount` is the total exempt up to that value, starting
+     above homestead_first's $25,000; `exclude_flag` withholds a rule from flagged units);
   3. every other dollar exemption (fixed, local_option, reduction) — subtractive with a $0
      floor, so their order among themselves doesn't change the result;
   4. percentage exemptions in spec order (deployed military: share of the remaining taxable
@@ -30,7 +32,7 @@ import pandas as pd
 
 from ptm.law import Law, LawError
 
-HOMESTEAD_FIRST = {"homestead_first", "homestead_second"}
+HOMESTEAD_FIRST = {"homestead_first", "homestead_second", "homestead_nonschool_total", "homestead_new_resident"}
 
 
 def _flag(units: pd.DataFrame, col: str, missing: set) -> np.ndarray:
@@ -82,6 +84,8 @@ def apply_exemptions(units: pd.DataFrame, law: Law, year: int, detail: bool = Fa
     for r in first + others:
         kind = r.spec["kind"]
         elig = _flag(units, r.spec["household_flag"], missing)
+        if "exclude_flag" in r.spec:
+            elig = elig * (_flag(units, r.spec["exclude_flag"], set()) <= 0)
         if r.id in HOMESTEAD_FIRST:
             # s. 196.031: on the residence (homestead part), measured on raw assessed value,
             # prorated for co-owners who don't live there
@@ -91,6 +95,8 @@ def apply_exemptions(units: pd.DataFrame, law: Law, year: int, detail: bool = Fa
                     amount = (elig > 0) * np.minimum(base, float(r.get("amount", year))) * hs_share
                 else:
                     start, width = float(r.get("band_start", year)), float(r.get("amount", year))
+                    if r.spec.get("amount_is_total"):      # `amount` = exempt up to this value in all
+                        width = max(width - start, 0.0)
                     amount = (elig > 0) * np.clip(base - start, 0, width) * hs_share
                 take = np.minimum(np.maximum(remaining[c], 0), amount)
                 remaining[c] = remaining[c] - take

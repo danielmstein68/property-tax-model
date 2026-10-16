@@ -45,6 +45,9 @@ LIVE = {
     ("senior_lowinc_municipal", "max_amount"): "Most a city may grant as the low-income senior exemption (binds only if set below a city's amount)",
     ("widow_blind_disabled_5000", "amount"): "Widow(er), blind and disabled exemption",
     ("disabled_exservice_5000", "amount"): "Disabled ex-servicemember exemption",
+    ("homestead_nonschool_total", "amount"): "Non-school homestead exemption on the first $X of assessed value (Amendment 3 shape)",
+    ("homestead_new_resident", "amount"): "Non-school exemption for new residents while they wait (Amendment 3)",
+    ("homestead_new_resident", "waiting_years"): "Years new residents wait for the full non-school exemption (Amendment 3: 4)",
     ("homestead_share_all_levies", "share"): "Share of homestead taxable value exempt from all levies (policy lever)",
     ("homestead_share_nonschool", "share"): "Share of homestead taxable value exempt from non-school levies (policy lever)",
     ("senior_nonschool", "share"): "Share of senior homesteaders' taxable value exempt from non-school levies (policy lever)",
@@ -67,7 +70,8 @@ LIVE = {
 }
 SKIP_KEYS = {"description", "citation", "source_text", "source_url", "confidence", "notes", "order", "kind",
              "household_flag", "value_column", "roll_code", "projection", "applies_to", "indexed",
-             "income_limit_indexed", "income_measure", "just_value_limit_when", "majority_vote_max_of_rolled_back"}
+             "income_limit_indexed", "income_measure", "just_value_limit_when", "majority_vote_max_of_rolled_back",
+             "exclude_flag", "amount_is_total", "reference_year"}
 
 
 def _is_number_param(v) -> bool:

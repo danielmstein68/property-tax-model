@@ -1,0 +1,9 @@
+# Amendment 3 (CS/HJR 1-F, 2026), part 1: the larger non-school homestead exemption.
+# Florida residents as of Dec 31, 2026: non-school levies exempt on the first $150,000 of
+# assessed value in 2027 and $250,000 in 2028, indexed to CPI (positive changes) from 2029.
+# Replaces the $25,000 + second exemption for non-school levies; school exemption stays $25,000.
+name: "Amendment 3: larger homestead exemption"
+description: Homesteads' first $150,000 (2027), then $250,000 (2028, indexed after) of assessed value is exempt from county, city and special district taxes; school taxes keep the $25,000 exemption.
+changes:
+  - {rule: homestead_nonschool_total, key: amount, values: {2027: 150000, 2028: 250000}}
+  - {rule: homestead_second, key: amount, value: 0, from: 2027}
