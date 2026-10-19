@@ -147,10 +147,6 @@ table.wrap-cells td { font-family: var(--body); }
 @media (min-width: 900px) { .a3-bar { position: sticky; top: 0; z-index: 5; } }
 .a3-ctl { display: grid; gap: 6px; }
 .a3 .figures .fig .l { font-size: 14.5px; }
-.pill { font: 700 13px var(--body); padding: 5px 14px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); border-radius: 999px; cursor: pointer; }
-.pill:hover { background: var(--accent-soft); }
-.cty-table td.barcell { min-width: 150px; text-align: left; }
-.cty-bar { display: inline-block; height: 9px; border-radius: 2px; background: var(--lose2); vertical-align: 0; margin-right: 8px; }
 .wl { display: grid; gap: 6px; }
 .wl-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13.5px; }
 .wl-lab { color: var(--muted); text-align: right; }
@@ -492,16 +488,6 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
         <div class="tablebox"><table id="a3-t-rev"></table></div>
       </div>
-    </section>
-
-    <section>
-      <div class="eyebrow">Counties</div>
-      <h2 id="a3-cty-title">Where it hits hardest</h2>
-      <p id="a3-cty-intro"></p>
-      <div class="tabletools"><button class="copy" data-table="a3-t-cty" id="copy-a3-cty">Copy table</button></div>
-      <div class="tablebox"><table id="a3-t-cty" class="cty-table"></table></div>
-      <p><button class="pill" id="a3-cty-more"></button></p>
-      <p class="muted-p">Tax base lost is the share of county and city taxable value the amendment removes, so it applies to every non-school levy in the county. The dollar columns count only the county general levy and city levies; county taxing units and special districts lose revenue too. "Small rural" marks the 29 fiscally constrained counties.</p>
     </section>
 
     <section>
@@ -1487,7 +1473,6 @@ onTab("a3-mode", d => A3.mode = d.k);
 onTab("a3-court", d => A3.court = d.k);
 onTab("a3-gov-tabs", d => A3.gov = d.g);
 onTab("a3-group-tabs", d => A3.group = d.g);
-$("a3-cty-more").addEventListener("click", () => { A3.ctyAll = !A3.ctyAll; renderA3(); });
 
 // the model's static Amendment 3 score vs the state's estimate, 2027-2030 (e.g. "7%–20% lower")
 function recGap() {
@@ -1549,31 +1534,6 @@ function renderA3() {
     const recOf = yy => REC.by_roll_year[yy], b = v => bnS(v).replace("+", "");
     $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Lost, rates unchanged</th><th>State estimate</th><th>Still lost after replacement</th></tr></thead><tbody>` +
       rows.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${recOf(r.year) !== undefined ? b(-recOf(r.year) * 1e6) : ""}</td><td>${b(-a3yr(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
-  })();
-
-  // counties: share of the county/city tax base lost, revenue lost with rates unchanged, the general rate needed to replace it
-  (function () {
-    const ys = String(y), d = run.rates[ys], cities = G.governments.cities;
-    const rows = G.governments.counties.map((c, i) => {
-      const dc = d.county[i], share = dc / (1 + dc), gen = c.general ? c.general[ys] : null;
-      const cityLost = cities.filter(q => q.county === c.fips).reduce((t, q) => { const dd = d.city[q.i]; return t + q.rate[ys] * q.tv[ys] * dd / (1 + dd) / 1000; }, 0);
-      const want = gen != null ? gen * (1 + dc) : null;
-      return { name: c.name, fc: c.fc, share, genLost: gen != null ? gen * c.tv[ys] * share / 1000 : null, cityLost, gen, want,
-               capped: want != null && want > Math.max(10, gen) + 0.0005 };
-    }).sort((a, b) => b.share - a.share);
-    const big = rows[0].share, top = rows.slice(0, 10), fcTop = top.filter(r => r.fc).length;
-    const over15 = rows.filter(r => r.share >= 0.15).length, capped = rows.filter(r => r.capped).length;
-    $("a3-cty-title").textContent = `Where it hits hardest, ${y}`;
-    $("a3-cty-intro").textContent = `With rates unchanged, ${over15} of 67 counties lose 15% or more of the property value their county and city taxes are levied on; ${rows[0].name} loses ${pct(rows[0].share, 0)}. ` +
-      `${fcTop} of the 10 hardest hit are small, rural "fiscally constrained" counties, which the state has helped after earlier amendments. Coastal resort counties with many second homes lose least (${rows[rows.length - 1].name} ${pct(rows[rows.length - 1].share, 0)}). ` +
-      `To replace the money, ${capped ? `${capped} ${capped === 1 ? "county's general rate would go past" : "counties' general rates would go past"} the 10-mill cap` : "no county's general rate would pass the 10-mill cap"}.`;
-    const all = A3.ctyAll;
-    $("a3-t-cty").innerHTML = `<thead><tr><th>County</th><th>Tax base lost</th><th></th><th>County general levy lost</th><th>City levies lost</th><th>General rate, current law (mills)</th><th>Needed to replace (mills)</th></tr></thead><tbody>` +
-      (all ? rows : rows.slice(0, 15)).map(r => `<tr><td>${r.name}${r.fc ? " <span class=\"moe\">small rural</span>" : ""}</td><td>${pct(r.share, 1)}</td>` +
-        `<td class="barcell"><span class="cty-bar" style="width:${Math.round(140 * r.share / big)}px"></span></td>` +
-        `<td>${r.genLost != null ? usd(r.genLost) : "—"}</td><td>${r.cityLost >= 1 ? usd(r.cityLost) : "—"}</td>` +
-        `<td>${r.gen != null ? r.gen.toFixed(2) : "—"}</td><td class="${r.capped ? "over" : ""}">${r.want != null ? r.want.toFixed(2) + (r.capped ? " (over the cap)" : "") : "—"}</td></tr>`).join("") + "</tbody>";
-    $("a3-cty-more").textContent = all ? "Show the 15 hardest hit" : "Show all 67 counties";
   })();
 
   // who pays less and who pays more
