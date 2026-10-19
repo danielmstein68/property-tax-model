@@ -190,6 +190,8 @@ details.more > summary:focus-visible { outline: 2px solid var(--accent); outline
 @keyframes flash { from { background: var(--accent-soft); } to { background: var(--surface); } }
 @media (prefers-reduced-motion: reduce) { .changed.flash { animation: none; } }
 .fig.lead .v, .fig.lead .l { color: var(--bg); }
+.rev-figs { margin: 4px 0 18px; }
+.rev-figs .fig .v { font-size: 26px; }
 .tablebox.tall thead th { position: sticky; top: 0; background: var(--bg); }
 td.over { color: var(--lose2); font-weight: 700; }
 .tabs button { font: 700 14px var(--body); padding: 7px 16px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
@@ -376,6 +378,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     <section class="pol-sec">
       <div class="eyebrow">Revenue</div>
       <h2 id="pol-rev-title">Revenue lost to local governments</h2>
+      <div class="figures rev-figs" id="pol-rev-figs"></div>
       <p id="pol-rev-intro"></p>
       <div class="charts">
         <div class="chart">
@@ -468,6 +471,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     <section>
       <div class="eyebrow">Revenue</div>
       <h2 id="a3-rev-title">Revenue lost to local governments</h2>
+      <div class="figures rev-figs" id="a3-rev-figs"></div>
       <p id="a3-rev-intro"></p>
       <div class="charts">
         <div class="chart">
@@ -1794,6 +1798,22 @@ const REC = {"source_url": "https://edr.state.fl.us/Content/conferences/revenuei
 const RYEARS = G.current_law.yearly.filter(r => r.year > 2026).map(r => r.year);
 const allTax = y => { const b = G.current_law.yearly.find(r => r.year === y); return b.tax_total + b.nonowner; };
 const bnAbs = v => "$" + (Math.abs(v) / 1e9).toFixed(Math.abs(v) >= 1e10 ? 1 : 2) + " billion";
+// revenue figures for the chosen year: lost that year and added up from the first year, with rates unchanged
+// and under a second rate setting (alt). `none`, `alt` are yearly rows; `all` < 0 = less revenue than current law.
+function revFigs(id, none, alt, altLabel, y) {
+  const big = v => Math.abs(v) < 1e9 ? "$" + Math.round(Math.abs(v) / 1e6) + " million" : "$" + (Math.abs(v) / 1e9).toFixed(1) + " billion";
+  const at = rows => (rows.find(r => r.year === y) || {}).all || 0;
+  const cum = rows => { const r = rows.filter(x => x.all != null && x.year > 2026 && x.year <= y); return { from: r.length ? r[0].year : y, sum: r.reduce((t, x) => t + x.all, 0) }; };
+  const n = at(none), nc = cum(none), a = at(alt), ac = cum(alt);
+  const lost = (v, still) => v > 0 ? "Gained" : still ? "Still lost" : "Lost";
+  const span = c => c.from === y ? ` so far (${y} is the first year)` : `, ${c.from}–${y} added up`;
+  $(id).innerHTML = [
+    [big(n), `${lost(n)} by local governments in ${y}, tax rates unchanged`, "lead"],
+    [big(nc.sum), `${lost(nc.sum)} in total${span(nc)}, tax rates unchanged`],
+    [big(a), `${lost(a, true)} in ${y} ${altLabel}`],
+    [big(ac.sum), `${lost(ac.sum, true)} in total${span(ac)}, ${altLabel}`],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+}
 // 5. each government's rate (revenue-neutral, with reimbursement)
 const GOV_TABS = [["county", "Counties (general levy)"], ["city", "Cities"], ["school", "School districts"]];
 $("pol-gov-tabs").innerHTML = GOV_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgov-${g}">${l}</button>`).join("");
@@ -1853,6 +1873,9 @@ function renderPolicy() {
 
   // revenue
   $("pol-rev-title").textContent = `Revenue lost to local governments, ${y}`;
+  const alt = m === "none" ? "neutral" : m;
+  revFigs("pol-rev-figs", run[key("none")].yearly, run[key(alt)].yearly,
+    alt === "respond" ? "if governments respond as in similar years" : "after localities replace what they can", y);
   const S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null, small = Math.abs(N.all) < 5e6;
   let rt = small ? "With tax rates unchanged, revenue hardly changes: this rule works through how governments set their rates." :
     `With tax rates unchanged, local governments collect ${bnAbs(N.all)} ${N.all < 0 ? "less" : "more"} in ${y}; ${bnAbs(N.tax)} of it is homeowners' tax.` +
@@ -4538,6 +4561,7 @@ function renderA3() {
   // revenue
   const N = a3yr(run, "none", y), X = a3yr(run, "neutral", y), S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null;
   $("a3-rev-title").textContent = `Revenue lost to local governments, ${y}`;
+  revFigs("a3-rev-figs", run.none.yearly, run.neutral.yearly, "after localities replace what they can", y);
   const rr = RENT.years[String(y)], rent = rr ? { current: rr.current, none: rr[`${a3id()}_none`], neutral: rr[`${a3id()}_neutral`], apt: rr[`${a3id()}_neutral_apartments`] } : null;
   const own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
   $("a3-rev-intro").textContent = m === "none" ?
