@@ -93,15 +93,42 @@ def add_aged_taxamt(households: pd.DataFrame, to_year: int) -> pd.DataFrame:
 
 # Years since moving in, midpoint of each PUMS MV category (MV 7 = 30+ years).
 MV_YEARS_AGO = {1: 0.5, 2: 1.5, 3: 3.0, 4: 7.0, 5: 14.5, 6: 24.5, 7: 35.0}
-# Rough share of a homestead's tax that is school tax; replace with county millage at calibration.
+# PUMS MV (when moved in) bands as years before the survey: 12 months or less, 13-23 months, 2-4,
+# 5-9, 10-19, 20-29, 30+ years (30+ capped at 45). Each owner's years ago is spread evenly within its
+# band (a fixed draw per household, from SERIALNO), so years in the home isn't stuck at seven values
+# and rules like the 25-year residence test for the long-term senior exemption can bite.
+MV_YEARS_RANGE = {1: (0.0, 1.0), 2: (1.0, 2.0), 3: (2.0, 5.0), 4: (5.0, 10.0), 5: (10.0, 20.0), 6: (20.0, 30.0), 7: (30.0, 45.0)}
+
+
+def years_in_home(mv: pd.Series, serialno: pd.Series | None = None) -> pd.Series:
+    """Years since moving in, spread within each MV band by a fixed per-household draw."""
+    lo = mv.map({k: v[0] for k, v in MV_YEARS_RANGE.items()})
+    hi = mv.map({k: v[1] for k, v in MV_YEARS_RANGE.items()})
+    if serialno is None:
+        return mv.map(MV_YEARS_AGO)
+    u = (pd.util.hash_pandas_object(serialno.astype(str), index=False).to_numpy() % 1_000_003) / 1_000_003
+    return lo + (hi - lo) * pd.Series(u, index=mv.index)
+# Statewide fallback for the share of a homestead's tax rate that is school tax (school_share()).
 SCHOOL_SHARE = 0.37
+
+
+def school_share(h: pd.DataFrame) -> np.ndarray:
+    """Each household's county school share of the total tax rate (school millage / the median
+    district's total millage, 2025 rates); SCHOOL_SHARE where the county isn't known. Used to turn
+    reported tax into an implied rate on taxable value."""
+    if "county_fips" not in h:
+        return np.full(len(h), SCHOOL_SHARE)
+    from ptm.millage import load_rates
+    r = load_rates(2025)
+    share = (r["school_millage"] / r["total_millage"]).groupby(r["county_fips"]).median()
+    return h["county_fips"].map(share).fillna(SCHOOL_SHARE).to_numpy(dtype=float)
 
 
 def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year: int) -> pd.DataFrame:
     """Age owners' reported property tax with Florida's Save Our Homes and homestead rules.
 
     Requires add_aged_values first. For each owner (all treated as homesteads):
-      1. purchase year from MV (category midpoint);
+      1. purchase year from MV, spread evenly within its band (years_in_home);
       2. assessed/just ratio in the survey year from Save Our Homes history since purchase
          (ptm.florida.soh_ratio_from_purchase);
       3. just value: survey year = valp_2024 (or VALP) x just/market ratio; base year = valp_jv_aged;
@@ -109,7 +136,7 @@ def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year:
       4. assessed value rolled forward each year: min(prior x cap, just value);
       5. school and non-school taxable value after the homestead exemption, both years;
       6. taxamt_aged = TAXAMT x (taxable base year / taxable survey year), rates held fixed,
-         school share SCHOOL_SHARE.
+         county school share (school_share).
     Owners the rules say pay nothing in the survey year but who report tax fall back to the
     caps-only growth. $0 stays $0. TAXAMT itself is untouched.
     Adds: purchase_year, soh_ratio_<survey>, soh_ratio_<base>, av_<survey>, av_<base>,
@@ -123,8 +150,8 @@ def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year:
     own = h["VALP"].notna()
     o = h.loc[own]
 
-    years_ago = o["MV"].map(MV_YEARS_AGO)
-    purchase = (survey_year - years_ago).round().clip(lower=1994).astype(int)
+    years_ago = years_in_home(o["MV"], o["SERIALNO"] if "SERIALNO" in o else None)
+    purchase = np.floor(survey_year - years_ago).clip(lower=1994).astype(int)
     ratio0 = florida.soh_ratio_from_purchase(purchase, survey_year, hist)
 
     # Survey-year value: valp_2024 (top-coded values replaced, ptm.topcode) when present, else VALP
@@ -137,9 +164,11 @@ def add_aged_taxamt_rules(households: pd.DataFrame, survey_year: int, base_year:
         jv_y = jv0 * (jv1 / jv0) ** (k / n)
         av = florida.soh_assessed(av, jv_y, caps.loc[y])
 
+    share = school_share(o)
+
     def taxable(assessed, year):
         s, ns = florida.homestead_taxable(assessed, year)
-        return SCHOOL_SHARE * s + (1 - SCHOOL_SHARE) * ns
+        return share * s + (1 - share) * ns
 
     t0, t1 = taxable(ratio0 * jv0, survey_year), taxable(av, base_year)
     caps_only = float(np.prod([1 + caps.loc[y] for y in range(survey_year + 1, base_year + 1)]))

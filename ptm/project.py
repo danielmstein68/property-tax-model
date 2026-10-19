@@ -610,10 +610,15 @@ class Projection:
 
     def _nonowner(self, own_school: np.ndarray, own_county: np.ndarray) -> dict:
         """Estimated tax on non-homestead residential and non-residential property (rentals, second
-        homes, businesses; not households in the model): each county's taxable bases x the
-        owner-weighted average rates in the county this year. The model's own owner-occupied homes
-        without a homestead exemption are in the roll's non-homestead base too: their taxable value
-        (own_* this year) is taken out so they aren't counted twice."""
+        homes, businesses; not households in the model). County and special-district levies: each
+        county's taxable bases x the owner-weighted average county rate this year. City levies: each
+        city's own non-homestead and non-residential base (2026 rolls, grown with its county) x that
+        city's rate this year (owners' median 2026 rate, else the roll's; x its rate path). The
+        model's own owner-occupied homes without a homestead exemption are in the roll's
+        non-homestead base too: their taxable value (own_* this year) is taken out so they aren't
+        counted twice (from cities in proportion to their county).
+        Also reported: the county/city split and the tax on non-homestead residential property alone
+        (rentals and second homes, school and non-school)."""
         ci, ok, w = self.ci, self.ci_ok, self.w
         nc = len(self.rates.counties)
         c = self.rates._c
@@ -629,12 +634,26 @@ class Projection:
         own_s = own_s + self.sb_ex["school"]
         wsum = np.bincount(ci[ok], weights=w[ok], minlength=nc)
         avg = lambda m: np.where(wsum > 0, np.bincount(ci[ok], weights=(m * w)[ok], minlength=nc) / np.maximum(wsum, 1e-9), 0.0)
-        m_ns = avg(self.mill["county"] + self.mill["municipal"] + np.nan_to_num(self.mill["special"]))
+        m_c = avg(self.mill["county"] + np.nan_to_num(self.mill["special"]))
         m_s = avg(self.mill["school"])
-        b_ns = np.maximum(c["nh_county"] - own_c, 0) + c["nr_county"]
-        b_s = np.maximum(c["nh_school"] - own_s, 0) + c["nr_school"]
-        return {"nonowner_tax_nonschool": float((b_ns * m_ns).sum() / 1000),
+        nh_ns, nh_s = np.maximum(c["nh_county"] - own_c, 0), np.maximum(c["nh_school"] - own_s, 0)
+        b_ns, b_s = nh_ns + c["nr_county"], nh_s + c["nr_school"]
+        # cities: their own bases at their own rates; owner-occupied non-homestead homes out in proportion
+        y, cc = self.rates._y, self.rates._city_county
+        with np.errstate(divide="ignore", invalid="ignore"):
+            keep = np.where(c["nh_county"] > 0, nh_ns / c["nh_county"], 1.0)
+        on = cc >= 0
+        city_nh = y["nh"] * np.where(on, keep[np.maximum(cc, 0)], 1.0)
+        roll = self.rates.cities["rate_roll"].to_numpy(float) if "rate_roll" in self.rates.cities else np.zeros(len(cc))
+        rate0 = np.where(np.isfinite(self.city_rate_2026), self.city_rate_2026, np.nan_to_num(roll))
+        m_y = rate0 * self.rates.city_draws.mean(axis=0)
+        city_tax_nh, city_tax_nr = city_nh * m_y / 1000, y["nr"] * m_y / 1000
+        county_tax = b_ns * m_c / 1000
+        return {"nonowner_tax_nonschool": float(county_tax.sum() + city_tax_nh.sum() + city_tax_nr.sum()),
                 "nonowner_tax_school": float((b_s * m_s).sum() / 1000),
+                "nonowner_tax_county": float(county_tax.sum()),
+                "nonowner_tax_city": float(city_tax_nh.sum() + city_tax_nr.sum()),
+                "nonowner_tax_nh_res": float((nh_ns * m_c).sum() / 1000 + city_tax_nh.sum() + (nh_s * m_s).sum() / 1000),
                 "base_nonschool_nonhomestead": float(b_ns.sum())}
 
     def _apply_rates(self) -> None:

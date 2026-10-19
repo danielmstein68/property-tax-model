@@ -83,7 +83,12 @@ def main() -> None:
     }
 
     # 1b. by county (district county)
-    rc = r[rated].groupby("county_fips").agg(parcels=("tax", "size"), tax_roll=("tax", "sum"), jv_roll=("JV", "sum"))
+    # Every homestead parcel counts; parcels the preliminary roll gives no taxable value (Escambia: 8,881)
+    # take the county's average rated tax, so they don't drop out of the roll side.
+    rr = r[rated].groupby("county_fips").agg(rated=("tax", "size"), tax_rated=("tax", "sum"), jv_rated=("JV", "sum"))
+    rc = r.groupby("county_fips").agg(parcels=("JV", "size"), jv_roll=("JV", "sum")).join(rr)
+    rc["tax_roll"] = rc["tax_rated"] / rc["rated"] * rc["parcels"]
+    rc["unrated_share"] = 1 - rc["rated"] / rc["parcels"]
     mc = m.assign(t=m_tax * mw, j=m["valp_jv_cal"] * mw).groupby("county_fips_tax").agg(
         owners=("WGTP", "sum"), tax_model=("t", "sum"), jv_model=("j", "sum"), records=("WGTP", "size"))
     c = rc.join(mc, how="outer")
@@ -91,7 +96,8 @@ def main() -> None:
     c["avg_tax_model"] = c["tax_model"] / c["owners"]
     c["avg_tax_ratio"] = c["avg_tax_model"] / c["avg_tax_roll"]
     c["count_ratio"] = c["owners"] / c["parcels"]
-    c["rate_roll"] = c["tax_roll"] / c["jv_roll"]
+    c["rate_roll"] = c["tax_rated"] / c["jv_rated"]
+    c = c.drop(columns=["rated", "tax_rated", "jv_rated"])
     c["rate_model"] = c["tax_model"] / c["jv_model"]
     out["by_county"] = c.reset_index(names="county_fips").round(4).to_dict("records")
 

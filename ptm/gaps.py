@@ -69,9 +69,10 @@ def tax_implied_ratio(o: pd.DataFrame, base_year: int) -> pd.Series:
     NaN for $0 or top-coded tax.
     """
     from ptm import florida
-    from ptm.aging import SCHOOL_SHARE
+    from ptm.aging import school_share
 
-    exempt = SCHOOL_SHARE * florida.FIRST_EXEMPTION + (1 - SCHOOL_SHARE) * (
+    share = school_share(o)
+    exempt = share * florida.FIRST_EXEMPTION + (1 - share) * (
         florida.FIRST_EXEMPTION + florida.SECOND_EXEMPTION[base_year])
     av_model = o[f"soh_ratio_{base_year}"].fillna(1.0) * o["valp_jv_cal"]
     taxable_model = (av_model - exempt).clip(lower=1)

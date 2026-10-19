@@ -60,7 +60,7 @@ NOT_A_CITY = (r"\b(county|fire|rescue|library|district|dda|mstu|msbu|school|hosp
               r"improvement|authority|trust|unit|basin|transit|police|sheriff|fund|services|redevelopment|cra)\b")
 
 
-NONCITY_NOTE = r"\b(fire|rescue|mstu|msbu|unincorporated|uninc)\b"
+NONCITY_NOTE = r"\b(fire|rescue|mstu|msbu|unincorporated|uninc)\b|^\s*county\b"   # Volusia: "County - Westside"
 
 
 def tacd_municipal_authorities(year: int = 2025) -> dict[str, dict[int, tuple[str, float]]]:
@@ -118,15 +118,20 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
     def norm(s: str) -> str:
         s = s.upper()
         s = _re.sub(r"^(CITY|TOWN|VILLAGE) OF\s+", "", s)
-        return _re.sub(r"[^A-Z ]", "", s).strip()
+        s = _re.sub(r"[^A-Z ]", "", s)
+        s = _re.sub(r"\bSAINT\b", "ST", s)                 # "Saint Cloud" = "St Cloud"
+        s = _re.sub(r"\s+OPERATING$", "", s.strip())       # Volusia's Table 1: "Deltona Operating"
+        return _re.sub(r"\s+", " ", s).strip()
 
     city_mills, county_gov = {}, {}
+    strong = set()   # Table 1 names that are certainly cities ("City of X", Volusia's "X Operating")
     exact = {"Palm Beach": "Palm Beach County", "Volusia": "Volusia County General Fund"}
     for county, fips in county_fips_by_name().items():
         t1 = parse_table1(pdf_text(ROOT / "data" / "raw" / f"fl_rates_{year}" / "table1" / f"{county}.pdf"))
-        cities = t1[t1["authority"].str.match(r"(?i)^(city|town|village) of ")]
+        cities = t1[t1["authority"].str.match(r"(?i)^(city|town|village) of ") | t1["authority"].str.match(r"(?i)^[A-Za-z .'-]+ operating$")]
         for _, r in cities.iterrows():
             city_mills[(fips, norm(r["authority"]))] = r["millage_2025"]
+            strong.add((fips, norm(r["authority"])))
         # Some counties' Table 1 lists cities by bare name (Palm Beach: "Boca Raton"). Accept bare
         # names that aren't county, school or special-district levies; they only apply where a
         # district's note or parcels' city names that city (and the county-levy check passes).
@@ -152,11 +157,30 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
         for code, note in zip(d["code"].str.strip(), d["note"].fillna("")):
             notes[(fips, code)] = note
     note = pd.Series([notes.get((f, c), "") for f, c in zip(r["county_fips"], r["code"])], index=r.index)
-    uninc = note.str.contains("uninc", case=False)
     named = note.str.extract(r"(?i)\b((?:city|town|village) of [A-Za-z .'-]+?)(?:\s*[\(;,|]|$)")[0]
-    # a district note that is just a city's name ("BOCA RATON") names that city too
-    named = named.where(named.notna(), note.where(~uninc & (note != "")))
-    named_mills = [city_mills.get((f, norm(n))) if isinstance(n, str) else None for f, n in zip(r["county_fips"], named)]
+
+    def note_name(n: str) -> str:
+        """The place a note names: its first segment that isn't about the source ("listed in TACD
+        district group ...; Port St Lucie 4.6607 + ..."), cut before rates or "+" ("Lakeland city 5.43
+        + ...", "Deltona; components sum to total")."""
+        for seg in _re.split(r"[;|]", n):
+            seg = seg.strip()
+            if not seg or _re.match(r"(?i)(listed in|components|stacked header|column)", seg):
+                continue
+            seg = _re.split(r"\s+\d|\s\+\s|\s*\(", seg)[0]
+            return _re.sub(r"(?i)\s+city$", "", seg).strip()
+        return ""
+    # unincorporated if the place the note names is ("unincorporated base area"), not if it only
+    # mentions the county's unincorporated levies (Polk: "Lakeland city 5.43 + unincorporated-less-MSTU")
+    uninc = note.map(note_name).str.contains("uninc", case=False) | note.str.match(r"(?i)\s*uninc")
+    # a district note that names a place ("BOCA RATON", "Deltona; ...") names that city too
+    named = named.where(named.notna(), note.map(note_name).where(~uninc & (note != "")))
+    # a note's bare name counts only if Table 1 lists it as a city ("City of", "Operating"), the note
+    # is just that name (Palm Beach: "BOCA RATON"), or the district's parcels carry that city name:
+    # Osceola's Table 1 also lists MSBUs by bare name ("Bellalago; components sum to total")
+    named_mills = [city_mills.get((f, norm(n))) if isinstance(n, str) and ((f, norm(n)) in strong or norm(n) == norm(full)
+                                                                           or (isinstance(c, str) and norm(c) == norm(n))) else None
+                   for f, n, c, full in zip(r["county_fips"], named, r["city"], note)]
     mail_mills = [city_mills.get((f, norm(c))) if isinstance(c, str) else None for f, c in zip(r["county_fips"], r["city"])]
     # A district whose description names a fire district, MSTU or unincorporated area, and not the
     # mailing city, is not in that city (Manatee's East Manatee Fire district has Bradenton

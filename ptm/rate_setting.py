@@ -96,11 +96,15 @@ def _composition(base_year: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     c = c.fillna(0)
 
     dc = district_classes(base_year - 1, base_year)
-    dc = dc[dc["millage_municipal"] > 0][["county_fips", "code", "municipality"]]
+    dc = dc[dc["millage_municipal"] > 0][["county_fips", "code", "municipality", "millage_municipal"]]
     pc = p.merge(dc, on=["county_fips", "code"])
     pc["city"] = pc["municipality"].map(_city_key)
     cr = pc.groupby(["county_fips", "city", "hs"])["TV_NSD"].sum().unstack("hs").fillna(0)
     cities = pd.DataFrame({"hs": cr.get(True, 0), "nh": cr.get(False, 0)})
+    # the city's rate on the roll (taxable-value weighted over its districts; base_year - 1 rates)
+    pc["w"] = pc["TV_NSD"] * pc["millage_municipal"]
+    g = pc.groupby(["county_fips", "city"])[["w", "TV_NSD"]].sum()
+    cities["rate_roll"] = (g["w"] / g["TV_NSD"].replace(0, np.nan)).reindex(cities.index)
     nr_share = (c["nr_county"] / (c["hs_county"] + c["nh_county"]).replace(0, np.nan)).fillna(0)
     cities["nr"] = (cities["hs"] + cities["nh"]) * cities.index.get_level_values(0).map(nr_share).to_numpy()
     return c, cities
@@ -198,7 +202,7 @@ class RateSetter:
         self.history = _cached(("history", nb), lambda: RateHistory(neighbors=nb)) if uses_history else None
         self.counties, self.cities = _cached(("composition", base_year), lambda: composition(base_year))
         self._c = {k: self.counties[k].to_numpy(dtype=float) for k in self.counties.columns}
-        self._y = {k: self.cities[k].to_numpy(dtype=float) for k in self.cities.columns}
+        self._y = {k: self.cities[k].to_numpy(dtype=float) for k in ("hs", "nh", "nr")}
         self._city_county = self.cities.index.get_level_values(0).map(
             {k: i for i, k in enumerate(self.counties.index)}).fillna(-1).astype(int).to_numpy()
         nc, ny = len(self.counties), len(self.cities)

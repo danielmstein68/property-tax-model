@@ -60,7 +60,7 @@ def implied_rate_signal(h: pd.DataFrame, survey_year: int) -> pd.Series:
 
     Implied rate if homestead = TAXAMT / homestead taxable value in the survey year (assessed
     value from add_aged_taxamt_rules, less the homestead exemption, school share as in
-    ptm.aging.SCHOOL_SHARE). Compared with the weighted median implied rate among owners in the
+    ptm.aging.school_share, by county). Compared with the weighted median implied rate among owners in the
     same PUMA with similar time in the home (MV bands 1-3, 4, 5-7): comparing with
     similar-tenure neighbours cancels systematic error in the estimated Save Our Homes gap,
     which otherwise made long-time owners look like non-claimers.
@@ -69,11 +69,12 @@ def implied_rate_signal(h: pd.DataFrame, survey_year: int) -> pd.Series:
     0 for owners with $0 reported tax or top-coded value or tax (no usable evidence).
     """
     from ptm import florida
-    from ptm.aging import SCHOOL_SHARE
+    from ptm.aging import school_share
 
     av = h[f"av_{survey_year}"].to_numpy(dtype=float)
     school, nonschool = florida.homestead_taxable(np.nan_to_num(av), survey_year)
-    taxable = SCHOOL_SHARE * school + (1 - SCHOOL_SHARE) * nonschool
+    share = school_share(h)
+    taxable = share * school + (1 - share) * nonschool
     usable = ((h["TAXAMT"] > 0) & ~h["flag_topcode_taxamt"] & ~h["flag_topcode_valp"]
               & h[f"av_{survey_year}"].notna()).to_numpy()
     rate = np.where(usable & (taxable > 0), h["TAXAMT"].to_numpy() / np.where(taxable > 0, taxable, 1), np.nan)
