@@ -487,6 +487,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="eyebrow">Homeowners</div>
       <h2 id="a3-who-title">Who pays less and who pays more</h2>
       <p id="a3-who-intro"></p>
+      <div class="figures" id="a3-suits"></div>
       <div class="charts">
         <div class="chart">
           <h3>Average change per household, by income</h3>
@@ -1751,15 +1752,17 @@ function grp(run, mode, y, grouping) { return run[key(mode)].groups.filter(r => 
 function allRow(run, mode, y) { return run[key(mode)].groups.find(r => r.year === y && r.grouping === "all"); }
 function yrow(run, mode, y) { return run[key(mode)].yearly.find(r => r.year === y); }
 // Approximate Suits index from income-decile rows. Uses baseline income shares (stable across policies)
-// and policy-adjusted tax per decile. Returns null if data is missing or total tax ≤ 0.
-function approxSuits(policyDecileRows) {
+// and policy-adjusted tax per decile: 2026 decile tax grown to year y's current-law average, plus the
+// policy's change in y. Returns null if data is missing or total tax ≤ 0.
+function approxSuits(policyDecileRows, y = 2026) {
+  const cl = yy => (G.current_law.yearly.find(r => r.year === yy) || {}).avg_tax, k = cl(y) && cl(2026) ? cl(y) / cl(2026) : 1;
   const base = D.by_decile.filter(d => d.group !== "All owners").sort((a, b) => +a.group - +b.group);
   const pol = policyDecileRows.slice().sort((a, b) => +a.group.replace(/\D/g,'') - +b.group.replace(/\D/g,''));
   if (base.length !== pol.length || base.length < 2) return null;
   let totalIncome = 0, totalTax = 0;
   const rows = base.map((bd, i) => {
     const inc = bd.owners * bd.avg_income;
-    const tax = bd.owners * (bd.avg_tax + (pol[i] ? pol[i].avg_change : 0));
+    const tax = bd.owners * (bd.avg_tax * k + (pol[i] ? pol[i].avg_change : 0));
     totalIncome += inc; totalTax += tax;
     return { inc, tax };
   });
@@ -1794,8 +1797,8 @@ function renderPolicy() {
   // 2. owners
   $("pol-s1-title").textContent = `Owner property tax under the policy, ${y}`;
   const polDecR = run ? grp(run, "respond", y, "income_decile") : null;
-  const polSuits = polDecR ? approxSuits(polDecR) : null;
-  const suitsBase = D.headline.suits_index;
+  const polSuits = polDecR ? approxSuits(polDecR, y) : null;
+  const suitsBase = polDecR ? approxSuits(polDecR.map(r => ({ ...r, avg_change: 0 })), y) : D.headline.suits_index;   // same footing as the policy figure
   const suitsTile = polSuits != null
     ? [`${polSuits.toFixed(2)}`, `Suits index under policy (current law: ${suitsBase.toFixed(2)}; change: ${(polSuits - suitsBase) >= 0 ? "+" : ""}${(polSuits - suitsBase).toFixed(2)}). Below 0 = regressive.`, "fig-suits"]
     : [`${suitsBase.toFixed(2)}`, "Suits index — current law (policy unchanged from baseline)", "fig-suits"];
@@ -4414,7 +4417,14 @@ function renderA3() {
   if (f.tot < 0) $("a3-who-intro").textContent += ` Counting renters, who get nothing directly, the average household in the bottom tenth gets ${usd(Math.abs(perHH[0]))} a year and in the top tenth ${usd(Math.abs(perHH[9]))}` +
     (perHH[0] < 0 ? `, ${(perHH[9] / perHH[0]).toFixed(1)} times as much.` : ".") +
     ` The top tenth gets ${pct(D[9].total_change / f.tot, 0)} of the cut, with ${pct(incSh[9], 0)} of household income; the bottom tenth gets ${pct(D[0].total_change / f.tot, 0)}.`;
-  $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income and households are for 2026.";
+  // Suits index of owner property tax, from income tenths (current law on the same footing, so the change is like for like)
+  const sCur = approxSuits(D.map(r => ({ ...r, avg_change: 0 })), y), sNew = approxSuits(D, y);
+  $("a3-suits").innerHTML = sCur == null || sNew == null ? "" : [
+    [sNew.toFixed(2), `Suits index of homeowners' property tax under Amendment 3, ${y}. Below 0 = regressive: lower-income owners pay a larger share of their income.`, "fig-suits"],
+    [sCur.toFixed(2), "Suits index under current law, on the same footing"],
+    [signed(sNew - sCur, v => v.toFixed(2)), `Change: ${sNew - sCur > 0.005 ? "less regressive" : sNew - sCur < -0.005 ? "more regressive" : "about the same"}`],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  $("a3-who-note").textContent = "The Suits index runs from −1 (fully regressive) to +1 (fully progressive), 0 = a flat share of income; here it is computed from income tenths of owners. Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income and households are for 2026.";
   (function () {
     const vals = D.map(r => r.avg_change).concat(perHH, [0]);
     const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
