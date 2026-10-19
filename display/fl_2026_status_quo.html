@@ -131,6 +131,17 @@ tbody tr.total td { font-weight: 700; border-bottom: 0; background: var(--accent
 .reimb input[type=range] { width: 100%; accent-color: var(--neutral); }
 .tablebox.tall { max-height: 520px; overflow-y: auto; }
 .sub-h { margin: 18px 0 8px; }
+.about-link { color: var(--muted); font-size: 15px; }
+.about-list { margin: 0; padding-left: 18px; display: grid; gap: 10px; font-size: 15.5px; max-width: 86ch; }
+.about-list b { color: var(--ink); }
+.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+.steps li { counter-increment: step; background: var(--surface); border-radius: 14px; padding: 16px 16px 18px; display: grid; gap: 6px; align-content: start; position: relative; }
+.steps li::before { content: counter(step); font: 700 13px/1 var(--body); color: var(--bg); background: var(--accent); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; }
+.steps li b { color: var(--ink); font-size: 16px; }
+.steps li span { color: var(--muted); font-size: 14px; line-height: 1.45; }
+table.wrap-cells td, table.wrap-cells th { white-space: normal; text-align: left; vertical-align: top; }
+table.wrap-cells td { font-family: var(--body); }
 .a3-bar { display: flex; flex-wrap: wrap; gap: 14px 32px; padding: 14px 0; border-block: 1px solid var(--rule); background: var(--bg); }
 @media (min-width: 900px) { .a3-bar { position: sticky; top: 0; z-index: 5; } }
 .a3-ctl { display: grid; gap: 6px; }
@@ -190,7 +201,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <div class="hero">
   <div class="hero-in">
     <nav class="views" aria-label="Views" id="views">
-      <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button><button data-v="a3" id="view-btn-a3">Amendment 3</button>
+      <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button><button data-v="a3" id="view-btn-a3">Amendment 3</button><button data-v="about" id="view-btn-about">About the model</button>
     </nav>
     <div class="eyebrow" id="eyebrow">Florida · Tax year 2026 · Current law</div>
     <h1 id="h1">Who pays Florida's property tax on owner-occupied homes</h1>
@@ -242,24 +253,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     <div class="tablebox"><table id="t-break"></table></div>
   </section>
 
-  <section class="notes">
-    <div>
-      <h3>How reliable these numbers are</h3>
-      <ul id="reliability"></ul>
-    </div>
-    <div>
-      <h3>Method and sources</h3>
-      <ul>
-        <li><b>Households:</b> Census Bureau American Community Survey, 2024 one-year microdata for Florida, with incomes and home values brought forward to 2026.</li>
-        <li><b>Tax law:</b> 2026 Florida assessment and exemption rules (homestead exemptions, Save Our Homes and the 10% non-homestead cap, senior, veteran and disability exemptions), each tied to its statute in the model's rules file.</li>
-        <li><b>Checked against the property rolls:</b> on 9.85 million residential parcels in the 2026 Department of Revenue rolls, the rules reproduce the official taxable value exactly for 99.4%. Modelled homestead tax averages within 1% of the rolls, and within 4% for every home-value band from $100,000 to $2 million.</li>
-        <li><b>Save Our Homes:</b> how far each home's assessed value sits below market value is drawn from real homestead parcels in the same area and value range, matched to owners using how long they have lived there and the tax they report.</li>
-        <li><b>Rates:</b> 2026 school rates from the state's required local effort; county rates as adopted where collected, otherwise estimated from Florida's rate-setting rules; 2026 city rates for 91 cities (from county property appraisers and city records), other cities at 2025 levels.</li>
-        <li><b>Income groups:</b> tenths of all Florida households by 2026 household income, renters included, so the groups will not move when renters are added.</li>
-        <li><b>Margins of error:</b> 90% intervals from the survey's 80 replicate weights.</li>
-      </ul>
-    </div>
-  </section>
+  <p class="about-link">Data sources, margins of error and how the model works: <a href="#about" data-goto="about">About the model →</a></p>
 
   <details id="view-proj" class="outlook">
     <summary>
@@ -323,24 +317,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <div class="tablebox"><table id="p-t-econ"></table></div>
       </section>
 
-      <section class="notes">
-        <div>
-          <h3>How to read the range</h3>
-          <ul id="p-reliability"></ul>
-        </div>
-        <div>
-          <h3>Method and sources</h3>
-          <ul>
-            <li><b>Current law only.</b> Florida's assessment rules, exemptions and rate limits as written for 2026, with the Save Our Homes cap following inflation and the indexed exemption amounts growing with it. No future law changes, including Amendment 3 on the November 2026 ballot.</li>
-            <li><b>Home values:</b> the state Revenue Estimating Conference's August 2026 forecast for existing residential property through 2032, then easing to the Florida Economic Estimating Conference's sale-price path (about 2% a year) by 2036.</li>
-            <li><b>Incomes and households:</b> Florida Economic Estimating Conference (July 2026) wage, income and household forecasts; Social Security and pensions grow with inflation (CBO).</li>
-            <li><b>Sales and resets:</b> homes change hands about 5.5% a year (homesteads), less often the larger their Save Our Homes savings, calibrated to the state's forecast of homestead assessment differences; deaths of owners living without a spouse are part of this. 14% of homestead sellers carry over savings (portability).</li>
-            <li><b>Tax rates:</b> each county, city and school district's yearly rate change is drawn from what Florida governments of the same kind did in years with similar growth (1996-2025), within the 2026 law's limit of 110% of the rolled-back rate.</li>
-            <li><b>New owners:</b> owner households grow with Florida's household forecast; new owners live in new homes taxed on full value, placed where new construction happens.</li>
-            <li><b>Population:</b> owners shift toward older ages following Florida's official population projections by age.</li>
-          </ul>
-        </div>
-      </section>
+      <p class="about-link">How the range is built, and the assumptions behind the projections: <a href="#about" data-goto="about">About the model →</a></p>
     </div>
   </details>
   </div>
@@ -465,29 +442,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="tablebox tall"><table id="pol-t-gov"></table></div>
     </section>
 
-    <section class="notes">
-      <div>
-        <h3>How to read this</h3>
-        <ul>
-          <li><b>Revenue lost</b> is property tax on all property, homes, rentals, second homes and businesses, compared with current law, with every government's tax rate where it would be under current law (how the state's economists score tax changes). Tax on property other than owner-occupied homes is estimated from each county's 2026 tax roll and average rates. "After governments respond" nets out the rate increases governments have made in similar years.</li>
-          <li><b>People respond to bigger exemptions.</b> When a policy raises what an owner saves by claiming the homestead exemption, some owner-occupiers who could claim but don't start claiming (central assumption: 20% of them at a $2,500-a-year gain, phased in over two years, from Texas's response to its 2023 exemption increase), and some out-of-state owners of Florida second homes make Florida their legal residence (5% at that gain, over three years; under Amendment 3 they wait four years for the full exemption). Florida's 2008 increase showed no visible jump in claims, so these shares are assumptions. The revenue section shows how much they add; the state's estimate leaves them out.</li>
-          <li><b>Two versions of every result.</b> "Governments respond": counties, cities and school districts set rates the way Florida governments have in comparable years since the 1990s, within the 2026 limit of 110% of the rolled-back rate; when a policy shrinks their tax base, some raise rates, so owners who don't benefit can pay more. "No response": rates follow exactly the path they would under current law, showing the policy's direct effect. Tick "Localities replace lost revenue" for a third version: every county, city and school district resets its rate so it raises the same revenue as under current law, so a tax cut for some owners is paid for by higher rates on everyone else in that place (school districts keep the state-set required rate and adjust their local part). The slider sets how much of the lost revenue the state pays back to local governments, as Maine does for its homestead exemption; local rates rise only to cover the rest. With this ticked, section 4 lists every county, city and school district's rate.</li>
-          <li><b>One change at a time.</b> Each slider changes one number (or a set that moves together), with everything else at current law. The listed policies combine changes. Free combinations need a live engine, planned for later.</li>
-          <li><b>Revenue replaced is a check, not a forecast.</b> It shows who would pay if no local government cut spending. Each government's tax base follows its homesteads in the model and its other property from the 2026 rolls (including the non-homestead assessment caps). By default it respects the Florida Constitution's 10-mill caps on county general levies and city levies: a government at the cap can't raise more, and what it can't raise stays lost (section 5 lists them). Untick the cap to see what full replacement would take. County taxing units (MSTUs) and special districts have their own limits, not modelled; they rise in full. Florida law lets a government replace lost revenue by majority vote (the rolled-back rate is last year's taxes over this year's value; ch. 2026-240), so the 10-mill cap is the binding limit. "The state offsets fiscally constrained counties" applies the formula the state has used for earlier amendments (ss. 218.12, 218.125, 218.136): 95% of each of the 29 counties' lost taxable value times the lower of its 2026 or current rate, if the Legislature funds it.</li>
-          <li><b>Big policies are outside history.</b> Rate responses are drawn from ordinary years; for policies that remove most of a government's homestead base, treat the "respond" figures as indicative only.</li>
-          <li><b>Owners only.</b> Renters' share through rent isn't modelled yet. "About the same" means within $10 a year.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Method</h3>
-        <ul>
-          <li>Both runs use the same households, economy (central forecast) and random draws, so differences come from the policy.</li>
-          <li>Changes start in tax year 2027. Indexed amounts keep growing with inflation from the new value.</li>
-          <li>Income-tested exemptions are re-tested each year; newly eligible households claim at today's rates where their county or city offers the exemption.</li>
-          <li>Income deciles are 2026 groups of all Florida households.</li>
-        </ul>
-      </div>
-    </section>
+    <p class="about-link">“About the same” means within $10 a year. How rate responses, revenue replacement and behaviour are modelled: <a href="#about" data-goto="about">About the model →</a></p>
     </div>
   </div>
 
@@ -576,19 +531,77 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
           <div class="tablebox"><table id="a3-t-groups"></table></div>
         </div>
       </details>
-      <details class="more">
-        <summary>Method and notes</summary>
-        <div class="more-body">
-          <ul>
-            <li><b>Compared with current law</b> on the same households, economy (central forecast) and random draws, so differences come from the amendment. The model covers parts 1 to 3.</li>
-            <li><b>Rates unchanged</b> is how the state's economists score tax changes. <b>Localities replace the revenue</b>: every county, city and school district resets its rate to raise what it would under current law, up to the Constitution's 10-mill cap on county general and city levies, with no state reimbursement. Other options (reimbursement, no cap, a state offset for small counties) are on the Policy comparisons tab.</li>
-            <li><b>Other property</b> (rentals, second homes, businesses) is estimated from each county's 2026 tax roll and average rates.</li>
-            <li><b>People respond to the bigger exemption:</b> some owners who don't claim the homestead exemption start to (central assumption from Texas's 2023 increase), and some owners of second homes make Florida their legal residence. The state's estimate leaves these out.</li>
-            <li><b>New residents:</b> the Census survey's share of recent buyers who came from another state or abroad (23%, more at older ages), plus newcomers who rent first and buy later.</li>
-            <li><b>Owners only.</b> What renters pay through rent is not modelled.</li>
-          </ul>
-        </div>
-      </details>
+    </section>
+    <p class="about-link">Method, sources and limits: <a href="#about" data-goto="about">About the model →</a></p>
+  </div>
+
+  <div id="view-about" class="wrap-inner" hidden>
+    <section>
+      <div class="eyebrow">How it works</div>
+      <h2>From survey households to tax bills</h2>
+      <p>The model applies Florida's property tax law to a representative sample of the state's owner households, then compares each policy with current law on the same households, economy and random draws, so the differences come from the policy alone.</p>
+      <ol class="steps">
+        <li><b>Households</b><span>Census survey of Florida households (2024), brought forward to 2026.</span></li>
+        <li><b>Matched to the rolls</b><span>Homestead status, home values, Save Our Homes discounts and exemptions drawn so every area matches the 2026 parcel rolls.</span></li>
+        <li><b>Tax rules</b><span>Assessment caps and exemptions from the statutes, in a rules file with a citation for each number.</span></li>
+        <li><b>Local tax rates</b><span>Each owner's real tax district: school, county, city and special district rates.</span></li>
+        <li><b>Projections and policies</b><span>Year by year to 2036: values, sales, new homes, and how governments set rates; then each policy against current law.</span></li>
+      </ol>
+    </section>
+
+    <section>
+      <div class="eyebrow">Checks</div>
+      <h2>How well it matches official figures</h2>
+      <div class="tablebox"><table id="about-checks"></table></div>
+      <ul class="about-list" id="reliability"></ul>
+    </section>
+
+    <section>
+      <div class="eyebrow">Data</div>
+      <h2>Sources</h2>
+      <div class="tablebox"><table class="wrap-cells">
+        <thead><tr><th>Source</th><th>Used for</th></tr></thead>
+        <tbody>
+          <tr><td>Census Bureau, American Community Survey 2024 one-year microdata (Florida)</td><td>Households: income, age, home value, reported tax, time in home, where they moved from</td></tr>
+          <tr><td>Florida Department of Revenue, 2026 parcel rolls (all 67 counties; 29 final, 38 preliminary)</td><td>9.9 million residential parcels: homestead counts, values, assessed-to-market ratios, exemptions, tax districts; tax bases for rentals and businesses</td></tr>
+          <tr><td>Florida Statutes and Constitution (2026), Florida Administrative Code 12D</td><td>Assessment and exemption rules; Amendment 3 from CS/HJR 1-F</td></tr>
+          <tr><td>Department of Revenue tax rate tables (2025), Department of Education school rates (2025-26 and 2026), adopted 2026 county and city rates</td><td>District tax rates</td></tr>
+          <tr><td>Revenue Estimating Conference (Ad Valorem, August 2026; Amendment 3, July 10, 2026)</td><td>Home and property value growth; the state's Amendment 3 estimate</td></tr>
+          <tr><td>Florida Economic and Demographic Estimating Conferences (2026); Congressional Budget Office</td><td>Income, household and population growth; inflation</td></tr>
+          <tr><td>State Annual Financial Reports, fiscal year 2023-24</td><td>County and city budgets, for scale</td></tr>
+          <tr><td>Texas homestead claims, 2022-2025</td><td>How many owners start claiming when an exemption grows</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Assumptions</div>
+      <h2>Key assumptions</h2>
+      <ul class="about-list">
+        <li><b>Three ways local governments can respond.</b> <i>Rates unchanged</i> (or "no response"): every rate follows its current-law path; this is how the state's economists score tax changes. <i>Governments respond</i>: rates change the way Florida counties, cities and school districts changed them in comparable years since the 1990s, within the limit of 110% of the rolled-back rate. <i>Localities replace lost revenue</i>: each government resets its rate to raise what it would under current law, a check rather than a forecast. It respects the Constitution's 10-mill cap on county general and city levies (what a capped government can't raise stays lost); county taxing units and special districts rise in full. Options add state reimbursement or the state's usual offset for 29 small, rural counties (s. 218.125).</li>
+        <li><b>People respond to bigger exemptions.</b> Some owners who could claim the homestead exemption but don't start claiming (20% of them at a $2,500-a-year gain, phased in over two years, from Texas's 2023 increase), and some out-of-state owners of second homes make Florida their legal residence (5% at that gain). Florida's 2008 increase showed no visible jump, so these are assumptions; the state's estimates leave them out.</li>
+        <li><b>New residents</b> (Amendment 3): the Census share of recent buyers who came from another state or abroad (23%, more at older ages), plus newcomers who rent first (20% of arriving renters buy within five years).</li>
+        <li><b>Values and incomes:</b> the Revenue Estimating Conference's August 2026 forecasts through 2032, then easing to about 2% a year by 2036; incomes and households from the state's July 2026 forecasts; inflation from the Congressional Budget Office.</li>
+        <li><b>Sales and new homes:</b> homesteads change hands about 5.5% a year, less often the bigger their Save Our Homes savings, and 14% of sellers carry savings to their next home. New owners live in new homes taxed at full value, placed where construction happens. Owners shift older with the state's population projections.</li>
+        <li><b>Other property</b> (rentals, second homes, businesses): each county's tax base from the 2026 rolls, with the assessment caps applied in bands, grown with the state's forecasts and taxed at the county's average rates.</li>
+        <li><b>Income groups</b> are tenths of all Florida households by 2026 income, renters included.</li>
+      </ul>
+      <ul class="about-list" id="p-reliability"></ul>
+    </section>
+
+    <section>
+      <div class="eyebrow">Limits</div>
+      <h2>What the model doesn't cover</h2>
+      <ul class="about-list">
+        <li><b>Renters.</b> What renters pay through rent isn't modelled, so renters appear to pay nothing; nor are mobile-home owners on rented lots.</li>
+        <li><b>Fees.</b> Non-ad valorem assessments (fire, waste, stormwater) are on tax bills but aren't property tax, and are left out.</li>
+        <li><b>Business property</b> counts toward revenue and tax bases but not as households.</li>
+        <li><b>Other responses:</b> home prices adjusting to tax changes, people moving because of taxes, builders responding, and governments cutting spending.</li>
+        <li><b>Household details are estimates.</b> Homestead status, Save Our Homes discount and tax district are right for groups, not for any single household. Small rural counties share survey areas, so county results are reliable only for larger counties.</li>
+        <li><b>Income is one year's income</b>, not wealth: retirees with paid-off homes and little income look poorer than they are.</li>
+        <li><b>Some 2026 rates are 2025 rates:</b> cities without a collected 2026 rate, and special districts.</li>
+        <li><b>Amendment 3:</b> the limits on how counties and cities spend property tax, and local options (raising the exemption further, shortening the wait for new residents from 2030), are not modelled.</li>
+      </ul>
     </section>
   </div>
 
@@ -4217,6 +4230,13 @@ onTab("a3-court", d => A3.court = d.k);
 onTab("a3-gov-tabs", d => A3.gov = d.g);
 onTab("a3-group-tabs", d => A3.group = d.g);
 
+// the model's static Amendment 3 score vs the state's estimate, 2027-2030 (e.g. "7%–20% lower")
+function recGap() {
+  const run = G.runs.a3_full, st = y => (run.none_static || run.none).yearly.find(r => r.year === y).all, d = y => st(y) / (REC.by_roll_year[y] * 1e6) - 1;
+  const lo = Math.min(d(2027), d(2030)), hi = Math.max(d(2027), d(2030));
+  return hi < 0 ? `${pct(-hi, 0)}–${pct(-lo, 0)} lower` : lo > 0 ? `${pct(lo, 0)}–${pct(hi, 0)} higher` : "within a few percent";
+}
+
 // key numbers: the amendment as written
 (function () {
   const run = G.runs.a3_full; if (!run) return;
@@ -4229,10 +4249,7 @@ onTab("a3-group-tabs", d => A3.group = d.g);
     [usd(hh("newcomer") - hh("floridian")), "More a year paid for four years by a buyer moving from another state than by a Florida buyer of the same Cape Coral house"],
     [bnB(oth), "More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue"],
   ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  const st = y => (run.none_static || run.none).yearly.find(r => r.year === y).all, d = y => st(y) / (REC.by_roll_year[y] * 1e6) - 1;
-  const lo = Math.min(d(2027), d(2030)), hi = Math.max(d(2027), d(2030));
-  $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect; scored the same way, this model is ` +
-    (hi < 0 ? `${pct(-hi, 0)}–${pct(-lo, 0)} lower` : lo > 0 ? `${pct(lo, 0)}–${pct(hi, 0)} higher` : "within a few percent") + " for 2027–2030.";
+  $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect; scored the same way, this model is ${recGap()} for 2027–2030.`;
 })();
 
 function renderA3() {
@@ -4355,11 +4372,31 @@ function renderA3Ex(year, mode) {
     "Above $250,000 of assessed value every homestead gets the same extra exemption, so savings depend on local tax rates more than on home value. Rent effects are not modelled.";
 }
 
+// ---------------- About the model ----------------
+const VAL = {"parcels_roll": 5201638, "owners_model": 5150925.0054236865, "roll_parcels_with_rate": 0.9982395929897467, "just_value_roll": 2364293707840.0, "just_value_model": 2337469411837.0117, "school_taxable_roll": 1383143701796.0, "school_taxable_model": 1377416357644.3896, "nonschool_taxable_roll": 1249142951285.0, "nonschool_taxable_model": 1241916006990.3345, "tax_roll": 21097949265.49496, "tax_model": 20946862482.488995, "avg_tax_roll": 4056.020289280985, "avg_tax_model": 4066.6215214612744, "median_tax_roll": 2738.8302876, "median_tax_model": 2733.694654939732};   // homestead check against the parcel rolls (scripts/validate_2026.py), 2025 rates on both sides
+(function () {
+  const B = v => "$" + (v / 1e9).toLocaleString("en-US", { maximumFractionDigits: 0 }) + " billion";
+  const rows = [
+    ["Taxable value of each of 9.85 million residential parcels", "Exact for 99.4%", "Department of Revenue 2026 rolls"],
+    ["Average homestead tax", usd(VAL.avg_tax_model), `${usd(VAL.avg_tax_roll)} (parcel rolls)`],
+    ["Median homestead tax", usd(VAL.median_tax_model), `${usd(VAL.median_tax_roll)} (parcel rolls)`],
+    ["Homestead taxable value, county and city taxes", B(VAL.nonschool_taxable_model), `${B(VAL.nonschool_taxable_roll)} (parcel rolls)`],
+    ["County government tax paid by homesteads, 66 counties", "1.05 times official", "Official levies times homestead share"],
+    ["Statewide taxable value, 2026", "$3,965 billion school, $3,673 billion county", "$3,966 billion, $3,673 billion (Revenue Estimating Conference)"],
+    ["Projected taxable value, 2031", "School 0.6% and county 1.9% above", "Revenue Estimating Conference, August 2026"],
+    ["Amendment 3 revenue lost, 2027–2030, scored statically", recGap(), "Revenue Estimating Conference, July 10, 2026"],
+  ];
+  $("about-checks").innerHTML = "<thead><tr><th>What's compared</th><th>Model</th><th>Official figure</th></tr></thead><tbody>" +
+    rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") + "</tbody>";
+  $("about-checks").classList.add("wrap-cells");
+})();
+
 // views: 2026 today / policy comparisons / Amendment 3
 const VIEWS = {
   today: { eyebrow: "Florida · Tax year 2026 · Current law", h1: "Florida's property tax falls hardest on low-income homeowners" },
   policy: { eyebrow: "Florida · Policy comparisons · From 2027", h1: "What a property tax policy would change, and for whom" },
   a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom" },
+  about: { eyebrow: "Florida Property Tax Model", h1: "About the model" },
 };
 const LEDE_TODAY = $("lede").textContent;
 function showView(v) {
@@ -4367,9 +4404,11 @@ function showView(v) {
   $("view-today").hidden = v !== "today";
   $("view-policy").hidden = v !== "policy";
   $("view-a3").hidden = v !== "a3";
+  $("view-about").hidden = v !== "about";
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1;
-  $("lede").textContent = v === "today" ? LEDE_TODAY : v === "a3" ?
+  $("lede").textContent = v === "today" ? LEDE_TODAY : v === "about" ?
+    "How the results are built, how well they match official figures, the assumptions behind them and what they leave out." : v === "a3" ?
     "Who gains and who pays under the proposed constitutional amendment, compared with current law on the same households and economy." :
     "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
   if (v === "policy") { setLever(POL.lever, true); renderPolicy(); }
@@ -4377,5 +4416,7 @@ function showView(v) {
   document.querySelectorAll(".slider-scale").forEach(placeTicks);   // sizes need the view visible
 }
 $("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
-showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : "today");
+document.addEventListener("click", e => { const a = e.target.closest("[data-goto]"); if (!a) return;
+  e.preventDefault(); showView(a.dataset.goto); window.scrollTo(0, 0); });
+showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : location.hash === "#about" ? "about" : "today");
 </script>
