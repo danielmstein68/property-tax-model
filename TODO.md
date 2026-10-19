@@ -28,7 +28,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 **Amendment 3 and policy**
 - [ ] Local options: counties/cities raising the exemption; shortening the newcomer wait from 2030.
 - [ ] County map of revenue lost and rate increases.
-- [ ] (optional) Compare county/city/special district impacts with REC's per-government tables (impact0710.pdf pages 5-18).
+- [x] Compare county/city/special district impacts with REC's per-government tables (2026-10-19, `scripts/check_rec_by_government.py`, `docs/checks/a3_rec_by_government.md`): county + special districts within 2% in 2027-28; cities a third lower.
+- [ ] Fix the county/city split of losses: model city losses are ~33-45% below REC (homestead value in cities 42% vs roll 45%; non-owner property taxed at county-average city rates though 52% of non-homestead residential value is in cities; check which levies `district_classes` counts as municipal: city-dependent districts, debt service).
 - [x] Tests for 2026-10-15/16 features: `tests/test_policy_features.py` (10 tests; suite 78).
 
 **Bigger**

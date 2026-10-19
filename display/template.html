@@ -554,6 +554,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="eyebrow">Checks</div>
       <h2>How well it matches official figures</h2>
       <div class="tablebox"><table id="about-checks"></table></div>
+      <p class="muted-p" id="about-gov-note"></p>
       <ul class="about-list" id="reliability"></ul>
     </section>
 
@@ -1396,6 +1397,7 @@ function renderA3Ex(year, mode) {
 }
 
 // ---------------- About the model ----------------
+const A3GOV = __A3GOV__;   // Amendment 3 by type of government vs the state (scripts/check_rec_by_government.py)
 const VAL = __VAL__;   // homestead check against the parcel rolls (scripts/validate_2026.py), 2025 rates on both sides
 (function () {
   const B = v => "$" + (v / 1e9).toLocaleString("en-US", { maximumFractionDigits: 0 }) + " billion";
@@ -1408,10 +1410,18 @@ const VAL = __VAL__;   // homestead check against the parcel rolls (scripts/vali
     ["Statewide taxable value, 2026", "$3,965 billion school, $3,673 billion county", "$3,966 billion, $3,673 billion (Revenue Estimating Conference)"],
     ["Projected taxable value, 2031", "School 0.6% and county 1.9% above", "Revenue Estimating Conference, August 2026"],
     ["Amendment 3 revenue lost, 2027–2030, scored statically", recGap(), "Revenue Estimating Conference, July 10, 2026"],
+    ...[["county", "Amendment 3: county governments and special districts, 2027–2030"], ["city", "Amendment 3: cities, 2027–2030"]].map(([k, l]) => {
+      const g = A3GOV.rows.filter(r => r.year <= 2030).map(r => r[`model_${k}`] / r[`rec_${k}`] - 1), lo = Math.min(...g), hi = Math.max(...g);
+      const f = v => `${pct(Math.abs(v), 0)} ${v < 0 ? "lower" : "higher"}`;
+      return [l, lo * hi < 0 ? `${f(hi)} to ${f(lo)}` : hi < 0 ? `${pct(-hi, 0)}–${pct(-lo, 0)} lower` : `${pct(lo, 0)}–${pct(hi, 0)} higher`, "Revenue Estimating Conference by type of government"];
+    }),
   ];
   $("about-checks").innerHTML = "<thead><tr><th>What's compared</th><th>Model</th><th>Official figure</th></tr></thead><tbody>" +
     rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") + "</tbody>";
   $("about-checks").classList.add("wrap-cells");
+  const r27 = A3GOV.rows.find(r => r.year === 2027);
+  $("about-gov-note").textContent = `Split by type of government, the model's Amendment 3 losses for counties and special districts match the state's closely at first ($${(r27.model_county / 1e9).toFixed(2)} billion vs $${(r27.rec_county / 1e9).toFixed(2)} billion in 2027), but its city losses are about a third lower ($${(r27.model_city / 1e9).toFixed(2)} billion vs $${(r27.rec_city / 1e9).toFixed(2)} billion). ` +
+    "The totals are close, so this is mainly how the loss is divided, not its size: the model places slightly less homestead value inside cities than the rolls do (42% vs 45%), taxes rentals and businesses at county-average city rates though more of that property is in cities, and may count some city-related levies in the county column. This is on the list to fix. From 2029 the model's county losses also run below the state's, as its statewide total does.";
 })();
 
 // views: 2026 today / policy comparisons / Amendment 3

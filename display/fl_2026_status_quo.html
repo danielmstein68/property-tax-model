@@ -554,6 +554,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="eyebrow">Checks</div>
       <h2>How well it matches official figures</h2>
       <div class="tablebox"><table id="about-checks"></table></div>
+      <p class="muted-p" id="about-gov-note"></p>
       <ul class="about-list" id="reliability"></ul>
     </section>
 
@@ -4353,6 +4354,51 @@ function renderA3Ex(year, mode) {
 }
 
 // ---------------- About the model ----------------
+const A3GOV = {
+ "source": "impact0710.pdf, Addendum 1 (July 10, 2026)",
+ "rows": [
+  {
+   "year": 2027,
+   "model_county": 3707238111,
+   "model_city": 873935106,
+   "rec_county": 3634821544,
+   "rec_city": 1294722333,
+   "rec_special": 432803391
+  },
+  {
+   "year": 2028,
+   "model_county": 6357027436,
+   "model_city": 1489648478,
+   "rec_county": 6438415747,
+   "rec_city": 2276076774,
+   "rec_special": 775209713
+  },
+  {
+   "year": 2029,
+   "model_county": 6660284200,
+   "model_city": 1560297170,
+   "rec_county": 7122662297,
+   "rec_city": 2525200452,
+   "rec_special": 855990534
+  },
+  {
+   "year": 2030,
+   "model_county": 6957190875,
+   "model_city": 1624717048,
+   "rec_county": 7903924519,
+   "rec_city": 2806233229,
+   "rec_special": 949408896
+  },
+  {
+   "year": 2031,
+   "model_county": 7345897654,
+   "model_city": 1707974477,
+   "rec_county": 8733713323,
+   "rec_city": 3101018335,
+   "rec_special": 1051185290
+  }
+ ]
+};   // Amendment 3 by type of government vs the state (scripts/check_rec_by_government.py)
 const VAL = {"parcels_roll": 5201638, "owners_model": 5150925.0054236865, "roll_parcels_with_rate": 0.9982395929897467, "just_value_roll": 2364293707840.0, "just_value_model": 2337469411837.0117, "school_taxable_roll": 1383143701796.0, "school_taxable_model": 1377416357644.3896, "nonschool_taxable_roll": 1249142951285.0, "nonschool_taxable_model": 1241916006990.3345, "tax_roll": 21097949265.49496, "tax_model": 20946862482.488995, "avg_tax_roll": 4056.020289280985, "avg_tax_model": 4066.6215214612744, "median_tax_roll": 2738.8302876, "median_tax_model": 2733.694654939732};   // homestead check against the parcel rolls (scripts/validate_2026.py), 2025 rates on both sides
 (function () {
   const B = v => "$" + (v / 1e9).toLocaleString("en-US", { maximumFractionDigits: 0 }) + " billion";
@@ -4365,10 +4411,18 @@ const VAL = {"parcels_roll": 5201638, "owners_model": 5150925.0054236865, "roll_
     ["Statewide taxable value, 2026", "$3,965 billion school, $3,673 billion county", "$3,966 billion, $3,673 billion (Revenue Estimating Conference)"],
     ["Projected taxable value, 2031", "School 0.6% and county 1.9% above", "Revenue Estimating Conference, August 2026"],
     ["Amendment 3 revenue lost, 2027–2030, scored statically", recGap(), "Revenue Estimating Conference, July 10, 2026"],
+    ...[["county", "Amendment 3: county governments and special districts, 2027–2030"], ["city", "Amendment 3: cities, 2027–2030"]].map(([k, l]) => {
+      const g = A3GOV.rows.filter(r => r.year <= 2030).map(r => r[`model_${k}`] / r[`rec_${k}`] - 1), lo = Math.min(...g), hi = Math.max(...g);
+      const f = v => `${pct(Math.abs(v), 0)} ${v < 0 ? "lower" : "higher"}`;
+      return [l, lo * hi < 0 ? `${f(hi)} to ${f(lo)}` : hi < 0 ? `${pct(-hi, 0)}–${pct(-lo, 0)} lower` : `${pct(lo, 0)}–${pct(hi, 0)} higher`, "Revenue Estimating Conference by type of government"];
+    }),
   ];
   $("about-checks").innerHTML = "<thead><tr><th>What's compared</th><th>Model</th><th>Official figure</th></tr></thead><tbody>" +
     rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") + "</tbody>";
   $("about-checks").classList.add("wrap-cells");
+  const r27 = A3GOV.rows.find(r => r.year === 2027);
+  $("about-gov-note").textContent = `Split by type of government, the model's Amendment 3 losses for counties and special districts match the state's closely at first ($${(r27.model_county / 1e9).toFixed(2)} billion vs $${(r27.rec_county / 1e9).toFixed(2)} billion in 2027), but its city losses are about a third lower ($${(r27.model_city / 1e9).toFixed(2)} billion vs $${(r27.rec_city / 1e9).toFixed(2)} billion). ` +
+    "The totals are close, so this is mainly how the loss is divided, not its size: the model places slightly less homestead value inside cities than the rolls do (42% vs 45%), taxes rentals and businesses at county-average city rates though more of that property is in cities, and may count some city-related levies in the county column. This is on the list to fix. From 2029 the model's county losses also run below the state's, as its statewide total does.";
 })();
 
 // views: 2026 today / policy comparisons / Amendment 3
