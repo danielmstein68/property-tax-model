@@ -147,7 +147,14 @@ table.wrap-cells td { font-family: var(--body); }
 @media (min-width: 900px) { .a3-bar { position: sticky; top: 0; z-index: 5; } }
 .a3-ctl { display: grid; gap: 6px; }
 .a3 .figures .fig .l { font-size: 14.5px; }
-#a3-c-win svg { max-width: 1040px; }
+.wl { display: grid; gap: 6px; }
+.wl-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13.5px; }
+.wl-lab { color: var(--muted); text-align: right; }
+.wl-all .wl-lab { color: var(--ink); font-weight: 700; }
+.wl-all { margin-top: 4px; }
+.wl-bar { display: flex; height: 26px; border-radius: 4px; overflow: hidden; }
+.wl-bar i { display: flex; align-items: center; justify-content: center; font: 600 12.5px var(--body); font-style: normal; color: var(--bar-ink); white-space: nowrap; overflow: hidden; }
+@media (max-width: 560px) { .wl-row { grid-template-columns: 64px minmax(0, 1fr); font-size: 12.5px; } }
 @media (max-width: 560px) { .a3 .figures { grid-template-columns: 1fr; } }
 tbody tr.sel td { background: var(--accent-soft); font-weight: 700; }
 .more-list { gap: 0; }
@@ -487,7 +494,6 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="eyebrow">Homeowners</div>
       <h2 id="a3-who-title">Who pays less and who pays more</h2>
       <p id="a3-who-intro"></p>
-      <div class="figures" id="a3-suits"></div>
       <div class="charts">
         <div class="chart">
           <h3>Average change per household, by income</h3>
@@ -4418,14 +4424,7 @@ function renderA3() {
   if (f.tot < 0) $("a3-who-intro").textContent += ` Counting renters, who get nothing directly, the average household in the bottom tenth gets ${usd(Math.abs(perHH[0]))} a year and in the top tenth ${usd(Math.abs(perHH[9]))}` +
     (perHH[0] < 0 ? `, ${(perHH[9] / perHH[0]).toFixed(1)} times as much.` : ".") +
     ` The top tenth gets ${pct(D[9].total_change / f.tot, 0)} of the cut, with ${pct(incSh[9], 0)} of household income; the bottom tenth gets ${pct(D[0].total_change / f.tot, 0)}.`;
-  // Suits index of owner property tax, from income tenths (current law on the same footing, so the change is like for like)
-  const sCur = approxSuits(D.map(r => ({ ...r, avg_change: 0 })), y), sNew = approxSuits(D, y);
-  $("a3-suits").innerHTML = sCur == null || sNew == null ? "" : [
-    [sNew.toFixed(2), `Suits index of homeowners' property tax under Amendment 3, ${y}. Below 0 = regressive: lower-income owners pay a larger share of their income.`, "fig-suits"],
-    [sCur.toFixed(2), "Suits index under current law, on the same footing"],
-    [signed(sNew - sCur, v => v.toFixed(2)), `Change: ${sNew - sCur > 0.005 ? "less regressive" : sNew - sCur < -0.005 ? "more regressive" : "about the same"}`],
-  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  $("a3-who-note").textContent = "The Suits index runs from −1 (fully regressive) to +1 (fully progressive), 0 = a flat share of income; here it is computed from income tenths of owners. Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
+  $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
   (function () {
     const vals = D.map(r => r.avg_change).concat(perHH, [0]);
     const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -4444,15 +4443,11 @@ function renderA3() {
     const CATS = [["gain_more_5pct", "Over 5% less", "var(--gain2)"], ["gain_less_5pct", "Up to 5% less", "var(--gain1)"],
       ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Over 5% more", "var(--lose2)"]];
     $("a3-win-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
-    const rows = D.concat([A]), Wb = 1040, rowH = 17, gap = 5, Lb = 62, Rb = 8, Hb = 6 + rows.length * (rowH + gap) + 4, sb = svg(Wb, Hb);
-    sb.setAttribute("aria-label", "Share of owners paying less or more by income tenth");
-    rows.forEach((r, i) => { const y0 = 6 + i * (rowH + gap); let acc = 0;
-      el(sb, "text", { x: Lb - 8, y: y0 + rowH / 2 + 4, "text-anchor": "end" }, i === rows.length - 1 ? "All" : "Tenth " + (i + 1));
-      CATS.forEach(([k, , c]) => { const v = r[k] || 0, w = (Wb - Lb - Rb) * v;
-        if (w > 0.3) el(sb, "rect", { x: Lb + (Wb - Lb - Rb) * acc, y: y0, width: w, height: rowH, fill: c });
-        if (v >= 0.14) el(sb, "text", { x: Lb + (Wb - Lb - Rb) * (acc + v / 2), y: y0 + rowH / 2 + 4, "text-anchor": "middle", class: "bar-label" }, pct(v, 0));
-        acc += v; }); });
-    $("a3-c-win").innerHTML = ""; $("a3-c-win").appendChild(sb);
+    // HTML bars rather than SVG so labels stay legible at any width
+    $("a3-c-win").innerHTML = `<div class="wl" role="img" aria-label="Share of owners paying less or more by income tenth">` +
+      D.concat([A]).map((r, i) => `<div class="wl-row${i === 10 ? " wl-all" : ""}"><span class="wl-lab">${i === 10 ? "All owners" : "Tenth " + (i + 1)}</span><span class="wl-bar">` +
+        CATS.map(([k, l, c]) => { const v = r[k] || 0; return v > 0.002 ? `<i style="width:${(100 * v).toFixed(2)}%;background:${c}${/more_5pct$/.test(k) ? ";color:#fff" : ""}" title="${l}: ${pct(v, 0)}">${v >= 0.08 ? pct(v, 0) : ""}</i>` : ""; }).join("") +
+        `</span></div>`).join("") + "</div>";
   })();
 
   renderA3Ex(y, m === "none" ? "none" : "replace");
