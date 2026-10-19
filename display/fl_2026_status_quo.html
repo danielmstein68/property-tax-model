@@ -146,6 +146,7 @@ table.wrap-cells td { font-family: var(--body); }
 @media (min-width: 900px) { .a3-bar { position: sticky; top: 0; z-index: 5; } }
 .a3-ctl { display: grid; gap: 6px; }
 .a3 .figures .fig .l { font-size: 14.5px; }
+#a3-c-win svg { max-width: 1040px; }
 @media (max-width: 560px) { .a3 .figures { grid-template-columns: 1fr; } }
 tbody tr.sel td { background: var(--accent-soft); font-weight: 700; }
 .more-list { gap: 0; }
@@ -479,17 +480,25 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <p id="a3-who-intro"></p>
       <div class="charts">
         <div class="chart">
-          <h3>Average change per owner, by household income</h3>
+          <h3>Average change per household, by income</h3>
           <p>Dollars a year; tenths of all Florida households (1 = lowest income).</p>
           <div id="a3-c-dec"></div>
+          <div class="legend"><span><i style="background:var(--gain1)"></i>Per owner</span><span><i style="background:var(--gain2)"></i>Per household, renters included</span></div>
         </div>
         <div class="chart">
-          <h3>Share of owners paying less or more</h3>
-          <p>By household income tenth.</p>
-          <div id="a3-c-win"></div>
-          <div class="legend" id="a3-win-legend"></div>
+          <h3>Who gets the tax cut</h3>
+          <p>Each income tenth's share of the homeowner tax cut, compared with its share of all household income.</p>
+          <div id="a3-c-share"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Share of the tax cut</span><span><i style="background:var(--income)"></i>Share of household income</span><span><i style="background:transparent;border-top:2px dashed var(--muted);border-radius:0;height:0;vertical-align:3px"></i>Share of households (10%)</span></div>
         </div>
       </div>
+      <div class="chart">
+        <h3>Share of owners paying less or more</h3>
+        <p>By household income tenth.</p>
+        <div id="a3-c-win"></div>
+        <div class="legend" id="a3-win-legend"></div>
+      </div>
+      <p class="muted-p" id="a3-who-note"></p>
     </section>
 
     <section>
@@ -4205,6 +4214,72 @@ const EX = {
   }
  ]
 };   // example owners (scripts/a3_examples.py)
+const HH = {
+ "year": 2026,
+ "income": "household income (2026), negatives as 0",
+ "deciles": [
+  {
+   "decile": 1,
+   "households": 938534,
+   "owners": 436196,
+   "income": 8461030205
+  },
+  {
+   "decile": 2,
+   "households": 938683,
+   "owners": 470148,
+   "income": 26266767780
+  },
+  {
+   "decile": 3,
+   "households": 938590,
+   "owners": 493656,
+   "income": 41111205031
+  },
+  {
+   "decile": 4,
+   "households": 864251,
+   "owners": 498118,
+   "income": 50850486622
+  },
+  {
+   "decile": 5,
+   "households": 996923,
+   "owners": 589463,
+   "income": 74821051963
+  },
+  {
+   "decile": 6,
+   "households": 954688,
+   "owners": 609368,
+   "income": 90177008020
+  },
+  {
+   "decile": 7,
+   "households": 932064,
+   "owners": 655977,
+   "income": 108936324854
+  },
+  {
+   "decile": 8,
+   "households": 927009,
+   "owners": 703092,
+   "income": 136222095714
+  },
+  {
+   "decile": 9,
+   "households": 956197,
+   "owners": 771686,
+   "income": 188232417619
+  },
+  {
+   "decile": 10,
+   "households": 939276,
+   "owners": 827205,
+   "income": 389069381473
+  }
+ ]
+};  // all households by 2026 income tenth (scripts/household_deciles.py)
 const A3_OPT = { reimb: 0, nocap: false, fc: false };
 const A3_MODES = [["none", "Unchanged"], ["neutral", "Raised to replace lost revenue"]];
 const A3_COURT = [["written", "As written"], ["struck", "Struck down by the courts"]];
@@ -4295,8 +4370,16 @@ function renderA3() {
   $("a3-who-intro").textContent = `${mt}, ${pct(A.share_pay_less, 0)} of homeowners pay less (on average ${usd(Math.abs(A.avg_gain_if_less))} a year)` +
     (A.share_pay_more >= 0.005 ? ` and ${pct(A.share_pay_more, 0)} pay more (on average ${usd(Math.abs(A.avg_loss_if_more))})` : "") + "." +
     (f.tot < 0 ? ` Households in the highest-income fifth get ${pct(f.top, 0)} of the cut; the bottom half gets ${pct(f.bottom, 0)}.` : "");
+  // all households: renters at $0; households grow with each tenth's owners (same ownership rate as 2026)
+  const hhOf = (r, i) => HH.deciles[i].households * r.owners / HH.deciles[i].owners;
+  const perHH = D.map((r, i) => r.total_change / hhOf(r, i));
+  const incTot = HH.deciles.reduce((t, d) => t + d.income, 0);
+  if (f.tot < 0) $("a3-who-intro").textContent += ` Counting renters, who get nothing directly, the average household in the bottom tenth gets ${usd(Math.abs(perHH[0]))} a year and in the top tenth ${usd(Math.abs(perHH[9]))}` +
+    (perHH[0] < 0 ? `, ${(perHH[9] / perHH[0]).toFixed(1)} times as much.` : ".") +
+    ` The top tenth gets ${pct(D[9].total_change / f.tot, 0)} of the cut, with ${pct(HH.deciles[9].income / incTot, 0)} of household income; the bottom tenth gets ${pct(D[0].total_change / f.tot, 0)}.`;
+  $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income and households are for 2026.";
   (function () {
-    const vals = D.map(r => r.avg_change).concat([0]);
+    const vals = D.map(r => r.avg_change).concat(perHH, [0]);
     const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
     const step = [1, 2, 2.5, 5, 10].find(k => k * p >= raw) * p;   // round tick steps
     const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
@@ -4304,14 +4387,27 @@ function renderA3() {
     s.setAttribute("aria-label", "Average change per owner by income tenth");
     for (let v = lo; v <= hi + step / 2; v += step) { el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
     el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
-    D.forEach((r, i) => { const v = r.avg_change;
-      el(s, "rect", { x: L + i * bw + bw * 0.16, y: Math.min(yy(v), yy(0)), width: bw * 0.68, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? "var(--gain2)" : "var(--lose2)", rx: 2 });
+    D.forEach((r, i) => {
+      [[r.avg_change, "var(--gain1)", "var(--lose1)", 0], [perHH[i], "var(--gain2)", "var(--lose2)", 1]].forEach(([v, cg, cl, j]) =>
+        el(s, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(yy(v), yy(0)), width: bw * 0.36, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? cg : cl, rx: 2 }));
       el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
     $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(s);
+    // share of the cut vs share of income (and the 10% share of households)
+    const sh = D.map(r => f.tot ? r.total_change / f.tot : 0), inc = HH.deciles.map(d => d.income / incTot);
+    const top = Math.ceil(Math.max(...sh, ...inc) * 20) / 20, bot = Math.min(0, Math.floor(Math.min(...sh) * 20) / 20);
+    const s2 = svg(W, H), y2 = v => T + (H - T - B) * (1 - (v - bot) / (top - bot));
+    s2.setAttribute("aria-label", "Share of the tax cut and of household income by income tenth");
+    for (let v = bot; v <= top + 1e-9; v += 0.05) { el(s2, "line", { x1: L, x2: W - R_, y1: y2(v), y2: y2(v), stroke: "var(--rule)" }); el(s2, "text", { x: L - 6, y: y2(v) + 4, "text-anchor": "end" }, pct(v, 0)); }
+    el(s2, "line", { x1: L, x2: W - R_, y1: y2(0.1), y2: y2(0.1), stroke: "var(--muted)", "stroke-dasharray": "5 4", "stroke-width": 1.5 });
+    D.forEach((r, i) => {
+      [[sh[i], "var(--accent)", 0], [inc[i], "var(--income)", 1]].forEach(([v, c, j]) =>
+        el(s2, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(y2(v), y2(0)), width: bw * 0.36, height: Math.abs(y2(v) - y2(0)), fill: c, rx: 2 }));
+      el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+    $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(s2);
     const CATS = [["gain_more_5pct", "Over 5% less", "var(--gain2)"], ["gain_less_5pct", "Up to 5% less", "var(--gain1)"],
       ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Over 5% more", "var(--lose2)"]];
     $("a3-win-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
-    const rows = D.concat([A]), Wb = 520, rowH = 17, gap = 5, Lb = 62, Rb = 8, Hb = 6 + rows.length * (rowH + gap) + 4, sb = svg(Wb, Hb);
+    const rows = D.concat([A]), Wb = 1040, rowH = 17, gap = 5, Lb = 62, Rb = 8, Hb = 6 + rows.length * (rowH + gap) + 4, sb = svg(Wb, Hb);
     sb.setAttribute("aria-label", "Share of owners paying less or more by income tenth");
     rows.forEach((r, i) => { const y0 = 6 + i * (rowH + gap); let acc = 0;
       el(sb, "text", { x: Lb - 8, y: y0 + rowH / 2 + 4, "text-anchor": "end" }, i === rows.length - 1 ? "All" : "Tenth " + (i + 1));
