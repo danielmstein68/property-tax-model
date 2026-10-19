@@ -1057,17 +1057,21 @@ function revFigs(id, none, alt, altLabel, y, range) {
   const at = rows => (rows.find(r => r.year === y) || {}).all || 0;
   const cum = rows => { const r = rows.filter(x => x.all != null && x.year > 2026 && x.year <= y); return { from: r.length ? r[0].year : y, sum: r.reduce((t, x) => t + x.all, 0) }; };
   const n = at(none), nc = cum(none), a = at(alt), ac = cum(alt);
-  const lost = (v, still) => v > 0 ? "Gained" : still ? "Still lost" : "Lost";
+  const lost = (v, still) => still && Math.abs(v) < 5e7 ? "Lost" : v > 0 ? "Gained" : still ? "Still lost" : "Lost";
+  const near0 = v => Math.abs(v) < 5e7 ? "About $0" : big(v);   // after replacement: what the 10-mill cap leaves, noisy near zero
   const span = c => c.from === y ? ` so far (${y} is the first year)` : `, ${c.from}–${y} added up`;
-  // range: {none: {low, high}, alt: {low, high}} yearly rows under fewer and more owners starting to claim
+  // range: {none: {low, high}} yearly rows under fewer and more owners starting to claim (rates unchanged only)
   const rng = (r, f) => { if (!r) return ""; const v = [f(r.low), f(r.high)].map(Math.abs).sort((p, q) => p - q);
-    const lo = big(v[0]), hi = big(v[1]), u = t => t.split(" ")[1];
+    const fine = x => Math.abs(x) >= 1e9 ? "$" + (Math.abs(x) / 1e9).toFixed(2) + " billion" : big(x);
+    let lo = big(v[0]), hi = big(v[1]);
+    if (lo === hi) { lo = fine(v[0]); hi = fine(v[1]); }   // ends that round to the same number
+    const u = t => t.split(" ")[1];
     return `<div class="rng">Range ${u(lo) === u(hi) ? lo.split(" ")[0] : lo}–${hi}</div>`; };
   $(id).innerHTML = [
     [big(n), `${lost(n)} by local governments in ${y}, tax rates unchanged`, "lead", rng(range && range.none, at)],
     [big(nc.sum), `${lost(nc.sum)} in total${span(nc)}, tax rates unchanged`, "", rng(range && range.none, r => cum(r).sum)],
-    [big(a), `${lost(a, true)} in ${y} ${altLabel}`, "", rng(range && range.alt, at)],
-    [big(ac.sum), `${lost(ac.sum, true)} in total${span(ac)}, ${altLabel}`, "", rng(range && range.alt, r => cum(r).sum)],
+    [near0(a), `${lost(a, true)} in ${y} ${altLabel}`],
+    [near0(ac.sum), `${lost(ac.sum, true)} in total${span(ac)}, ${altLabel}`],
   ].map(([v, l, c, g]) => `<div class="fig ${c || ""}"><div class="v">${v}</div>${g || ""}<div class="l">${l}</div></div>`).join("");
 }
 // 5. each government's rate (revenue-neutral, with reimbursement)
@@ -1428,7 +1432,7 @@ function renderA3() {
   $("a3-rev-title").textContent = `Revenue lost to local governments, ${y}`;
   const RG = (A3R.runs || {})[a3id()];
   revFigs("a3-rev-figs", run.none.yearly, run.neutral.yearly, "after localities replace what they can", y,
-    RG ? { none: { low: RG.low.none, high: RG.high.none }, alt: { low: RG.low.neutral, high: RG.high.neutral } } : null);
+    RG ? { none: { low: RG.low.none, high: RG.high.none } } : null);
   const rr = RENT.years[String(y)], rent = rr ? { current: rr.current, none: rr[`${a3id()}_none`], neutral: rr[`${a3id()}_neutral`], apt: rr[`${a3id()}_neutral_apartments`] } : null;
   const own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
   $("a3-rev-intro").textContent = m === "none" ?

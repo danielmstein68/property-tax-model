@@ -246,6 +246,14 @@ Status: **Solved**, **Planned** (decided, not built yet), **Open** (not decided)
 
 ---
 
+### Exemptions in the wrong price range; Escambia's blank taxable values; shared PUMAs (2026-10-19)
+- **Problem:** homes under $100k were 9% below the roll, Escambia 8% below, Putnam 10% above.
+- **Cause 1 (under $100k, Putnam):** special exemptions were matched to the roll's counts by area only. The disabled veterans' total exemption goes first to owners reporting $0 tax, and many owners of cheap homes report $0 (tiny bills), so the model gave 26k of the 158k exemptions to homes under $100k (roll: 2.1k). Low-income senior exemptions go first to low reported tax relative to value, which favoured expensive homes (model 15.1k above $1M, roll 1.7k). Statewide counts were right.
+- **Solution:** match each exemption's roll count by area **and just-value band** (under $100k, $100-200k, $200-300k, $300-500k, $500k-1M, $1M+; `ptm.exemptions.JV_BANDS`), then fill any band shortfall from the area. Under $100k 0.90 → 0.98 of the roll.
+- **Cause 2 (Escambia, a check error):** the preliminary roll leaves taxable value blank on 8,881 Escambia homesteads (12%), including 4,832 of its disabled veterans' total exemptions. The check filled them with the county's average rated tax, so the roll side charged tax to fully exempt homes. **Solution:** `validate_2026.roll_homesteads` derives blank taxable values as assessed value minus the recorded exemptions (reproduces the roll's TV within 0.2% in every county), and fills district codes without a 2025 rate with the county's average. Escambia 1.00.
+- **Cause 3 (Putnam):** PUMA 10799 covers Putnam and part of St. Johns; districts (and so the county) were drawn within PUMA × homestead × value **third**, too coarse to keep dearer St. Johns-type homes out of Putnam. **Solution:** in the 10 PUMAs shared by several counties, value **tenths** (thin cells fall back to thirds). Putnam 1.09 → 1.05; across the shared-PUMA counties the parcel-weighted error falls 4.0% → 3.6%; the tiniest counties move both ways (sampling noise).
+- **Trade-off:** owners within 25% of their own reported tax 53% → 52%; reported tax is the noisier benchmark.
+
 ## Ohio
 
 ### Rollback base year undefined

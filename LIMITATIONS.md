@@ -38,9 +38,9 @@ What the model can't do, or does only approximately. Read this before citing res
 
 ## How well it matches (2026, `scripts/validate_2026.py`)
 
-- **Against the parcel rolls** (homesteads, same 2025 rates on both sides): average tax $4,069 vs $4,056, median $2,734 vs $2,739; every value band from $100k to $2M within 4%; $2M+ 6% low; under $100k 9% low (small bills). Partly by construction — homestead counts, values, assessed/just ratios and districts are drawn from the roll — so this mainly tests the exemption and cap rules.
-- **Small counties are unreliable on their own.** PUMS areas (PUMAs) often cover several rural counties, so the model knows the group but not each county: 13 counties with fewer than ~100 survey records are more than 15% off (together 0.6% of homestead tax). Report county results only where records are sufficient; pool the rest into regions. Monroe and St. Johns, which share a PUMA with part of a big neighbour, are handled by tract (Monroe now 1.01 of the roll); some Miami-Dade parcels lack tract codes, so that split is approximate.
-- **Against reported tax:** total $25.35B modelled vs $26.2B reported (−3%); deciles 1–9 4–10% below reported, decile 10 4% above. Reported tax often includes non-ad valorem fees and reporting error, so a modest shortfall is expected.
+- **Against the parcel rolls** (homesteads, same 2025 rates on both sides): average tax $4,035 vs $4,049, median $2,704 vs $2,733; every value band under $2M within 3% (exemptions matched by value band since 2026-10-19); $2M+ 7% low. Partly by construction — homestead counts, values, assessed/just ratios and districts are drawn from the roll — so this mainly tests the exemption and cap rules.
+- **Small counties are unreliable on their own.** PUMS areas (PUMAs) often cover several rural counties, so the model knows the group but not each county: 10 counties with fewer than ~100 survey records are more than 15% off (together 0.3% of homestead tax); Putnam (210 records, sharing a PUMA with St. Johns) is 5% high. Report county results only where records are sufficient; pool the rest into regions. Monroe and St. Johns, which share a PUMA with part of a big neighbour, are handled by tract (Monroe now 1.01 of the roll); some Miami-Dade parcels lack tract codes, so that split is approximate.
+- **Against reported tax:** total $25.13B modelled vs $26.2B reported (−4%); deciles 1–9 5–10% below reported, decile 10 2% above. Reported tax often includes non-ad valorem fees and reporting error, so a modest shortfall is expected.
 
 ## Scope: what's not modelled
 

@@ -27,7 +27,6 @@ Steps we're working through one at a time. Each gets discussed before it's built
 
 **Amendment 3 and policy**
 - [ ] Local options: counties/cities raising the exemption; shortening the newcomer wait from 2030.
-- [ ] County map of revenue lost and rate increases.
 - [x] Compare county/city/special district impacts with REC's per-government tables (2026-10-19, `scripts/check_rec_by_government.py`, `docs/checks/a3_rec_by_government.md`): county + special districts within 2% in 2027-28; cities a third lower.
 - [x] (2026-10-19) Fixed the county/city split: `district_classes` missed 60 city districts (all of Polk and Volusia, Port St. Lucie, St. Cloud, parts of Lake; note formats and Table 1 'Operating' names); other property's city levies now use each city's own base and rate (`Projection._nonowner`); Jacksonville is a municipality in REC, county in the model (moved in the check). City-dependent districts and city debt stay in county (Table 1 doesn't separate them). Was: model city losses are ~33-45% below REC (homestead value in cities 42% vs roll 45%; non-owner property taxed at county-average city rates though 52% of non-homestead residential value is in cities; check which levies `district_classes` counts as municipal: city-dependent districts, debt service).
 - [x] Tests for 2026-10-15/16 features: `tests/test_policy_features.py` (10 tests; suite 78).
@@ -131,13 +130,13 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
 - [x] **Calibration** (option A: modelled tax validated against official levies) — match modelled tax to reported `TAXAMT` and published levy totals
 - [x] **Metrics** (`ptm/results.py`: deciles, Suits, replicate SEs) — distribution tables by income decile etc., Suits index, replicate-weight SEs
 - [x] **Monroe County check** — fixed (shared PUMA merged Monroe with Miami-Dade); now 0.95 of roll. See CHALLENGES.md.
-- [ ] **Putnam check** — model homestead tax 12% above the roll (218 records).
-- [ ] **Under-$100k homesteads** — 9% below the roll since value-tenth ranking (small bills; low priority).
+- [x] **Putnam check** — 1.05 of the roll (was 1.12): exemptions by value band, value tenths in shared PUMAs (2026-10-19; CHALLENGES.md).
+- [x] **Under-$100k homesteads** — 0.98 of the roll (was 0.91): exemptions matched by value band (2026-10-19).
 - [x] **City over-assignment** — fixed for Manatee (fire districts), Collier (authority lists) and small Lee fire districts: Bradenton 10.7k homesteads (was ~60k), Naples 6.6k (was ~100k). See CHALLENGES.md.
 - [x] **Non-homestead owners' districts** — donors now restricted to non-homestead parcels owned by Florida-resident individuals (fallback: all owners). Marco Island non-homestead owners 26k → 20k (roll: 13k non-homestead parcels of all owners; PUMA-level limit). Also fixed the roll's out-of-state flag ("FLORIDA" spelled out in Broward, Palm Beach and two other counties).
 - [ ] **Reprocess NAL rolls** so the stored `own_out_of_state` flag is correct (code now recomputes it from `own_state`).
 - [ ] **More 2026 city rates** — Tampa, Orlando, Clearwater, Naples, Tallahassee, Gainesville, remaining Broward cities; replace proposed with final when DOR's 2026 Table 1 is out.
-- [ ] **Escambia check** — 8% below the roll (814 records; 41 parcels missing JV).
+- [x] **Escambia check** — 1.00 (was 0.92): the check now derives the preliminary roll's blank taxable values (2026-10-19).
 - [x] **Public results display — the first public output** (agreed 2026-10-14). Draft built (private artifact): `ptm/results.py` → `scripts/results_2026.py` → `scripts/build_display.py` (`display/template.html`), styled after landeconomics.org. Next: county map, example households, "how the model compares" section; sharing is Daniel's call. Once the status quo is complete (owners only): a public page presenting Florida's current property tax by income decile, age, region and home type, with clear "owners only" labelling and links to LIMITATIONS. Plan the design together before building.
 - [x] **Current-law projection** — 2026 → 2036 (step 2 below)
 - [x] **Amendment 3** (Florida, Nov 3 2026 ballot) — first policy (page done 2026-10-16)

@@ -36,15 +36,38 @@ MV_BANDS = {1: "Under 2 years", 2: "Under 2 years", 3: "2–4 years", 4: "5–9 
             5: "10–19 years", 6: "20 years or more", 7: "20 years or more"}
 
 
+# Exemption columns that reduce school / non-school taxable value (inputs/fl_exemption_codes.csv;
+# city-only codes 04 and 40 left out). AV minus these reproduces the roll's TV within 0.2% in every county.
+EX_SCHOOL = ["EXMPT_01", "EXMPT_05", "EXMPT_06", "EXMPT_08", "EXMPT_31", "EXMPT_32", "EXMPT_33", "EXMPT_34",
+             "EXMPT_35", "EXMPT_38", "EXMPT_41", "EXMPT_80", "EXMPT_81"]
+EX_NONSCHOOL = EX_SCHOOL + ["EXMPT_02", "EXMPT_03", "EXMPT_39"]
+
+
 def roll_homesteads() -> pd.DataFrame:
+    import pyarrow.parquet as pq
     files = glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{YEAR}" / "co*.parquet"))
-    cols = ["CO_NO", "DOR_UC", "JV", "TV_SD", "TV_NSD", "TAX_AUTH_CD", "homestead"]
-    p = pd.concat([pd.read_parquet(f, columns=cols) for f in files], ignore_index=True)
+    cols = ["CO_NO", "DOR_UC", "JV", "AV_SD", "AV_NSD", "TV_SD", "TV_NSD", "TAX_AUTH_CD", "homestead"]
+    parts = []
+    for f in files:
+        have = set(pq.read_schema(f).names)
+        d = pd.read_parquet(f, columns=cols + [c for c in EX_NONSCHOOL if c in have])
+        d = d.reindex(columns=cols + EX_NONSCHOOL, fill_value=0.0)
+        parts.append(d)
+    p = pd.concat(parts, ignore_index=True)
     p = p[p["DOR_UC"].isin(RES_UC) & (p["JV"] > 0) & p["homestead"].fillna(False).astype(bool)]
+    # The preliminary roll leaves taxable value blank on some parcels (Escambia: 8,881 homesteads,
+    # most of its fully exempt ones): derive it from assessed value and the recorded exemptions.
+    p["tv_derived"] = p["TV_SD"].isna() | p["TV_NSD"].isna()
+    p["TV_SD"] = p["TV_SD"].fillna((p["AV_SD"] - p[EX_SCHOOL].fillna(0).sum(axis=1)).clip(lower=0))
+    p["TV_NSD"] = p["TV_NSD"].fillna((p["AV_NSD"] - p[EX_NONSCHOOL].fillna(0).sum(axis=1)).clip(lower=0))
+    p = p.drop(columns=EX_NONSCHOOL)
     p["county_fips"] = fl_dor_to_fips(p["CO_NO"])
     p["code"] = p["TAX_AUTH_CD"].astype(str).str.strip()
     rates = load_rates(2025).set_index(["county_fips", "code"])[["school_millage", "nonschool_millage"]]
     p = p.join(rates, on=["county_fips", "code"])
+    # district codes with no 2025 rate: the county's average rates over rated homesteads
+    for c in ["school_millage", "nonschool_millage"]:
+        p[c] = p[c].fillna(p.groupby("county_fips")[c].transform("mean"))
     p["tax"] = (p["TV_SD"] * p["school_millage"] + p["TV_NSD"] * p["nonschool_millage"]) / 1000
     return p
 
@@ -83,11 +106,10 @@ def main() -> None:
     }
 
     # 1b. by county (district county)
-    # Every homestead parcel counts; parcels the preliminary roll gives no taxable value (Escambia: 8,881)
-    # take the county's average rated tax, so they don't drop out of the roll side.
+    # Every homestead parcel has a tax (taxable values derived and rates filled in roll_homesteads)
+    r["tax_filled"] = r["tax"].fillna(0.0)
     rr = r[rated].groupby("county_fips").agg(rated=("tax", "size"), tax_rated=("tax", "sum"), jv_rated=("JV", "sum"))
-    rc = r.groupby("county_fips").agg(parcels=("JV", "size"), jv_roll=("JV", "sum")).join(rr)
-    rc["tax_roll"] = rc["tax_rated"] / rc["rated"] * rc["parcels"]
+    rc = r.groupby("county_fips").agg(parcels=("JV", "size"), jv_roll=("JV", "sum"), tax_roll=("tax_filled", "sum")).join(rr)
     rc["unrated_share"] = 1 - rc["rated"] / rc["parcels"]
     mc = m.assign(t=m_tax * mw, j=m["valp_jv_cal"] * mw).groupby("county_fips_tax").agg(
         owners=("WGTP", "sum"), tax_model=("t", "sum"), jv_model=("j", "sum"), records=("WGTP", "size"))
@@ -96,7 +118,7 @@ def main() -> None:
     c["avg_tax_model"] = c["tax_model"] / c["owners"]
     c["avg_tax_ratio"] = c["avg_tax_model"] / c["avg_tax_roll"]
     c["count_ratio"] = c["owners"] / c["parcels"]
-    c["rate_roll"] = c["tax_rated"] / c["jv_rated"]
+    c["rate_roll"] = c["tax_roll"] / c["jv_roll"]
     c = c.drop(columns=["rated", "tax_rated", "jv_rated"])
     c["rate_model"] = c["tax_model"] / c["jv_model"]
     out["by_county"] = c.reset_index(names="county_fips").round(4).to_dict("records")

@@ -53,6 +53,14 @@ GROUPS = {
     "disabled_exservice": ["EXMPT_35"],
 }
 TOTAL = ["vet_total", "disabled_total"]
+# Just-value bands: each group's roll count is matched by area and band, then any shortfall by area.
+# Matching by area alone put disabled veterans (chosen by reported $0 tax) in cheap homes and
+# low-income seniors (chosen by low reported tax) in expensive ones (CHALLENGES.md).
+JV_BANDS = [0, 100_000, 200_000, 300_000, 500_000, 1_000_000, np.inf]
+
+
+def jv_band(jv) -> np.ndarray:
+    return np.searchsorted(JV_BANDS[1:-1], np.asarray(jv, float), side="right")
 
 
 def _code08_split(d: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
@@ -70,7 +78,7 @@ def roll_exemption_counts(base_year: int) -> tuple[pd.DataFrame, dict]:
 
     Returns (counts by area, amounts) where amounts has 'senior_lowinc_by_area' (median county
     low-income senior exemption per area) and 'vet_discount_share' (statewide median)."""
-    rows, senior, disc = [], [], []
+    rows, band_rows, senior, disc = [], [], [], []
     for f in glob.glob(str(ROOT / "data" / "processed" / f"fl_nal_{base_year}" / "co*.parquet")):
         d0 = pd.read_parquet(f)
         d0 = d0[d0["homestead"] & d0["DOR_UC"].isin(["001", "002", "004", "005"])]
@@ -79,6 +87,8 @@ def roll_exemption_counts(base_year: int) -> tuple[pd.DataFrame, dict]:
         for a, d in d0.groupby(parcel_area(d0)):  # one area per county, except split counties
             total08, five08 = _code08_split(d)
             row = {"area": a}
+            band = jv_band(d["JV"].fillna(0).to_numpy())
+            brow = {}
             for g, cols in GROUPS.items():
                 has = np.zeros(len(d), bool)
                 for c in cols:
@@ -89,7 +99,10 @@ def roll_exemption_counts(base_year: int) -> tuple[pd.DataFrame, dict]:
                 if g == "widow_blind_disabled":
                     has = has | five08
                 row[g] = int(has.sum())
+                brow[g] = np.bincount(band[has], minlength=len(JV_BANDS) - 1)
             rows.append(row)
+            for k in range(len(JV_BANDS) - 1):
+                band_rows.append({"area": a, "band": k, **{g: int(v[k]) for g, v in brow.items()}})
             if "EXMPT_03" in d:
                 senior.append(pd.DataFrame({"area": a, "amount": d.loc[d["EXMPT_03"] > 0, "EXMPT_03"]}))
             if "EXMPT_80" in d:
@@ -99,7 +112,8 @@ def roll_exemption_counts(base_year: int) -> tuple[pd.DataFrame, dict]:
     s = pd.concat(senior) if senior else pd.DataFrame(columns=["area", "amount"])
     amounts = {"senior_lowinc_by_area": s.groupby("area")["amount"].median(),
                "senior_lowinc_state": float(s["amount"].median()) if len(s) else 50_000.0,
-               "vet_discount_share": float(pd.concat(disc).median()) if disc else 0.0}
+               "vet_discount_share": float(pd.concat(disc).median()) if disc else 0.0,
+               "by_band": pd.DataFrame(band_rows).groupby(["area", "band"]).sum()}
     return counts, amounts
 
 
@@ -162,6 +176,7 @@ def assign_exemptions(h: pd.DataFrame, base_year: int, persons_path, seed: int =
     out["_low_tax"] = -(out["taxamt_aged"].fillna(0) / base_taxable.clip(lower=1)) + rng.random(len(out)) * 1e-6
     out["_zero_tax"] = out["TAXAMT"] == 0
     out["_rand"] = rng.random(len(out))
+    out["_band"] = jv_band(out["valp_jv_cal"].fillna(0).to_numpy())
 
     age65 = out["HHLDRAGEP"] >= 65
     agi = out["hincp_aged"].fillna(0) - out.get("ssp_aged", 0) - out.get("ssip_aged", 0)
@@ -202,7 +217,10 @@ def assign_exemptions(h: pd.DataFrame, base_year: int, persons_path, seed: int =
             prio, asc = ["_zero_tax", "_rand"], [False, True]
         else:
             prio, asc = ["_low_tax"], [False]
-        got = _fill_by_priority(out, elig, counts[g], priority=prio, ascending=asc, group="value_area")
+        got = _fill_by_priority(out, elig, amounts["by_band"][g], priority=prio, ascending=asc, group=["value_area", "_band"])
+        # bands short of candidates: fill the rest of the area's count from any band
+        short = counts[g] - out.loc[got].groupby("value_area")["WGTP"].sum().reindex(counts.index, fill_value=0.0)
+        got |= _fill_by_priority(out, elig & ~got, short, priority=prio, ascending=asc, group="value_area")
         out[f"ex_{g}"] = got
         if g in TOTAL:
             taken_total |= got
@@ -238,5 +256,5 @@ def assign_exemptions(h: pd.DataFrame, base_year: int, persons_path, seed: int =
     out.loc[zero & (total | out["ex_senior_longterm"]), "zero_tax_class"] = "total_exemption"
     out.loc[zero & out["zero_tax_class"].isna() & (taxable < 5_000), "zero_tax_class"] = "cheap_home"
     out.loc[zero & out["zero_tax_class"].isna(), "zero_tax_class"] = "misreported"
-    out = out.drop(columns=["_low_tax", "_zero_tax", "_rand", "_vet_tier", "_dis_tier"])
+    out = out.drop(columns=["_low_tax", "_zero_tax", "_rand", "_vet_tier", "_dis_tier", "_band"])
     return out, pd.DataFrame(report)

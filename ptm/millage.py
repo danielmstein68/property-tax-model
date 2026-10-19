@@ -256,6 +256,11 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
     roll = roll[roll["homestead"].fillna(False).astype(bool) | roll["fl_individual"]]
     pct = roll.groupby(["PUMA", "homestead"])["JV"].rank(pct=True, method="first")
     roll["band"] = pd.cut(pct, [0, 1 / 3, 2 / 3, 1.0001], labels=["low", "mid", "high"]).astype(str)
+    # PUMAs shared by several counties: value tenths, so the county (and its district) follows home
+    # value more closely than thirds allow (Putnam / St. Johns, the small rural groups); thin tenth
+    # cells fall back to thirds
+    roll["band10"] = np.minimum((pct.fillna(0) * 10).astype(int), 9)
+    shared = set(k[k > 1].index) if len(k := roll.groupby("PUMA")["county_fips"].nunique()) else set()
 
     out = h.copy()
     owner = (out["tenure"] == "owner") & ~out["mh_rented_lot"].fillna(False).astype(bool)
@@ -263,20 +268,34 @@ def assign_districts(h: pd.DataFrame, base_year: int, rate_year: int = 2025, see
     o["PUMA"] = o["PUMA"].astype(str).str.zfill(5)
     o["is_hs"] = (o["homestead"] == True).to_numpy()  # noqa: E712
     o["band"] = ""
+    o["band10"] = 0
     for _, idx in o.groupby(["PUMA", "is_hs"]).groups.items():
         o.loc[idx, "band"] = _bands(o.loc[idx, "valp_jv_cal"], o.loc[idx, "WGTP"])
+        v = o.loc[idx, "valp_jv_cal"].sort_values(kind="stable")
+        cum = o.loc[v.index, "WGTP"].cumsum() / o.loc[v.index, "WGTP"].sum()
+        o.loc[v.index, "band10"] = np.minimum(((cum - 1e-9) * 10).astype(int).clip(lower=0), 9).to_numpy()
     taxable = 0.37 * o[f"taxable_sd_{base_year}"] + 0.63 * o[f"taxable_nsd_{base_year}"]
     usable = (o["TAXAMT"] > 0) & ~o["flag_topcode_taxamt"] & (taxable > 1000)
     implied = (o["taxamt_aged"] / taxable).where(usable)
     o["_order"] = implied.groupby(o["PUMA"]).rank(pct=True).fillna(pd.Series(rng.random(len(o)), index=o.index))
 
     cells = {k: g for k, g in roll[roll["PUMA"].notna()].groupby(["PUMA", "homestead", "band"])}
+    cells10 = {k: g for k, g in roll[roll["PUMA"].isin(shared)].groupby(["PUMA", "homestead", "band10"])}
     pumas = {k: g for k, g in roll[roll["PUMA"].notna()].groupby(["PUMA", "homestead"])}
     pumas_all = {k: g for k, g in roll_all[roll_all["PUMA"].notna()].groupby(["PUMA", "homestead"])}
     report = []
-    for (puma, is_hs, band), idx in o.groupby(["PUMA", "is_hs", "band"]).groups.items():
+    o["_cell"] = np.where(o["PUMA"].isin(shared), "t" + o["band10"].astype(str), o["band"])
+    for (puma, is_hs, cell), idx in o.groupby(["PUMA", "is_hs", "_cell"]).groups.items():
         g = o.loc[idx]
-        donors, level = cells.get((puma, is_hs, band)), "puma x homestead x band"
+        band = cell
+        donors, level = None, ""
+        if cell.startswith("t"):
+            donors, level = cells10.get((puma, is_hs, int(cell[1:]))), "puma x homestead x tenth"
+            if donors is None or len(donors) < min_donors:
+                band = g["band"].mode().iloc[0]
+                donors = None
+        if donors is None or len(donors) < min_donors:
+            donors, level = cells.get((puma, is_hs, band)), "puma x homestead x band"
         if donors is None or len(donors) < min_donors:
             donors, level = pumas.get((puma, is_hs)), "puma x homestead"
         if donors is None or len(donors) < min_donors:  # too few Florida-individual parcels: use all
