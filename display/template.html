@@ -351,112 +351,88 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       </div>
     </section>
 
-    <div id="pol-results" class="wrap-inner">
+    <div id="pol-results" class="wrap-inner a3">
     <section>
       <div class="pol-chosen" id="pol-chosen"></div>
-      <div class="tabs" role="radiogroup" aria-label="Year" id="pol-years"></div>
-      <label class="check" for="pol-neutral"><input type="checkbox" id="pol-neutral"><div>Localities replace lost revenue<span>Also show results if every county, city and school district resets its tax rate to raise the same revenue as under current law.</span></div></label>
-      <div class="reimb" id="pol-reimb-box" hidden>
+    </section>
+
+    <div class="a3-bar" role="group" aria-label="Settings">
+      <div class="a3-ctl"><span class="field-label">Year</span><div class="tabs" role="radiogroup" aria-label="Year" id="pol-years"></div></div>
+      <div class="a3-ctl"><span class="field-label">Local tax rates</span><div class="tabs" role="radiogroup" aria-label="Local tax rates" id="pol-mode"></div></div>
+    </div>
+    <div class="reimb" id="pol-reimb-box" hidden>
         <label class="field-label" for="pol-reimb" id="pol-reimb-label">State reimburses: 0% of lost revenue</label>
         <input type="range" id="pol-reimb" min="0" max="4" step="1" value="0">
         <div class="slider-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
         <label class="check" for="pol-cap"><input type="checkbox" id="pol-cap" checked><div>Respect the 10-mill cap<span>Counties' general levies and city levies can't go above 10 mills (the Florida Constitution), or their current rate if already higher; what they can't raise stays lost. Untick to see what full replacement would take.</span></div></label>
         <label class="check" for="pol-fc"><input type="checkbox" id="pol-fc"><div>The state offsets fiscally constrained counties<span id="pol-fc-note">As Florida has for earlier amendments (s. 218.125 formula): the state pays 29 small, rural counties 95% of their lost taxable value times their rate, if the Legislature funds it. With the 10-mill cap on and no other reimbursement.</span></div></label>
       </div>
-      <div class="changed" id="pol-changed" aria-live="polite"></div>
+
+    <section aria-label="Key numbers">
+      <div class="figures" id="pol-tiles"></div>
+      <p class="muted-p" id="pol-none-msg" hidden>This is current law: nothing changes. Pick a policy or move the slider.</p>
     </section>
 
-    <section>
-      <div class="eyebrow">1 · Revenue</div>
+    <section class="pol-sec">
+      <div class="eyebrow">Revenue</div>
       <h2 id="pol-rev-title">Revenue lost to local governments</h2>
-      <div class="figures" id="pol-rev-figures"></div>
-      <p id="pol-rev-scale"></p>
-      <p id="pol-rev-where"></p>
+      <p id="pol-rev-intro"></p>
       <div class="charts">
         <div class="chart">
-          <h3>Property tax revenue lost, by year</h3>
-          <p>All property (homes, rentals, businesses), billions of dollars; above zero = less revenue than under current law.</p>
+          <h3>Revenue lost by year, all property</h3>
+          <p>Billions of dollars a year; above zero = less revenue than under current law.</p>
           <div id="pol-c-rev"></div>
-          <div class="legend pol-legend"></div>
+          <div class="legend" id="pol-rev-legend"></div>
         </div>
-        <div class="chart">
-          <h3 id="pol-c-split-title">Who loses the revenue</h3>
-          <p>Billions of dollars with tax rates unchanged, by who levies the tax and whose property it was on.</p>
-          <div id="pol-c-split"></div>
-          <div class="legend"><span><i style="background:var(--accent)"></i>Owner-occupied homes</span><span><i style="background:var(--county)"></i>Other property (est.)</span></div>
-        </div>
+        <div class="tablebox"><table id="pol-t-rev"></table></div>
       </div>
     </section>
 
-    <section>
-      <div class="eyebrow">2 · Winners and losers</div>
-      <h2 id="pol-s3-title">Who pays less and who pays more</h2>
-      <p id="pol-s3-intro"></p>
+    <section class="pol-sec">
+      <div class="eyebrow">Homeowners</div>
+      <h2 id="pol-who-title">Who pays less and who pays more</h2>
+      <p id="pol-who-intro"></p>
       <div class="charts">
         <div class="chart">
-          <h3>Governments respond</h3>
-          <p>Share of owners in each income decile, by change in their tax bill.</p>
-          <div id="pol-w-respond"></div>
-        </div>
-        <div class="chart">
-          <h3>No response</h3>
-          <p>Local tax rates stay on their current-law path.</p>
-          <div id="pol-w-none"></div>
-        </div>
-        <div class="chart" id="pol-w-neutral-box" hidden>
-          <h3>Localities replace lost revenue</h3>
-          <p>Each county, city and school district raises the same revenue as under current law.</p>
-          <div id="pol-w-neutral"></div>
-        </div>
-      </div>
-      <div class="legend" id="pol-w-legend"></div>
-    </section>
-
-    <section>
-      <div class="eyebrow">3 · Owners</div>
-      <h2 id="pol-s1-title">Owner property tax under the policy</h2>
-      <div class="figures" id="pol-figures"></div>
-      <div class="tablebox"><table id="pol-t-levels"></table></div>
-    </section>
-
-    <section>
-      <div class="eyebrow">4 · Changes for owners</div>
-      <h2>How much changes, and for whom</h2>
-      <div class="charts">
-        <div class="chart">
-          <h3>Change in owner property tax by year</h3>
-          <p>Billions of dollars; below zero = owners pay less.</p>
-          <div id="pol-c-years"></div>
-          <div class="legend pol-legend"></div>
-        </div>
-        <div class="chart">
-          <h3 id="pol-c-dec-title">Average change per owner by income decile</h3>
-          <div class="tabs small" role="radiogroup" aria-label="Per owner or per household" id="pol-dec-unit"></div>
-          <p id="pol-c-dec-sub">Dollars a year in the selected year.</p>
+          <h3>Average change per household, by income</h3>
+          <p>Dollars a year; tenths of all Florida households (1 = lowest income).</p>
           <div id="pol-c-dec"></div>
-          <div class="legend pol-legend"></div>
+          <div class="legend"><span><i style="background:var(--gain1)"></i>Per owner</span><span><i style="background:var(--gain2)"></i>Per household, renters included</span></div>
         </div>
         <div class="chart">
-          <h3 id="pol-c-share-title">Who gets the tax change</h3>
-          <p id="pol-c-share-sub">Each income decile's share, with rates unchanged. Each decile is a tenth of all households, so an equal share would be 10%.</p>
+          <h3 id="pol-c-share-title">Who gets the tax cut</h3>
+          <p>Each income tenth's share. Each tenth is a tenth of all households, so an equal share would be 10%.</p>
           <div id="pol-c-share"></div>
           <div class="legend"><span><i style="background:var(--accent)"></i>More than an equal share</span><span><i style="background:var(--income)"></i>Less than an equal share</span></div>
         </div>
       </div>
-      <p class="muted-p">Per household counts renters at $0: the model doesn't track rent, so what landlords pass on isn't included.</p>
-      <div class="tabs" role="tablist" id="pol-group-tabs"></div>
-      <div class="tabletools"><button class="copy" data-table="pol-t-groups" id="copy-pol-groups">Copy table</button></div>
-      <div class="tablebox"><table id="pol-t-groups"></table></div>
+      <div class="chart">
+        <h3>Share of owners paying less or more</h3>
+        <p>By household income tenth.</p>
+        <div id="pol-c-win"></div>
+        <div class="legend" id="pol-win-legend"></div>
+      </div>
+      <p class="muted-p">Renters count as $0: the model doesn't track rent, so what landlords pass on isn't included.</p>
     </section>
 
-    <section id="pol-gov" hidden>
-      <div class="eyebrow">5 · Local tax rates</div>
-      <h2 id="pol-gov-title">How each government's tax rate changes</h2>
-      <p id="pol-gov-intro"></p>
-      <div class="figures" id="pol-gov-figures"></div>
-      <div class="tabs" role="tablist" id="pol-gov-tabs"></div>
-      <div class="tabletools"><button class="copy" data-table="pol-t-gov" id="copy-pol-gov">Copy table</button></div>
-      <div class="tablebox tall"><table id="pol-t-gov"></table></div>
+    <section class="more-list pol-sec">
+      <details class="more">
+        <summary>Each county, city and school district's tax rate</summary>
+        <div class="more-body">
+          <p id="pol-gov-intro"></p>
+          <div class="tabs" role="tablist" id="pol-gov-tabs"></div>
+          <div class="tabletools"><button class="copy" data-table="pol-t-gov" id="copy-pol-gov">Copy table</button></div>
+          <div class="tablebox tall"><table id="pol-t-gov"></table></div>
+        </div>
+      </details>
+      <details class="more">
+        <summary>Homeowners by age, homestead status, region and income</summary>
+        <div class="more-body">
+          <div class="tabs" role="tablist" id="pol-group-tabs"></div>
+          <div class="tabletools"><button class="copy" data-table="pol-t-groups" id="copy-pol-groups">Copy table</button></div>
+          <div class="tablebox"><table id="pol-t-groups"></table></div>
+        </div>
+      </details>
     </section>
 
     <p class="about-link">“About the same” means within $10 a year. How rate responses, revenue replacement and behaviour are modelled: <a href="#about" data-goto="about">About the model →</a></p>
@@ -1003,7 +979,6 @@ function currentRun() {
 const MODE = { respond: { l: "Governments respond", s: "respond", c: "var(--accent)", d: "" },
   none: { l: "No response", s: "no response", c: "var(--county)", d: "6 4" },
   neutral: { l: "Localities replace lost revenue", s: "revenue replaced", c: "var(--neutral)", d: "2 3" } };
-const modes = () => POL.neutral ? ["respond", "none", "neutral"] : ["respond", "none"];
 function grp(run, mode, y, grouping) { return run[key(mode)].groups.filter(r => r.year === y && r.grouping === grouping); }
 function allRow(run, mode, y) { return run[key(mode)].groups.find(r => r.year === y && r.grouping === "all"); }
 function yrow(run, mode, y) { return run[key(mode)].yearly.find(r => r.year === y); }
@@ -1033,267 +1008,12 @@ function approxSuits(policyDecileRows, y = 2026) {
   return 1 - 2 * area;
 }
 
-function renderPolicy() {
-  const { run, label, desc } = currentRun(), y = POL.year;
-  $("pol-chosen").innerHTML = `<div class="chosen-title">${label}</div><div class="muted-p">${desc}</div>`;
-  document.querySelectorAll("#pol-presets button").forEach(b => b.setAttribute("aria-checked", POL.kind === "preset" && b.dataset.id === POL.id));
-  document.querySelectorAll("#pol-years button").forEach(b => b.setAttribute("aria-checked", +b.dataset.y === y));
-  const base = G.current_law.yearly.find(r => r.year === y);
-  const zero = { tax: 0, avg_tax: 0, mill_county: 0, mill_school: 0, school: 0, county: 0, city: 0, pct: 0 };
-  const R = run ? yrow(run, "respond", y) : zero, N = run ? yrow(run, "none", y) : zero;
-  const aR = run ? allRow(run, "respond", y) : null, aN = run ? allRow(run, "none", y) : null;
-  MODE.neutral.l = "Localities replace lost revenue" + (POL.reimb ? ` (state pays ${pct(REIMB[POL.reimb], 0)})` : "");
-  const M = modes(), Y = Object.fromEntries(M.map(m => [m, run ? yrow(run, m, y) : zero])), A = Object.fromEntries(M.map(m => [m, run ? allRow(run, m, y) : null]));
-  document.querySelectorAll(".pol-legend").forEach(d => d.innerHTML = M.map(m => `<span><i style="background:${MODE[m].c}"></i>${MODE[m].l}</span>`).join(""));
-  $("pol-w-neutral-box").hidden = !POL.neutral;
-
-  renderRevenue(run, y, M);
-  renderChanged(run, y, M);
-
-  // 2. owners
-  $("pol-s1-title").textContent = `Owner property tax under the policy, ${y}`;
-  const polDecR = run ? grp(run, "respond", y, "income_decile") : null;
-  const polSuits = polDecR ? approxSuits(polDecR, y) : null;
-  const suitsBase = polDecR ? approxSuits(polDecR.map(r => ({ ...r, avg_change: 0 })), y) : D.headline.suits_index;   // same footing as the policy figure
-  const suitsTile = polSuits != null
-    ? [`${polSuits.toFixed(2)}`, `Suits index under policy (current law: ${suitsBase.toFixed(2)}; change: ${(polSuits - suitsBase) >= 0 ? "+" : ""}${(polSuits - suitsBase).toFixed(2)}). Below 0 = regressive.`, "fig-suits"]
-    : [`${suitsBase.toFixed(2)}`, "Suits index — current law (policy unchanged from baseline)", "fig-suits"];
-  $("pol-figures").innerHTML = [
-    suitsTile,
-    [bnS(R.tax), `Change in owner tax in ${y} if governments respond (${pctS(R.pct)})`],
-    [bnS(N.tax), `Change with no response (${pctS(N.pct)})`],
-  ].concat(POL.neutral ? [
-    [bnS(Y.neutral.tax), `Change if localities replace lost revenue (${pctS(Y.neutral.pct)})`],
-    [A.neutral ? pct(A.neutral.share_pay_more, 0) : "0%", "Owners paying more (revenue replaced)"],
-  ] : [
-    [aR ? pct(aR.share_pay_less, 0) : "0%", "Owners paying less (governments respond)"],
-    [aR ? pct(aR.share_pay_more, 0) : "0%", "Owners paying more (governments respond)"],
-  ]).map(([v, l, cls]) => `<div class="fig${cls ? " " + cls : ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  const lv = (b, d) => b + d;
-  $("pol-t-levels").innerHTML = `<thead><tr><th>${y}</th><th>Current law</th>${M.map(m => `<th>Policy, ${MODE[m].l.toLowerCase()}</th>`).join("")}</tr></thead><tbody>` +
-    [["Owner property tax", "tax_total", "tax", bn], ["School district", "school", "school", bn],
-     ["County and special districts", "county", "county", bn], ["City", "city", "city", bn],
-     ["Average owner bill", "avg_tax", "avg_tax", usd],
-     ["Average county rate (mills)", "mill_county", "mill_county", v => v.toFixed(3)],
-     ["Average school rate (mills)", "mill_school", "mill_school", v => v.toFixed(3)]]
-      .map(([l, bk, k, f]) => `<tr><td>${l}</td><td>${f(base[bk])}</td>${M.map(m => `<td>${f(lv(base[bk], Y[m][k]))}</td>`).join("")}</tr>`).join("") + "</tbody>";
-
-  // 2a. change by year
-  (function () {
-    if (!run) { $("pol-c-years").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; return; }
-    const ok = r => r.tax !== null && r.tax !== undefined && isFinite(r.tax);
-    const PTS = Object.fromEntries(M.map(m => [m, run[key(m)].yearly.filter(ok).map(r => ({ year: r.year, v: r.tax / 1e9 }))])), ptsR = PTS.respond;
-    const vals = M.flatMap(m => PTS[m].map(p => p.v)).concat([0]);
-    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.1 || 0.1; lo -= pad; hi += pad;
-    const W = 520, H = 280, L = 72, R_ = 12, T = 14, B = 30, years = ptsR.map(p => p.year);
-    const s = svg(W, H), x = yv => L + (W - L - R_) * (yv - years[0]) / (years[years.length - 1] - years[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
-    s.setAttribute("aria-label", "Change in owner tax by year, with and without government responses");
-    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, (v >= 0 ? "" : "−") + "$" + Math.abs(v).toFixed(Math.abs(hi - lo) < 2 ? 2 : 1) + "B"); }
-    el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
-    years.forEach((yv, i) => { if (i % 3 === 0) el(s, "text", { x: x(yv), y: H - 8, "text-anchor": "middle" }, String(yv)); });
-    M.slice().reverse().map(m => [PTS[m], MODE[m].c, MODE[m].d]).forEach(([pts, c, dash]) =>
-      el(s, "polyline", { points: pts.map(p => `${x(p.year)},${yy(p.v)}`).join(" "), fill: "none", stroke: c, "stroke-width": 2.5, "stroke-dasharray": dash }));
-    el(s, "line", { x1: x(y), x2: x(y), y1: T, y2: H - B, stroke: "var(--muted)", "stroke-dasharray": "2 3" });
-    $("pol-c-years").innerHTML = ""; $("pol-c-years").appendChild(s);
-  })();
-
-  // 2b. by decile
-  (function () {
-    const hh = POL.unit === "household";
-    document.querySelectorAll("#pol-dec-unit button").forEach(b => b.setAttribute("aria-checked", (b.dataset.k === "household") === hh));
-    $("pol-c-dec-title").textContent = hh ? "Average change per household by income decile" : "Average change per owner by income decile";
-    $("pol-c-dec-sub").textContent = `Dollars a year in ${y}${hh ? "; renters count as $0" : ""}.`;
-    if (!run) { $("pol-c-dec").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; $("pol-c-share").innerHTML = ""; return; }
-    const sortD = rows => rows.slice().sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
-    const D = M.map(m => { const rows = sortD(grp(run, m, y, "income_decile")), ph = perHousehold(rows);
-      return rows.map((r, i) => ({ ...r, avg_change: hh ? ph[i] : r.avg_change })); }), dr = D[0];
-    // who gets the change: rates unchanged ("none")
-    const DN = sortD(grp(run, "none", y, "income_decile")), totN = DN.reduce((a, r) => a + r.total_change, 0);
-    $("pol-c-share-title").textContent = totN < 0 ? "Who gets the tax cut" : "Who pays the tax increase";
-    if (Math.abs(totN) < 1e7) $("pol-c-share").innerHTML = '<p class="muted-p">Owner tax changes by less than $10 million with rates unchanged.</p>';
-    else { $("pol-c-share").innerHTML = ""; $("pol-c-share").appendChild(shareSvg(DN)); }
-    const vals = D.flat().map(r => r.avg_change).concat([0]);
-    let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.12 || 1; lo = Math.min(lo - pad, 0); hi = Math.max(hi + pad, 0);
-    const W = 520, H = 280, L = 56, R_ = 10, T = 14, B = 36, bw = (W - L - R_) / 10;
-    const s = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
-    s.setAttribute("aria-label", "Average change per owner by income decile");
-    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
-    el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
-    dr.forEach((r, i) => {
-      const w = (bw * 0.72 - 2 * (M.length - 1)) / M.length, x0 = L + i * bw + bw * 0.14;
-      M.map((m, j) => [D[j][i].avg_change, MODE[m].c, j * (w + 2)]).forEach(([v, c, dx]) =>
-        el(s, "rect", { x: x0 + dx, y: Math.min(yy(v), yy(0)), width: w, height: Math.abs(yy(v) - yy(0)), fill: c, rx: 2 }));
-      el(s, "text", { x: L + i * bw + bw / 2, y: H - B + 16, "text-anchor": "middle" }, String(i + 1));
-    });
-    el(s, "text", { x: L + (W - L - R_) / 2, y: H - 4, "text-anchor": "middle" }, "Household income decile (1 = lowest)");
-    $("pol-c-dec").innerHTML = ""; $("pol-c-dec").appendChild(s);
-  })();
-
-  // 2c. group table
-  (function () {
-    const g = POL.group;
-    document.querySelectorAll("#pol-group-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === g));
-    if (!run) { $("pol-t-groups").innerHTML = ""; return; }
-    let rr = grp(run, "respond", y, g);
-    if (g === "income_decile") { const k = r => +r.group.replace(/\D/g, ""); rr = rr.sort((a, b) => k(a) - k(b)); }
-    const extra = M.slice(1), G2 = Object.fromEntries(extra.map(m => [m, grp(run, m, y, g)]));
-    const head = `<thead><tr><th>Group</th><th>Owners</th><th>Average change (respond)</th><th>% change (respond)</th><th>Pay less (respond)</th><th>Pay more (respond)</th>${extra.map(m => `<th>Average change (${MODE[m].s})</th><th>% change (${MODE[m].s})</th>`).join("")}</tr></thead>`;
-    const row = (r, ex, name) => `<td>${name}</td><td>${Math.round(r.owners).toLocaleString("en-US")}</td><td>${usdS(r.avg_change)}</td><td>${pctS(r.pct_change)}</td><td>${pct(r.share_pay_less, 0)}</td><td>${pct(r.share_pay_more, 0)}</td>${ex.map(n => `<td>${usdS(n.avg_change)}</td><td>${pctS(n.pct_change)}</td>`).join("")}`;
-    const body = rr.map(r => `<tr>${row(r, extra.map(m => G2[m].find(x => x.group === r.group) || {}), r.group)}</tr>`).join("");
-    const tot = `<tr class="total">${row(allRow(run, "respond", y), extra.map(m => allRow(run, m, y)), "All owners")}</tr>`;
-    $("pol-t-groups").innerHTML = head + "<tbody>" + body + tot + "</tbody>";
-  })();
-
-  // 3. winners and losers
-  const CATS = [["gain_more_5pct", "Pay over 5% less", "var(--gain2)"], ["gain_less_5pct", "Pay up to 5% less", "var(--gain1)"],
-    ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Pay up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Pay over 5% more", "var(--lose2)"]];
-  $("pol-w-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
-  $("pol-s3-title").textContent = `Who pays less and who pays more, ${y}`;
-  $("pol-s3-intro").textContent = run ? `If governments respond, ${pct(aR.share_pay_less, 0)} of owners pay less (on average ${usd(aR.avg_gain_if_less)} a year) and ${pct(aR.share_pay_more, 0)} pay more (on average ${usd(aR.avg_loss_if_more)}). With no response, ${pct(aN.share_pay_less, 0)} pay less and ${pct(aN.share_pay_more, 0)} pay more.` +
-    (POL.neutral ? ` If localities replace the lost revenue${POL.reimb ? ` the state doesn't pay back (it pays ${pct(REIMB[POL.reimb], 0)})` : ""}, ${pct(A.neutral.share_pay_less, 0)} pay less and ${pct(A.neutral.share_pay_more, 0)} pay more (on average ${usd(A.neutral.avg_loss_if_more)}).` : "") : "Current law: nobody's bill changes.";
-  M.forEach(mode => {
-    const target = $(`pol-w-${mode}`);
-    if (!run) { target.innerHTML = '<p class="muted-p">No change.</p>'; return; }
-    const rows = grp(run, mode, y, "income_decile").sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
-    rows.push(allRow(run, mode, y));
-    const W = 520, rowH = 22, gap = 6, L = 70, R_ = 8, T = 6, H = T + rows.length * (rowH + gap) + 18;
-    const s = svg(W, H);
-    s.setAttribute("aria-label", `Winners and losers by income decile, ${MODE[mode].l.toLowerCase()}`);
-    rows.forEach((r, i) => {
-      const yy = T + i * (rowH + gap); let acc = 0;
-      el(s, "text", { x: L - 8, y: yy + rowH / 2 + 4, "text-anchor": "end" }, i === rows.length - 1 ? "All owners" : "Decile " + (i + 1));
-      CATS.forEach(([k, , c]) => { const v = r[k] || 0, w = (W - L - R_) * v;
-        if (w > 0.3) el(s, "rect", { x: L + (W - L - R_) * acc, y: yy, width: w, height: rowH, fill: c });
-        if (v >= 0.12) el(s, "text", { x: L + (W - L - R_) * (acc + v / 2), y: yy + rowH / 2 + 4, "text-anchor": "middle", class: "bar-label" }, pct(v, 0));
-        acc += v; });
-    });
-    [0, 0.25, 0.5, 0.75, 1].forEach(t => el(s, "text", { x: L + (W - L - R_) * t, y: H - 2, "text-anchor": "middle" }, Math.round(t * 100) + "%"));
-    target.innerHTML = ""; target.appendChild(s);
-  });
-  document.querySelector("#pol-w-neutral-box h3").textContent = MODE.neutral.l;
-  renderGov(run, y, N);
-}
-
-// "What changed": the key numbers next to the controls, and why a setting changes little or nothing
-const NO_EFFECT = 10e6;
-function noEffectReason(y) {
-  if (POL.kind !== "slider" || VIEW !== "policy") return "";
-  const sl = G.sliders.find(x => x.id === POL.lever), v = sl.settings[POL.idx];
-  if (sl.id === "soh_cap" && (v === "none" || v > sl.current))
-    return "The Save Our Homes cap is the lower of this rate and inflation. With inflation forecast below 3%, a higher ceiling changes nothing unless inflation rises.";
-  if (sl.id === "nonhomestead_cap" && (v === "none" || v > sl.current))
-    return "Few non-homestead owners' assessments rise faster than 10% a year at forecast growth, so a higher cap changes little.";
-  if (sl.id === "portability" && (v === "none" || v > sl.current))
-    return "Few movers carry more than $500,000 of Save Our Homes savings, so raising the limit helps only a small number of buyers.";
-  return "";
-}
-function renderChanged(run, y, M) {
-  const box = $("pol-changed");
-  if (!run) { box.innerHTML = `<h3>What changed, ${y}</h3><div class="none-msg">Nothing: this is current law. Pick a policy or move the slider.</div>`; flash(box); return; }
-  const yr = m => run[key(m)].yearly.find(r => r.year === y) || {};
-  const al = m => allRow(run, m, y) || {};
-  const N = yr("none"), R = yr("respond");
-  const items = [];
-  const lost = -N.all, lostR = -R.all;
-  items.push(Math.abs(lost) >= 5e6 ? `Local revenue ${lost >= 0 ? "lost" : "gained"}: ${bnAbs(lost)} with rates unchanged, ${bnAbs(lostR)} after governments respond.` :
-    Math.abs(lostR) >= 5e6 ? `Local revenue ${lostR >= 0 ? "lost" : "gained"} after governments respond: ${bnAbs(lostR)} (no change with rates unchanged).` : "Local revenue: about the same.");
-  M.forEach(m => { const Y = yr(m), A = al(m);
-    items.push(`${MODE[m].l}: owners pay ${bnS(Y.tax)} (${pctS(Y.pct)}); ${pct(A.share_pay_less || 0, 0)} pay less, ${pct(A.share_pay_more || 0, 0)} pay more.`); });
-  if (POL.neutral && !POL.nocap) { const held = govRows(run, y), h = held.county.concat(held.city).filter(q => q.capped);
-    if (h.length) items.push(`${h.length} ${h.length === 1 ? "government is" : "counties and cities are"} held at the 10-mill cap; about ${(t => t >= 5e6 ? bnAbs(t) : usd(t))(h.reduce((t, q) => t + q.short, 0))} can't be raised.`); }
-  const biggest = Math.max(...["none", "respond"].concat(POL.neutral ? ["neutral"] : []).map(m => Math.max(Math.abs(yr(m).tax || 0), Math.abs(yr(m).all || 0))));
-  let msg = "";
-  if (biggest < NO_EFFECT) {
-    const A = al("respond"), hh = (A.owners || 0) * ((A.share_pay_less || 0) + (A.share_pay_more || 0));
-    msg = `Little or no effect in ${y}: property tax changes by less than $10 million` + (hh >= 1000 ? `, for about ${Math.round(hh / 1000).toLocaleString("en-US")},000 owner households.` : hh > 0 ? ", for very few owner households." : ".") +
-      (noEffectReason(y) ? " " + noEffectReason(y) : " Few owners qualify for or are affected by this setting.");
-  } else if (Math.abs(N.tax || 0) < 1e6 && Math.abs(R.tax || 0) >= NO_EFFECT) {
-    msg = "This rule changes only how governments set their tax rates, so its effect shows under \"Governments respond\", not with rates unchanged.";
-  }
-  box.innerHTML = `<h3>What changed, ${y}</h3>` + (msg ? `<div class="none-msg">${msg}</div>` : "") + `<ul>${items.map(t => `<li>${t}</li>`).join("")}</ul>`;
-  flash(box);
-}
-function flash(el) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
-
 // 1. revenue lost (all property)
 const FIN = __FIN__;
 const REC = __REC__;   // Revenue Estimating Conference, Amendment 3 (millions, by tax roll year)
 const RYEARS = G.current_law.yearly.filter(r => r.year > 2026).map(r => r.year);
 const allTax = y => { const b = G.current_law.yearly.find(r => r.year === y); return b.tax_total + b.nonowner; };
 const bnAbs = v => "$" + (Math.abs(v) / 1e9).toFixed(Math.abs(v) >= 1e10 ? 1 : 2) + " billion";
-function renderRevenue(run, y, M) {
-  $("pol-rev-title").textContent = `Revenue lost to local governments, ${y}`;
-  if (!run) {
-    $("pol-rev-figures").innerHTML = '<div class="fig"><div class="v">$0</div><div class="l">Current law: no revenue lost</div></div>';
-    $("pol-rev-where").textContent = ""; $("pol-c-rev").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; $("pol-c-split").innerHTML = ""; return;
-  }
-  const yr = (m, yy) => run[key(m)].yearly.find(r => r.year === yy) || {};
-  const N0 = yr("none", y), R = yr("respond", y), viaRates = Math.abs(N0.all) < 5e6 && Math.abs(R.all) >= 5e6;
-  const N = viaRates ? R : N0, lost = -N.all, word = lost >= 0 ? "lost" : "gained";
-  const cum = RYEARS.reduce((t, yy) => t - (yr("none", yy).all || 0), 0);
-  $("pol-rev-figures").innerHTML = [
-    [bnS(-N.all).replace(/^[+−]/, ""), `${lost >= 0 ? "Lost by" : "Gained by"} Florida's local governments in ${y}, ${viaRates ? "after governments respond (this rule changes only how they set rates)" : "tax rates unchanged"}`, "lead"],
-    [pct(Math.abs(lost) / allTax(y), 1), `Of all property tax in ${y}`],
-    [bnS(cum).replace(/^[+−]/, ""), `Revenue ${cum >= 0 ? "lost" : "gained"} 2027–${RYEARS[RYEARS.length - 1]}, rates unchanged`],
-    [bnS(-R.all).replace(/^[+−]/, ""), `Still ${-R.all >= 0 ? "lost" : "gained"} in ${y} after governments respond`],
-  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  let where = Math.abs(lost) < 5e6 ? "This change hardly moves property tax revenue." :
-    `With tax rates unchanged, local governments collect ${bnAbs(lost)} ${lost >= 0 ? "less" : "more"} in ${y}. If governments respond as they have in similar years, rate changes ${lost >= 0 ? "win back" : "give back"} ${bnAbs(lost + R.all)} and ${bnAbs(R.all)} stays ${lost >= 0 ? "lost" : "gained"}.`;
-  if (POL.neutral && Math.abs(lost) >= 5e6) {
-    const r = REIMB[POL.reimb], X = yr("neutral", y), own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
-    const off = fcOn() ? (X.state_offset || 0) : 0;
-    const held = govRows(run, y).county.concat(govRows(run, y).city).filter(q => q.capped);   // same numbers as section 5
-    const nHeld = held.length, short = held.reduce((t, q) => t + q.short, 0);
-    where += ` If localities replace what they can${r ? `, the state pays ${bnAbs(r * lost)} (${pct(r, 0)}) and` : off ? `, the state offsets fiscally constrained counties with ${bnAbs(off)} and` : ","} higher local rates raise ${bnAbs(own + oth)}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses.` +
-      (POL.nocap ? " (This version ignores the 10-mill cap.)" : nHeld ? ` About ${short >= 5e6 ? bnAbs(short) : usd(short)} can't be raised because ${nHeld} ${nHeld === 1 ? "government is" : "counties and cities are"} held at the 10-mill cap; it stays lost.` : " No county or city hits the 10-mill cap.");
-  }
-  const S0 = run.none_static ? run.none_static.yearly.find(q => q.year === y) : null;
-  if (S0 && !viaRates && Math.abs(N0.all - S0.all) >= 5e6) {
-    const extra = S0.all - N0.all, k = v => Math.round(v / 1000).toLocaleString("en-US") + ",000";
-    where += ` About ${bnAbs(extra)} of the ${lost >= 0 ? "loss" : "change"} comes from people responding to the bigger exemption: ${N0.claimants >= 500 ? k(N0.claimants) + " more owners claim it" : "more owners claim it"}${N0.switched >= 500 ? ` and ${k(N0.switched)} second-home owners make Florida their legal residence` : ""}. Without these responses (scored statically, as the state does) it would be ${bnAbs(-S0.all)}.`;
-  }
-  $("pol-rev-where").textContent = where;
-  // for scale: non-school share lost, translated with statewide county and city finances (FY 2023-24)
-  const b = G.current_law.yearly.find(q => q.year === y);
-  const nsLost = -(N.all - N.school - N.nonowner_school), nsTot = (b.tax_total - b.school) + (b.nonowner - b.nonowner_school);
-  const sLost = -(N.school + N.nonowner_school), sTot = b.school + b.nonowner_school, sh = nsLost / nsTot;
-  $("pol-rev-scale").innerHTML = Math.abs(nsLost) < 5e6 && Math.abs(sLost) < 5e6 ? "" :
-    `<b>For scale:</b> ` + (Math.abs(nsLost) >= 5e6 ? `that is ${pct(Math.abs(sh), 1)} of the property tax counties, cities and special districts would collect in ${y}. ` +
-      `Property tax pays for about ${pct(FIN.property_tax_share_of_revenue, 0)} of Florida counties' and cities' revenue, so ${sh >= 0 ? "losing" : "gaining"} that share is like ${sh >= 0 ? "losing" : "gaining"} about ${pct(Math.abs(sh) * FIN.property_tax_share_of_revenue, 1)} of all their revenue, ` +
-      `or a sum equal to about ${pct(Math.abs(sh) * FIN.property_tax_per_public_safety_dollar, 0)} of what they spend on public safety (police, fire, emergency services). ` : "") +
-    (Math.abs(sLost) >= 5e6 ? `School districts ${sLost >= 0 ? "lose" : "gain"} ${pct(Math.abs(sLost) / sTot, 1)} of their property tax. ` : "") +
-    `<span class="muted-p">County and city finances: <a href="${FIN.source_url}">state Annual Financial Reports, fiscal year 2023–24</a> (excluding taxes collected for other governments, transfers and borrowing; counties exclude Jacksonville-Duval). A comparison of size, not a forecast of which services would be cut.</span>`;
-  // chart: revenue lost by year, each response
-  const W = 520, H = 260, L = 56, R_ = 12, T = 14, B = 30;
-  const S = M.map(m => ({ m, pts: run[key(m)].yearly.filter(r => r.all !== null && r.all !== undefined).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));
-  const vals = S.flatMap(x => x.pts.map(p => p.v)).concat([0]);
-  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.1 || 0.1; lo -= pad; hi += pad;
-  const ys = S[0].pts.map(p => p.year), s = svg(W, H);
-  const x = v => L + (W - L - R_) * (v - ys[0]) / (ys[ys.length - 1] - ys[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
-  s.setAttribute("aria-label", "Property tax revenue lost by year");
-  for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, (v < 0 ? "−" : "") + "$" + Math.abs(v).toFixed(Math.abs(hi - lo) < 2 ? 2 : 1) + "B"); }
-  el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
-  ys.forEach((v, i) => { if (i % 3 === 0) el(s, "text", { x: x(v), y: H - 8, "text-anchor": "middle" }, String(v)); });
-  S.slice().reverse().forEach(({ m, pts }) => el(s, "polyline", { points: pts.map(p => `${x(p.year)},${yy(p.v)}`).join(" "), fill: "none", stroke: MODE[m].c, "stroke-width": 2.5, "stroke-dasharray": MODE[m].d }));
-  el(s, "line", { x1: x(y), x2: x(y), y1: T, y2: H - B, stroke: "var(--muted)", "stroke-dasharray": "2 3" });
-  $("pol-c-rev").innerHTML = ""; $("pol-c-rev").appendChild(s);
-  // chart: who loses it (rates unchanged)
-  $("pol-c-split-title").textContent = `Who loses the revenue, ${y}`;
-  const parts = [["School districts", -N.school, -N.nonowner_school],
-                 ["Counties, cities, special districts", -(N.tax - N.school), -(N.nonowner - N.nonowner_school)]];
-  const W2 = 520, rowH = 34, L2 = 190, H2 = parts.length * (rowH + 22) + 26, s2 = svg(W2, H2);
-  const mx = Math.max(...parts.map(([, a, b]) => Math.abs(a) + Math.abs(b)), 1e6);
-  s2.setAttribute("aria-label", "Revenue lost by type of government");
-  parts.forEach(([lab, a, b], i) => {
-    const y0 = 8 + i * (rowH + 22), sc = v => (W2 - L2 - 70) * Math.abs(v) / mx;
-    el(s2, "text", { x: L2 - 8, y: y0 + rowH / 2 + 4, "text-anchor": "end" }, lab);
-    el(s2, "rect", { x: L2, y: y0, width: Math.max(sc(a), 0.5), height: rowH, fill: "var(--accent)" });
-    el(s2, "rect", { x: L2 + sc(a), y: y0, width: Math.max(sc(b), 0.5), height: rowH, fill: "var(--county)" });
-    el(s2, "text", { x: L2 + sc(a) + sc(b) + 6, y: y0 + rowH / 2 + 4 }, "$" + ((a + b) / 1e9).toFixed(2) + "B");
-  });
-  $("pol-c-split").innerHTML = ""; $("pol-c-split").appendChild(s2);
-}
-
 // 5. each government's rate (revenue-neutral, with reimbursement)
 const GOV_TABS = [["county", "Counties (general levy)"], ["city", "Cities"], ["school", "School districts"]];
 $("pol-gov-tabs").innerHTML = GOV_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgov-${g}">${l}</button>`).join("");
@@ -1323,43 +1043,82 @@ function govRows(run, y, o = POL) {   // o: reimb, nocap, fc (the Policy tab's s
   }));
   return rows;
 }
-function renderGov(run, y, N) {
-  $("pol-gov").hidden = !POL.neutral;
-  if (!POL.neutral) return;
+// the Policy tab: one rate response at a time
+const POL_MODES = [["none", "Unchanged"], ["respond", "Governments respond"], ["neutral", "Raised to replace lost revenue"]];
+const MODE_TEXT = { none: "With local tax rates unchanged", respond: "If governments set rates as they have in similar years",
+  neutral: "If local governments raise rates to replace the lost revenue" };
+function renderPolicy() {
+  const { run, label, desc } = currentRun(), y = POL.year, m = POL.mode;
+  $("pol-chosen").innerHTML = `<div class="chosen-title">${label}</div><div class="muted-p">${desc}</div>`;
+  document.querySelectorAll("#pol-presets button").forEach(b => b.setAttribute("aria-checked", POL.kind === "preset" && b.dataset.id === POL.id));
+  radios("pol-years", "y", y); radios("pol-mode", "k", m);
   document.querySelectorAll("#pol-gov-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === POL.gov));
+  document.querySelectorAll("#pol-group-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === POL.group));
+  $("pol-none-msg").hidden = !!run;
+  document.querySelectorAll("#pol-results .pol-sec").forEach(x => x.hidden = !run);
+  if (!run) { $("pol-tiles").innerHTML = ""; return; }
+  const N = yrow(run, "none", y), R = yrow(run, "respond", y), X = yrow(run, "neutral", y), Ym = yrow(run, m, y), Am = allRow(run, m, y);
+  const sortD = rows => rows.slice().sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
+  const D = sortD(grp(run, m, y, "income_decile")), mt = MODE_TEXT[m];
+  const gov = govRows(run, y), held = gov.county.concat(gov.city).filter(x => x.capped);
+
+  // key numbers
+  const sNew = approxSuits(D, y), sCur = approxSuits(D.map(r => ({ ...r, avg_change: 0 })), y);
+  $("pol-tiles").innerHTML = [
+    [bnB(N.all), `${N.all <= 0 ? "Lost by" : "Gained by"} Florida's local governments in ${y} with tax rates unchanged, ${pct(Math.abs(N.all) / allTax(y), 1)} of all property tax`, "lead"],
+    [pct(Am.share_pay_less, 0), `Of homeowners pay less in ${y}, and ${pct(Am.share_pay_more, 0)} pay more (${POL_MODES.find(x => x[0] === m)[1].toLowerCase()} rates)`],
+    [usdS(Am.avg_change), `Average change per homeowner a year, ${y}`],
+  ].concat(sNew != null && sCur != null ? [[sNew.toFixed(2), `Suits index of homeowners' tax under the policy; current law ${sCur.toFixed(2)}. Below 0 = regressive.`, "fig-suits"]] : [])
+    .map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+
+  // revenue
+  $("pol-rev-title").textContent = `Revenue lost to local governments, ${y}`;
+  const S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null, small = Math.abs(N.all) < 5e6;
+  let rt = small ? "With tax rates unchanged, revenue hardly changes: this rule works through how governments set their rates." :
+    `With tax rates unchanged, local governments collect ${bnAbs(N.all)} ${N.all < 0 ? "less" : "more"} in ${y}; ${bnAbs(N.tax)} of it is homeowners' tax.` +
+    (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimates leave out.` : "");
+  if (m === "respond") rt += ` If governments respond as they have in similar years, ${R.all < 0 ? `${bnM(R.all)} stays lost` : `they collect ${bnM(R.all)} more`}.`;
+  if (m === "neutral" && !small) {
+    const r = REIMB[POL.reimb], own = X.tax - N.tax, oth = X.nonowner - N.nonowner, off = fcOn() ? (X.state_offset || 0) : 0;
+    rt += ` If localities replace what they can${r ? `, the state pays ${bnAbs(r * N.all)} (${pct(r, 0)}) and` : off ? `, the state offsets fiscally constrained counties with ${bnAbs(off)} and` : ","} higher local rates raise ${bnAbs(own + oth)}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses.` +
+      (POL.nocap ? " (This version ignores the 10-mill cap.)" : held.length ? ` ${held.length} counties and cities hit the 10-mill cap and can't raise ${bnM(held.reduce((t2, x) => t2 + x.short, 0))}.` : " No county or city hits the 10-mill cap.");
+  }
+  $("pol-rev-intro").textContent = rt;
+  const pts = k => run[key(k)].yearly.filter(r => r.all != null).map(r => ({ year: r.year, v: -r.all / 1e9 }));
+  const LN = [["none", "Rates unchanged", "var(--accent)", ""], ["respond", "Governments respond", "var(--county)", "6 4"], ["neutral", "Still lost after localities replace what they can", "var(--neutral)", "2 3"]];
+  $("pol-c-rev").innerHTML = ""; $("pol-c-rev").appendChild(revSvg(LN.map(([k, , c, d]) => ({ c, d, pts: pts(k) })), null, y));
+  $("pol-rev-legend").innerHTML = LN.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
+  const b = v => bnS(v).replace("+", ""), rowsY = run.none.yearly.filter(r => r.all != null);
+  $("pol-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Lost, rates unchanged</th><th>Governments respond</th><th>Still lost after replacement</th></tr></thead><tbody>` +
+    rowsY.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${b(-yrow(run, "respond", r.year).all)}</td><td>${b(-yrow(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
+
+  // who pays less and who pays more
+  $("pol-who-title").textContent = `Who pays less and who pays more, ${y}`;
+  $("pol-who-intro").textContent = whoText(mt, Am, D);
+  const tot = D.reduce((a, r) => a + r.total_change, 0);
+  $("pol-c-dec").innerHTML = ""; $("pol-c-dec").appendChild(decSvg(D));
+  $("pol-c-share-title").textContent = tot < 0 ? "Who gets the tax cut" : "Who pays the tax increase";
+  if (Math.abs(tot) < 1e7) $("pol-c-share").innerHTML = '<p class="muted-p">Owner tax changes by less than $10 million.</p>';
+  else { $("pol-c-share").innerHTML = ""; $("pol-c-share").appendChild(shareSvg(D)); }
+  $("pol-win-legend").innerHTML = winLegend();
+  $("pol-c-win").innerHTML = winnersHtml(D, Am);
+
+  // each government's rate (the replacement settings above: reimbursement, cap, offsets)
+  const med = list => { const v = list.map(x => x.d).sort((a, c) => a - c); return v.length ? v[Math.floor(v.length / 2)] : 0; };
   const r = REIMB[POL.reimb];
-  $("pol-gov-title").textContent = `How each government's tax rate changes, ${y}`;
-  const rows = govRows(run, y);
-  const over = list => list.filter(x => x.pol > 10.0005);
-  const newly = list => list.filter(x => x.pol > 10.0005 && x.cur <= 10.0005);
-  const up = list => list.filter(x => x.d > 0.0005);
-  const med = list => { const v = list.map(x => x.d).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : 0; };
-  const lost = N && N.tax < 0 ? -N.tax : 0;
-  $("pol-gov-intro").textContent = !run ? "Current law: no rate changes." :
-    `Each government's rate if it raises the same revenue as under current law${r ? ` after the state pays back ${pct(r, 0)} of what it loses` : ""}. ` +
-    (r && lost ? `The state's payments would be about ${bnS(r * lost).replace("+", "")} in ${y} (${pct(r, 0)} of the ${bnS(lost).replace("+", "")} that owners stop paying). ` : "") +
-    (POL.nocap ? "County general levies and city rates are capped at 10 mills by the Florida Constitution; this version ignores the cap, so rates above 10 show where a government could not legally replace its revenue." :
-      "County general levies and city rates are capped at 10 mills by the Florida Constitution (or stay at their current rate if already higher); a government at the cap can't raise the rest, and that revenue stays lost.");
-  const sumLost = list => list.reduce((t, x) => t + (x.lost || 0), 0);
-  $("pol-gov-intro").textContent += run ? ` With rates unchanged, county general levies would lose ${bnAbs(sumLost(rows.county))} in ${y}, city levies ${bnAbs(sumLost(rows.city))} and school districts ${bnAbs(sumLost(rows.school))}.` : "";
-  $("pol-gov-figures").innerHTML = [
-    [`${up(rows.county).length} of ${rows.county.length}`, "Counties raising their general rate"],
-    [pctS(med(rows.county), 1), "Median county rate change"],
-  ].concat(POL.nocap ? [
-    [String(newly(rows.county).length + newly(rows.city).length), "Counties and cities pushed above the 10-mill cap"],
-    [`${up(rows.city).length} of ${rows.city.length}`, "Cities raising their rate"],
-  ] : [
-    [String(rows.county.concat(rows.city).filter(x => x.capped).length), "Counties and cities held at the 10-mill cap"],
-    [bnS(rows.county.concat(rows.city).reduce((t, x) => t + x.short, 0)).replace(/^[+−]/, ""), `Revenue they can't raise under the cap, ${y}`],
-  ]).map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  const list = rows[POL.gov].slice().sort((a, b) => b.d - a.d || a.name.localeCompare(b.name));
-  const capped = POL.gov !== "school";
-  const capHead = POL.nocap ? "<th>Above 10 mills</th>" : "<th>At the 10-mill cap</th><th>Can't be raised under the cap</th>";
-  const capCells = x => POL.nocap ? `<td class="${x.pol > 10.0005 ? "over" : ""}">${x.pol > 10.0005 ? (x.cur > 10.0005 ? "Yes (already)" : "Yes") : ""}</td>` :
-    `<td class="${x.capped ? "over" : ""}">${x.capped ? `Yes (needs ${x.want.toFixed(2)})` : ""}</td><td>${x.short > 0 ? usd(x.short) : ""}</td>`;
-  const head = `<thead><tr><th>${POL.gov === "city" ? "City" : "County"}</th>${POL.gov === "city" ? "<th>County</th>" : ""}<th>Current law (mills)</th><th>Policy (mills)</th><th>Change (mills)</th><th>% change</th>${capped ? capHead : ""}<th>Revenue lost, rates unchanged</th><th>Share of levy lost</th></tr></thead>`;
-  const body = list.map(x => `<tr><td>${x.name}</td>${POL.gov === "city" ? `<td>${x.county}</td>` : ""}<td>${x.cur.toFixed(3)}</td><td>${x.pol.toFixed(3)}</td><td>${signed(x.pol - x.cur, v => v.toFixed(3))}</td><td>${pctS(x.pol / x.cur - 1, 1)}</td>${capped ? capCells(x) : ""}<td>${x.lost < 0 ? "Gains " : ""}${usd(Math.abs(x.lost))}</td><td>${pct(x.share, 1)}</td></tr>`).join("");
-  $("pol-t-gov").innerHTML = head + "<tbody>" + body + "</tbody>";
+  $("pol-gov-intro").textContent = `The rate each government would need in ${y} to raise what it would under current law${r ? `, after the state pays back ${pct(r, 0)} of what it loses` : ""}, and the rate it can set ${POL.nocap ? "(this version ignores the 10-mill cap)" : "under the 10-mill cap on county general and city levies"}. ` +
+    `${gov.county.filter(x => x.d > 0.0005).length} of ${gov.county.length} counties raise their general rate (median ${pctS(med(gov.county), 0)})` +
+    (POL.nocap ? "." : `; ${held.length} counties and cities are held at the cap and can't raise ${bnM(held.reduce((a, x) => a + x.short, 0))}.`);
+  const g = POL.gov, list = gov[g].slice().sort((a, c) => c.d - a.d || a.name.localeCompare(c.name)), capCol = g !== "school";
+  $("pol-t-gov").innerHTML = `<thead><tr><th>${g === "city" ? "City" : "County"}</th>${g === "city" ? "<th>County</th>" : ""}<th>Current law (mills)</th><th>Needed to replace (mills)</th>${capCol ? "<th>Can set (mills)</th><th>Can't raise</th>" : ""}<th>Revenue lost, rates unchanged</th></tr></thead><tbody>` +
+    list.map(x => `<tr><td>${x.name}</td>${g === "city" ? `<td>${x.county}</td>` : ""}<td>${x.cur.toFixed(3)}</td><td>${x.want.toFixed(3)}</td>${capCol ? `<td class="${x.capped ? "over" : ""}">${x.pol.toFixed(3)}</td><td>${x.short > 0 ? usd(x.short) : ""}</td>` : ""}<td>${usd(Math.abs(x.lost))}</td></tr>`).join("") + "</tbody>";
+
+  // homeowners by group
+  let gr = grp(run, m, y, POL.group);
+  if (POL.group === "income_decile") gr = sortD(gr);
+  const grow = (q, n) => `<td>${n}</td><td>${Math.round(q.owners).toLocaleString("en-US")}</td><td>${usdS(q.avg_change)}</td><td>${pctS(q.pct_change)}</td><td>${pct(q.share_pay_less, 0)}</td><td>${pct(q.share_pay_more, 0)}</td>`;
+  $("pol-t-groups").innerHTML = `<thead><tr><th>Group</th><th>Owners</th><th>Average change</th><th>% change</th><th>Pay less</th><th>Pay more</th></tr></thead><tbody>` +
+    gr.map(q => `<tr>${grow(q, q.group)}</tr>`).join("") + `<tr class="total">${grow(Am, "All owners")}</tr></tbody>`;
 }
 
 // builder controls
@@ -1382,18 +1141,16 @@ function setLever(id, keepIdx) {
 }
 $("pol-lever").addEventListener("change", e => { setLever(e.target.value); POL.kind = "slider"; renderPolicy(); });
 $("pol-slider").addEventListener("input", e => { POL.idx = +e.target.value; POL.kind = "slider"; setLever(POL.lever, true); renderPolicy(); });
-$("pol-years").innerHTML = G.years.map(y => `<button role="radio" data-y="${y}" id="pyear-${y}">${y}</button>`).join("");
+$("pol-years").innerHTML = G.years.map(y => `<button role="radio" data-y="${y}">${y}</button>`).join("");
 $("pol-years").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.year = +b.dataset.y; renderPolicy(); });
 const GROUP_TABS = [["age_group", "Age"], ["homestead", "Homestead"], ["region", "Region"], ["income_decile", "Income decile"]];
-POL.unit = "owner";
-$("pol-dec-unit").innerHTML = [["owner", "Per owner"], ["household", "Per household"]].map(([k, l]) => `<button role="radio" data-k="${k}">${l}</button>`).join("");
-$("pol-dec-unit").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.unit = b.dataset.k; renderPolicy(); });
+POL.mode = "none";
+$("pol-mode").innerHTML = POL_MODES.map(([k, l]) => `<button role="radio" data-k="${k}">${l}</button>`).join("");
+$("pol-mode").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.mode = b.dataset.k; syncReimb(); renderPolicy(); });
 $("pol-group-tabs").innerHTML = GROUP_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgroup-${g}">${l}</button>`).join("");
 $("pol-group-tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.group = b.dataset.g; renderPolicy(); });
 setLever(POL.lever);
-try { POL.neutral = localStorage.getItem("ptm-neutral") === "1"; } catch (e) { POL.neutral = false; }
-$("pol-neutral").checked = POL.neutral;
-const syncReimb = () => { $("pol-reimb-box").hidden = !POL.neutral; $("pol-reimb-label").textContent = `State reimburses: ${pct(REIMB[POL.reimb], 0)} of lost revenue${POL.reimb === 4 ? " (= no response)" : ""}`;
+const syncReimb = () => { $("pol-reimb-box").hidden = POL.mode !== "neutral"; $("pol-reimb-label").textContent = `State reimburses: ${pct(REIMB[POL.reimb], 0)} of lost revenue${POL.reimb === 4 ? " (= no response)" : ""}`;
   placeTicks(document.querySelector("#pol-reimb-box .slider-scale")); };
 // put each tick label under its slider stop; wrap long labels and size the row to fit
 function placeTicks(el) {
@@ -1406,7 +1163,6 @@ function placeTicks(el) {
 }
 window.addEventListener("resize", () => { if (typeof setLever === "function") setLever(POL.lever, true);
   document.querySelectorAll(".slider-scale").forEach(placeTicks); });
-$("pol-neutral").addEventListener("change", e => { POL.neutral = e.target.checked; try { localStorage.setItem("ptm-neutral", POL.neutral ? "1" : "0"); } catch (x) {} syncReimb(); renderPolicy(); });
 $("pol-reimb").addEventListener("input", e => { POL.reimb = +e.target.value; syncReimb(); if (typeof syncFc === "function") syncFc(); renderPolicy(); });
 POL.nocap = false;
 $("pol-cap").addEventListener("change", e => { POL.nocap = !e.target.checked; syncFc(); renderPolicy(); });
@@ -1433,6 +1189,59 @@ const HH = __HHDEC__;  // all households by 2026 income tenth (scripts/household
 // change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
 const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
 const hhIncomeShare = () => { const t = HH.deciles.reduce((a, d) => a + d.income, 0); return HH.deciles.map(d => d.income / t); };
+// revenue lost by year: lines [{c, d, pts: [{year, v (billions)}]}], optional state-estimate dots, marker at year y
+function revSvg(lines, rec, y) {
+  const ys = lines[0].pts.map(p => p.year), vals = lines.flatMap(l => l.pts.map(p => p.v)).concat((rec || []).map(p => p.v), [0]);
+  const span = Math.max(...vals) - Math.min(...vals) || 1, step = span > 8 ? Math.ceil(span / 4) : span > 2 ? 1 : span > 0.8 ? 0.25 : 0.1;
+  const hi = Math.ceil(Math.max(...vals) * 1.05 / step) * step, lo = Math.floor(Math.min(...vals) / step) * step;
+  const W = 520, H = 260, L = 54, R_ = 22, T = 14, B = 30, s = svg(W, H);
+  const x = v => L + (W - L - R_) * (v - ys[0]) / (ys[ys.length - 1] - ys[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+  s.setAttribute("aria-label", "Revenue lost by year");
+  for (let v = lo; v <= hi + step / 2; v += step) { el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, (v < 0 ? "−" : "") + "$" + Math.abs(v).toFixed(step < 1 ? 2 : 0) + "B"); }
+  el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+  ys.forEach((v, i) => { if (i % 3 === 0) el(s, "text", { x: x(v), y: H - 8, "text-anchor": "middle" }, String(v)); });
+  el(s, "line", { x1: x(y), x2: x(y), y1: T, y2: H - B, stroke: "var(--muted)", "stroke-dasharray": "2 3" });
+  lines.forEach(l => el(s, "polyline", { points: l.pts.map(p => `${x(p.year)},${yy(p.v)}`).join(" "), fill: "none", stroke: l.c, "stroke-width": 2.5, "stroke-dasharray": l.d }));
+  (rec || []).forEach(p => el(s, "circle", { cx: x(p.year), cy: yy(p.v), r: 4.5, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 2 }));
+  return s;
+}
+// average change by income tenth: per owner (light) and per household with renters at $0 (dark)
+function decSvg(D) {
+  const perHH = perHousehold(D), vals = D.map(r => r.avg_change).concat(perHH, [0]);
+  const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].find(k => k * p >= raw) * p;   // round tick steps
+  const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
+  const W = 520, H = 260, L = 56, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10, s = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+  s.setAttribute("aria-label", "Average change per owner and per household by income tenth");
+  for (let v = lo; v <= hi + step / 2; v += step) { el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
+  el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+  D.forEach((r, i) => {
+    [[r.avg_change, "var(--gain1)", "var(--lose1)", 0], [perHH[i], "var(--gain2)", "var(--lose2)", 1]].forEach(([v, cg, cl, j]) =>
+      el(s, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(yy(v), yy(0)), width: bw * 0.36, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? cg : cl, rx: 2 }));
+    el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+  return s;
+}
+// share of owners paying less or more by income tenth: HTML bars, so labels stay legible at any width
+const WIN_CATS = [["gain_more_5pct", "Over 5% less", "var(--gain2)"], ["gain_less_5pct", "Up to 5% less", "var(--gain1)"],
+  ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Over 5% more", "var(--lose2)"]];
+const winLegend = () => WIN_CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
+const winnersHtml = (D, A) => `<div class="wl" role="img" aria-label="Share of owners paying less or more by income tenth">` +
+  D.concat([A]).map((r, i) => `<div class="wl-row${i === D.length ? " wl-all" : ""}"><span class="wl-lab">${i === D.length ? "All owners" : "Tenth " + (i + 1)}</span><span class="wl-bar">` +
+    WIN_CATS.map(([k, l, c]) => { const v = r[k] || 0; return v > 0.002 ? `<i style="width:${(100 * v).toFixed(2)}%;background:${c}${/more_5pct$/.test(k) ? ";color:#fff" : ""}" title="${l}: ${pct(v, 0)}">${v >= 0.08 ? pct(v, 0) : ""}</i>` : ""; }).join("") +
+    `</span></div>`).join("") + "</div>";
+// the "who pays" paragraph: owners paying less or more, then the distribution across all households
+function whoText(mt, A, D) {
+  const f = fifths(D), ph = perHousehold(D), inc = hhIncomeShare();
+  let t = `${mt}, ${pct(A.share_pay_less, 0)} of homeowners pay less` + (A.share_pay_less >= 0.005 ? ` (on average ${usd(Math.abs(A.avg_gain_if_less))} a year)` : "") +
+    (A.share_pay_more >= 0.005 ? ` and ${pct(A.share_pay_more, 0)} pay more (on average ${usd(Math.abs(A.avg_loss_if_more))})` : "") + ".";
+  if (Math.abs(f.tot) < 1e7) return t;
+  const cut = f.tot < 0, w = cut ? "cut" : "increase", v = cut ? "gets" : "pays";
+  t += ` Households in the highest-income fifth ${cut ? "get" : "pay"} ${pct(f.top, 0)} of the ${w}; the bottom half ${v} ${pct(f.bottom, 0)}.`;
+  t += ` Counting renters, who ${cut ? "get" : "pay"} nothing directly, the average household in the bottom tenth ${v} ${usd(Math.abs(ph[0]))} a year and in the top tenth ${usd(Math.abs(ph[9]))}` +
+    (ph[0] * ph[9] > 0 && Math.abs(ph[0]) >= 1 ? `, ${(ph[9] / ph[0]).toFixed(1)} times as much.` : ".") +
+    ` The top tenth ${v} ${pct(D[9].total_change / f.tot, 0)} of the ${w}, with ${pct(inc[9], 0)} of household income; the bottom tenth ${v} ${pct(D[0].total_change / f.tot, 0)}.`;
+  return t;
+}
 // each tenth's share of the total change, against an equal share (10%: each tenth is a tenth of households)
 function shareSvg(D) {
   const tot = D.reduce((a, r) => a + r.total_change, 0), sh = D.map(r => tot ? r.total_change / tot : 0);
@@ -1517,61 +1326,24 @@ function renderA3() {
       (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.") +
       (rent ? ` Homes and apartments without a homestead exemption (rentals and second homes) pay ${bnM(rent.neutral)} more, about ${usd(rent.neutral / RENT.units)} a year per unit (${pctS(rent.neutral / rent.current, 0)}); the model doesn't estimate how much of that reaches renters.` : "");
   (function () {
-    const rows = run.none.yearly.filter(r => r.all != null), ys = rows.map(r => r.year);
+    const rows = run.none.yearly.filter(r => r.all != null);
     const lines = [["none", "var(--accent)", ""], ["neutral", "var(--neutral)", "2 3"]].map(([k, c, d]) => ({ c, d, pts: run[k].yearly.filter(r => r.all != null).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));
     const rec = Object.entries(REC.by_roll_year).map(([yy, v]) => ({ year: +yy, v: -v / 1e3 }));
-    const vals = lines.flatMap(l => l.pts.map(p => p.v)).concat(rec.map(p => p.v), [0]);
-    const hi = 4 * Math.ceil(Math.max(...vals) * 1.05 / 4), lo = Math.min(0, ...vals);   // whole-billion ticks
-    const W = 520, H = 260, L = 50, R_ = 22, T = 14, B = 30, s = svg(W, H);
-    const x = v => L + (W - L - R_) * (v - ys[0]) / (ys[ys.length - 1] - ys[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
-    s.setAttribute("aria-label", "Revenue lost by year");
-    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, "$" + v.toFixed(0) + "B"); }
-    ys.forEach((v, i) => { if (i % 3 === 0) el(s, "text", { x: x(v), y: H - 8, "text-anchor": "middle" }, String(v)); });
-    el(s, "line", { x1: x(y), x2: x(y), y1: T, y2: H - B, stroke: "var(--muted)", "stroke-dasharray": "2 3" });
-    lines.forEach(l => el(s, "polyline", { points: l.pts.map(p => `${x(p.year)},${yy(p.v)}`).join(" "), fill: "none", stroke: l.c, "stroke-width": 2.5, "stroke-dasharray": l.d }));
-    rec.forEach(p => el(s, "circle", { cx: x(p.year), cy: yy(p.v), r: 4.5, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 2 }));
-    $("a3-c-rev").innerHTML = ""; $("a3-c-rev").appendChild(s);
+    $("a3-c-rev").innerHTML = ""; $("a3-c-rev").appendChild(revSvg(lines, rec, y));
     const recOf = yy => REC.by_roll_year[yy], b = v => bnS(v).replace("+", "");
     $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Lost, rates unchanged</th><th>State estimate</th><th>Still lost after replacement</th></tr></thead><tbody>` +
       rows.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${recOf(r.year) !== undefined ? b(-recOf(r.year) * 1e6) : ""}</td><td>${b(-a3yr(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
   })();
 
   // who pays less and who pays more
-  const A = a3all(run, m, y), D = a3dec(run, m, y), f = fifths(D);
+  const A = a3all(run, m, y), D = a3dec(run, m, y);
   $("a3-who-title").textContent = `Who pays less and who pays more, ${y}`;
-  $("a3-who-intro").textContent = `${mt}, ${pct(A.share_pay_less, 0)} of homeowners pay less (on average ${usd(Math.abs(A.avg_gain_if_less))} a year)` +
-    (A.share_pay_more >= 0.005 ? ` and ${pct(A.share_pay_more, 0)} pay more (on average ${usd(Math.abs(A.avg_loss_if_more))})` : "") + "." +
-    (f.tot < 0 ? ` Households in the highest-income fifth get ${pct(f.top, 0)} of the cut; the bottom half gets ${pct(f.bottom, 0)}.` : "");
-  // all households: renters at $0; households grow with each tenth's owners (same ownership rate as 2026)
-  const perHH = perHousehold(D), incSh = hhIncomeShare();
-  if (f.tot < 0) $("a3-who-intro").textContent += ` Counting renters, who get nothing directly, the average household in the bottom tenth gets ${usd(Math.abs(perHH[0]))} a year and in the top tenth ${usd(Math.abs(perHH[9]))}` +
-    (perHH[0] < 0 ? `, ${(perHH[9] / perHH[0]).toFixed(1)} times as much.` : ".") +
-    ` The top tenth gets ${pct(D[9].total_change / f.tot, 0)} of the cut, with ${pct(incSh[9], 0)} of household income; the bottom tenth gets ${pct(D[0].total_change / f.tot, 0)}.`;
+  $("a3-who-intro").textContent = whoText(mt, A, D);
   $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
-  (function () {
-    const vals = D.map(r => r.avg_change).concat(perHH, [0]);
-    const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
-    const step = [1, 2, 2.5, 5, 10].find(k => k * p >= raw) * p;   // round tick steps
-    const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
-    const W = 520, H = 260, L = 56, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10, s = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
-    s.setAttribute("aria-label", "Average change per owner by income tenth");
-    for (let v = lo; v <= hi + step / 2; v += step) { el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
-    el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
-    D.forEach((r, i) => {
-      [[r.avg_change, "var(--gain1)", "var(--lose1)", 0], [perHH[i], "var(--gain2)", "var(--lose2)", 1]].forEach(([v, cg, cl, j]) =>
-        el(s, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(yy(v), yy(0)), width: bw * 0.36, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? cg : cl, rx: 2 }));
-      el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
-    $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(s);
-    $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(shareSvg(D));
-    const CATS = [["gain_more_5pct", "Over 5% less", "var(--gain2)"], ["gain_less_5pct", "Up to 5% less", "var(--gain1)"],
-      ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Over 5% more", "var(--lose2)"]];
-    $("a3-win-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
-    // HTML bars rather than SVG so labels stay legible at any width
-    $("a3-c-win").innerHTML = `<div class="wl" role="img" aria-label="Share of owners paying less or more by income tenth">` +
-      D.concat([A]).map((r, i) => `<div class="wl-row${i === 10 ? " wl-all" : ""}"><span class="wl-lab">${i === 10 ? "All owners" : "Tenth " + (i + 1)}</span><span class="wl-bar">` +
-        CATS.map(([k, l, c]) => { const v = r[k] || 0; return v > 0.002 ? `<i style="width:${(100 * v).toFixed(2)}%;background:${c}${/more_5pct$/.test(k) ? ";color:#fff" : ""}" title="${l}: ${pct(v, 0)}">${v >= 0.08 ? pct(v, 0) : ""}</i>` : ""; }).join("") +
-        `</span></div>`).join("") + "</div>";
-  })();
+  $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(decSvg(D));
+  $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(shareSvg(D));
+  $("a3-win-legend").innerHTML = winLegend();
+  $("a3-c-win").innerHTML = winnersHtml(D, A);
 
   renderA3Ex(y, m === "none" ? "none" : "replace");
 
