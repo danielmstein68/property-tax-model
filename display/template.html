@@ -130,13 +130,24 @@ tbody tr.total td { font-weight: 700; border-bottom: 0; background: var(--accent
 .reimb { margin: 10px 0 0 28px; max-width: 520px; display: grid; gap: 8px; }
 .reimb input[type=range] { width: 100%; accent-color: var(--neutral); }
 .tablebox.tall { max-height: 520px; overflow-y: auto; }
-.a3-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 760px) { .a3-parts { grid-template-columns: 1fr; } }
-.a3-part { background: var(--surface); border-radius: 16px; padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
-.a3-part h3 { margin: 0; }
-.a3-part p { margin: 0; }
-.a3-part.off { background: transparent; border: 1.5px dashed var(--rule); }
 .sub-h { margin: 18px 0 8px; }
+.a3-bar { display: flex; flex-wrap: wrap; gap: 14px 32px; padding: 14px 0; border-block: 1px solid var(--rule); background: var(--bg); }
+@media (min-width: 900px) { .a3-bar { position: sticky; top: 0; z-index: 5; } }
+.a3-ctl { display: grid; gap: 6px; }
+.a3 .figures .fig .l { font-size: 14.5px; }
+@media (max-width: 560px) { .a3 .figures { grid-template-columns: 1fr; } }
+tbody tr.sel td { background: var(--accent-soft); font-weight: 700; }
+.more-list { gap: 0; }
+details.more { border-top: 1px solid var(--rule); }
+details.more:last-child { border-bottom: 1px solid var(--rule); }
+details.more > summary { list-style: none; cursor: pointer; padding: 16px 4px; font: 700 18px/1.3 var(--display); color: var(--ink); letter-spacing: -0.01em; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::after { content: " +"; color: var(--accent); }
+details.more[open] > summary::after { content: " −"; }
+details.more > summary:hover { color: var(--accent); }
+details.more > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.more-body { display: grid; gap: 14px; padding: 0 4px 22px; }
+.more-body ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 15px; max-width: 80ch; }
 .ex-table td:first-child { white-space: normal; min-width: 260px; max-width: 460px; }
 .ex-table .ex-who { display: block; font-size: 13px; font-weight: 400; color: var(--muted); line-height: 1.4; margin-top: 2px; }
 .ex-table td.gain { color: var(--gain2); font-weight: 700; }
@@ -480,49 +491,104 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     </div>
   </div>
 
-  <div id="view-a3" class="wrap-inner" hidden>
-    <section class="findings" id="a3-findings" aria-label="Key findings"></section>
-    <section>
-      <div class="eyebrow">On the ballot November 3, 2026 · needs 60% of the vote · would take effect January 1, 2027</div>
-      <h2>What Amendment 3 does</h2>
-      <p>The Legislature's proposal (<a href="https://www.flsenate.gov/Session/Bill/2026F/1F">CS/HJR 1-F</a>, 2026), titled "Save Our Homes from Excessive Property Taxes", changes the State Constitution in four ways. The model covers the first three.</p>
-      <div class="a3-parts">
-        <div class="a3-part"><h3>1 · A larger homestead exemption</h3><p>For county, city and special district taxes, the first $150,000 of a homestead's assessed value is exempt in 2027 and the first $250,000 from 2028, rising with inflation from 2029. Today it is $25,000 plus a second exemption worth up to about $26,000. School taxes keep the $25,000 exemption.</p></div>
-        <div class="a3-part"><h3>2 · New residents wait</h3><p>People who were not Florida residents on December 31, 2026 get the first $50,000 exempt (rising with inflation from 2028) until their fifth year with the exemption. From 2030 a county or city can shorten the wait by a two-thirds vote. A similar wait was struck down by the Florida Supreme Court in 1982, so this page also shows the amendment without it.</p></div>
-        <div class="a3-part"><h3>3 · A 5% cap on other property</h3><p>For non-school taxes, assessments of non-homestead homes, rentals, commercial and other property can rise at most 5% a year, down from 10%. Most of this goes to rentals and businesses, which the model counts as local tax base, not as households.</p></div>
-        <div class="a3-part off"><h3>4 · Limits on spending (not modelled)</h3><p>Counties and cities could use property tax only for public safety, education, infrastructure, natural resources and flood control, bonds and debt, employee retirement, and the operations of county officers, commissions and city governments. The last category is broad, so the model assumes no change in what they levy.</p></div>
-      </div>
+  <div id="view-a3" class="wrap-inner a3" hidden>
+    <section aria-label="Key numbers">
+      <div class="figures" id="a3-tiles"></div>
+      <p class="muted-p" id="a3-tiles-note"></p>
     </section>
 
-
-    <section>
-      <div class="eyebrow">Choose a version</div>
-      <h2>The whole amendment, or one part</h2>
-      <div class="tabs" role="radiogroup" aria-label="Part of the amendment" id="a3-parts"></div>
-      <h3 class="sub-h">Five-year rule for new residents</h3>
-      <div class="tabs" role="radiogroup" aria-label="Five-year rule" id="a3-court"></div>
-      <p class="muted-p" id="a3-court-note"></p>
-    </section>
+    <div class="a3-bar" role="group" aria-label="Settings">
+      <div class="a3-ctl"><span class="field-label">Year</span><div class="tabs" role="radiogroup" aria-label="Year" id="a3-years"></div></div>
+      <div class="a3-ctl"><span class="field-label">Local tax rates</span><div class="tabs" role="radiogroup" aria-label="Local tax rates" id="a3-mode"></div></div>
+      <div class="a3-ctl"><span class="field-label">Five-year rule for new residents</span><div class="tabs" role="radiogroup" aria-label="Five-year rule" id="a3-court"></div></div>
+    </div>
 
     <section>
       <div class="eyebrow">Revenue</div>
-      <h2 id="a3-rev-title">How much less property tax</h2>
+      <h2 id="a3-rev-title">Revenue lost to local governments</h2>
       <p id="a3-rev-intro"></p>
-      <div class="tabletools"><button class="copy" data-table="a3-t-rev" id="copy-a3-rev">Copy table</button></div>
-      <div class="tablebox"><table id="a3-t-rev"></table></div>
+      <div class="charts">
+        <div class="chart">
+          <h3>Revenue lost by year, all property</h3>
+          <p>Billions of dollars a year.</p>
+          <div id="a3-c-rev"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Rates unchanged</span><span><i style="background:var(--neutral)"></i>Still lost after localities replace what they can</span><span><i style="background:var(--surface);border:2.5px solid var(--ink);border-radius:50%;box-sizing:border-box"></i>State estimate</span></div>
+        </div>
+        <div class="tablebox"><table id="a3-t-rev"></table></div>
+      </div>
     </section>
 
-    <div id="a3-results-slot" class="wrap-inner"></div>
+    <section>
+      <div class="eyebrow">Homeowners</div>
+      <h2 id="a3-who-title">Who pays less and who pays more</h2>
+      <p id="a3-who-intro"></p>
+      <div class="charts">
+        <div class="chart">
+          <h3>Average change per owner, by household income</h3>
+          <p>Dollars a year; tenths of all Florida households (1 = lowest income).</p>
+          <div id="a3-c-dec"></div>
+        </div>
+        <div class="chart">
+          <h3>Share of owners paying less or more</h3>
+          <p>By household income tenth.</p>
+          <div id="a3-c-win"></div>
+          <div class="legend" id="a3-win-legend"></div>
+        </div>
+      </div>
+    </section>
 
     <section>
       <div class="eyebrow">Examples</div>
-      <h2>Six property owners, current law and Amendment 3</h2>
+      <h2 id="a3-ex-title">Six property owners</h2>
       <p id="a3-ex-lead"></p>
-      <div class="tabs" role="radiogroup" aria-label="Local tax rates" id="a3-ex-mode"></div>
-      <div class="tabs" role="radiogroup" aria-label="Year" id="a3-ex-years"></div>
       <div class="tabletools"><button class="copy" data-table="a3-t-ex" id="copy-a3-ex">Copy table</button></div>
       <div class="tablebox"><table id="a3-t-ex" class="ex-table"></table></div>
       <p class="muted-p" id="a3-ex-note"></p>
+    </section>
+
+    <section class="more-list">
+      <details class="more">
+        <summary>What Amendment 3 does</summary>
+        <div class="more-body">
+          <p>The Legislature's proposal (<a href="https://www.flsenate.gov/Session/Bill/2026F/1F">CS/HJR 1-F</a>) is on the November 3, 2026 ballot, needs 60% of the vote, and would take effect January 1, 2027.</p>
+          <ul>
+            <li><b>A larger homestead exemption.</b> For county, city and special district taxes, the first $150,000 of a homestead's assessed value is exempt in 2027 and the first $250,000 from 2028, rising with inflation. Today it is about $51,000. School taxes keep the $25,000 exemption.</li>
+            <li><b>New residents wait.</b> People who were not Florida residents on December 31, 2026 get $50,000 until their fifth year with the exemption. A similar wait was struck down by the Florida Supreme Court in 1982, hence the switch above.</li>
+            <li><b>A 5% assessment cap for rentals, second homes and businesses.</b> Their assessed value for non-school taxes can rise at most 5% a year, down from 10%.</li>
+            <li><b>Limits on spending (not modelled).</b> Counties and cities could use property tax only for listed purposes; the list includes their general operations, so the model assumes no change in what they levy.</li>
+          </ul>
+        </div>
+      </details>
+      <details class="more">
+        <summary>Each county, city and school district's tax rate</summary>
+        <div class="more-body">
+          <p id="a3-gov-intro"></p>
+          <div class="tabs" role="tablist" id="a3-gov-tabs"></div>
+          <div class="tabletools"><button class="copy" data-table="a3-t-gov" id="copy-a3-gov">Copy table</button></div>
+          <div class="tablebox tall"><table id="a3-t-gov"></table></div>
+        </div>
+      </details>
+      <details class="more">
+        <summary>Homeowners by age, homestead status, region and income</summary>
+        <div class="more-body">
+          <div class="tabs" role="tablist" id="a3-group-tabs"></div>
+          <div class="tabletools"><button class="copy" data-table="a3-t-groups" id="copy-a3-groups">Copy table</button></div>
+          <div class="tablebox"><table id="a3-t-groups"></table></div>
+        </div>
+      </details>
+      <details class="more">
+        <summary>Method and notes</summary>
+        <div class="more-body">
+          <ul>
+            <li><b>Compared with current law</b> on the same households, economy (central forecast) and random draws, so differences come from the amendment. The model covers parts 1 to 3.</li>
+            <li><b>Rates unchanged</b> is how the state's economists score tax changes. <b>Localities replace the revenue</b>: every county, city and school district resets its rate to raise what it would under current law, up to the Constitution's 10-mill cap on county general and city levies, with no state reimbursement. Other options (reimbursement, no cap, a state offset for small counties) are on the Policy comparisons tab.</li>
+            <li><b>Other property</b> (rentals, second homes, businesses) is estimated from each county's 2026 tax roll and average rates.</li>
+            <li><b>People respond to the bigger exemption:</b> some owners who don't claim the homestead exemption start to (central assumption from Texas's 2023 increase), and some owners of second homes make Florida their legal residence. The state's estimate leaves these out.</li>
+            <li><b>New residents:</b> the Census survey's share of recent buyers who came from another state or abroad (23%, more at older ages), plus newcomers who rent first and buy later.</li>
+            <li><b>Owners only.</b> What renters pay through rent is not modelled.</li>
+          </ul>
+        </div>
+      </details>
     </section>
   </div>
 
@@ -885,11 +951,9 @@ const usdS = v => signed(v, x => "$" + Math.round(x).toLocaleString("en-US"));
 const pctS = (v, d = 1) => signed(v, x => (100 * x).toFixed(d) + "%");
 
 let VIEW = "today";
-const A3 = { part: "full", court: "written" };
-const a3id = () => A3.part === "cap" ? "a3_cap" : `a3_${A3.part}${A3.court === "struck" ? "_nowait" : ""}`;
+const A3 = { year: G.years[0], mode: "none", court: "written", gov: "county", group: "age_group" };
+const a3id = () => A3.court === "struck" ? "a3_full_nowait" : "a3_full";
 function currentRun() {
-  if (VIEW === "a3") { const e = G.amendment3.find(a => a.id === a3id());
-    return { run: G.runs[e.id], label: `Amendment 3 · ${e.label}`, desc: e.description }; }
   if (POL.kind === "preset") return { run: G.runs[POL.id], label: G.presets.find(p => p.id === POL.id).label,
     desc: G.presets.find(p => p.id === POL.id).description };
   const sl = G.sliders.find(s => s.id === POL.lever), v = sl.settings[POL.idx];
@@ -1187,15 +1251,16 @@ $("pol-gov-tabs").innerHTML = GOV_TABS.map(([g, l]) => `<button role="tab" data-
 $("pol-gov-tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.gov = b.dataset.g; renderPolicy(); });
 const CNAME = Object.fromEntries(G.governments.counties.map(c => [c.fips, c.name]));
 const CAP = 10;
-function govRows(run, y) {
-  const r = REIMB[POL.reimb], k = 1 - r, ys = String(y), d = run && run.rates ? run.rates[ys] : null;
+function govRows(run, y, o = POL) {   // o: reimb, nocap, fc (the Policy tab's settings by default)
+  const fc = o.fc && !o.nocap && o.reimb === 0;
+  const r = REIMB[o.reimb], k = 1 - r, ys = String(y), d = run && run.rates ? run.rates[ys] : null;
   const rows = { county: [], city: [], school: [] };
   G.governments.counties.forEach((c, i) => {
     const dc = d ? d.county[i] : 0, ds = d ? d.school[i] : 0;
     const lostOf = (rate, tv, dd) => rate * tv * dd / (1 + dd) / 1000;   // rate x (current-law base - policy base)
     // state offset (fiscally constrained): 95% of the lost value x min(2026 rate, current rate) is paid by the state
-    const off = fcOn() && c.fc && c.general_2026 ? 0.95 * Math.max(dc, 0) * Math.min(1, c.general_2026 / c.general[ys]) : 0;
-    if (c.general) rows.county.push({ name: c.name + (fcOn() && c.fc ? " (state offset)" : ""), county: "", cur: c.general[ys], d: k * dc - off, d0: dc, tv: c.tv[ys], lost: lostOf(c.general[ys], c.tv[ys], dc), share: dc / (1 + dc) });
+    const off = fc && c.fc && c.general_2026 ? 0.95 * Math.max(dc, 0) * Math.min(1, c.general_2026 / c.general[ys]) : 0;
+    if (c.general) rows.county.push({ name: c.name + (fc && c.fc ? " (state offset)" : ""), county: "", cur: c.general[ys], d: k * dc - off, d0: dc, tv: c.tv[ys], lost: lostOf(c.general[ys], c.tv[ys], dc), share: dc / (1 + dc) });
     rows.school.push({ name: c.name, county: "", cur: c.school[ys], d: k * ds, d0: ds, tv: c.tv_school[ys], lost: lostOf(c.school[ys], c.tv_school[ys], ds), share: ds / (1 + ds) });
   });
   G.governments.cities.forEach(c => { const dd = d ? d.city[c.i] : 0;
@@ -1203,7 +1268,7 @@ function govRows(run, y) {
   // the rate each would need (want) and, with the cap, the rate it can set; the gap stays lost
   Object.entries(rows).forEach(([g, list]) => list.forEach(x => {
     x.want = x.cur * (1 + x.d);
-    x.capped = g !== "school" && !POL.nocap && x.want > Math.max(CAP, x.cur) + 0.0005;
+    x.capped = g !== "school" && !o.nocap && x.want > Math.max(CAP, x.cur) + 0.0005;
     x.pol = x.capped ? Math.max(CAP, x.cur) : x.want;
     x.short = x.capped ? (x.want - x.pol) * x.tv / (1 + x.d0) / 1000 : 0;   // on the policy base
   }));
@@ -1307,115 +1372,172 @@ syncReimb();
   $("today-context").textContent = `All property in Florida (homes, rentals, second homes and businesses) pays an estimated ${bn(tot)} in property tax in 2026: ${bn(school)} to school districts and ${bn(tot - school)} to counties, cities and special districts. Owner households' homes carry ${pct(b.tax_total / tot, 0)} of it.`;
 })();
 
-// Amendment 3 key findings (as written, tax rates unchanged), computed from the runs
+// ---------------- Amendment 3 page ----------------
+// One set of controls (year, local rate response, five-year rule) drives every section. Modes: "none" = rates
+// unchanged (how the state scores it), "neutral" = localities replace the revenue (10-mill cap, no reimbursement).
+const EX = __A3EX__;   // example owners (scripts/a3_examples.py)
+const A3_OPT = { reimb: 0, nocap: false, fc: false };
+const A3_MODES = [["none", "Unchanged"], ["neutral", "Raised to replace lost revenue"]];
+const A3_COURT = [["written", "As written"], ["struck", "Struck down by the courts"]];
+const bnB = v => "$" + (Math.abs(v) / 1e9).toFixed(1) + " billion";
+const bnM = v => Math.abs(v) < 1e9 ? "$" + Math.round(Math.abs(v) / 1e6) + " million" : bnAbs(v);   // small sums in millions
+const a3yr = (run, m, y) => run[m].yearly.find(r => r.year === y) || {};
+const a3all = (run, m, y) => run[m].groups.find(r => r.year === y && r.grouping === "all") || {};
+const a3grp = (run, m, y, g) => run[m].groups.filter(r => r.year === y && r.grouping === g);
+const a3dec = (run, m, y) => a3grp(run, m, y, "income_decile").sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
+const fifths = D => { const t = D.reduce((s, r) => s + r.total_change, 0), sh = (i, j) => D.slice(i, j).reduce((s, r) => s + r.total_change, 0) / t;
+  return { tot: t, top: sh(8, 10), bottom: sh(0, 5) }; };
+const radios = (id, attr, cur) => document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-checked", b.dataset[attr] === String(cur)));
+
+$("a3-years").innerHTML = G.years.map(y => `<button role="radio" data-y="${y}">${y}</button>`).join("");
+$("a3-mode").innerHTML = A3_MODES.map(([k, l]) => `<button role="radio" data-k="${k}">${l}</button>`).join("");
+$("a3-court").innerHTML = A3_COURT.map(([k, l]) => `<button role="radio" data-k="${k}">${l}</button>`).join("");
+$("a3-gov-tabs").innerHTML = GOV_TABS.map(([g, l]) => `<button role="tab" data-g="${g}">${l}</button>`).join("");
+$("a3-group-tabs").innerHTML = GROUP_TABS.map(([g, l]) => `<button role="tab" data-g="${g}">${l}</button>`).join("");
+const onTab = (id, f) => $(id).addEventListener("click", e => { const b = e.target.closest("button"); if (b) { f(b.dataset); renderA3(); } });
+onTab("a3-years", d => A3.year = +d.y);
+onTab("a3-mode", d => A3.mode = d.k);
+onTab("a3-court", d => A3.court = d.k);
+onTab("a3-gov-tabs", d => A3.gov = d.g);
+onTab("a3-group-tabs", d => A3.group = d.g);
+
+// key numbers: the amendment as written
 (function () {
   const run = G.runs.a3_full; if (!run) return;
-  const yr = y => run.none.yearly.find(r => r.year === y) || {};
-  const all = y => run.none.groups.find(r => r.year === y && r.grouping === "all") || {};
-  const dec = y => Object.fromEntries(run.none.groups.filter(r => r.year === y && r.grouping === "income_decile").map(r => [+r.group.replace(/\D/g, ""), r]));
-  const ys = run.none.yearly.filter(r => r.year > 2026 && r.all !== null).map(r => r.year), last = ys[ys.length - 1];
-  const cum = ys.reduce((t, y) => t - yr(y).all, 0);
-  const B = v => "$" + (Math.abs(v) / 1e9).toFixed(Math.abs(v) >= 1e11 ? 0 : 1) + " billion";
-  const D = dec(2027), tot = Object.values(D).reduce((t, r) => t + r.total_change, 0);
-  const topFifth = (D[9].total_change + D[10].total_change) / tot, bottomHalf = [1, 2, 3, 4, 5].reduce((t, i) => t + D[i].total_change, 0) / tot;
-  const r100 = v => "$" + (Math.round(Math.abs(v) / 10) * 10).toLocaleString("en-US");
-  $("a3-findings").innerHTML = `<h2>Key findings: Amendment 3 as written</h2><ol>
-    <li><b>Florida's local governments would lose ${B(-yr(2027).all)} in 2027, ${B(-yr(2031).all)} by 2031, and ${B(cum)} over ${ys[0]}–${last}</b>, with tax rates unchanged.
-      <div class="note">The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${B(REC.by_roll_year[2027] * 1e6)} for the 2027 tax year, ${B(REC.by_roll_year[2028] * 1e6)} for 2028 and ${B(REC.recurring * 1e6)} a year when fully in effect. ${(() => { const st = y => (run.none_static || run.none).yearly.find(r => r.year === y).all, d = y => st(y) / (REC.by_roll_year[y] * 1e6) - 1;
-        const lo = Math.min(d(2027), d(2030)), hi = Math.max(d(2027), d(2030));
-        return `Scored the same way (statically, before anyone changes behaviour), this model's figures are ${hi < 0 ? `${pct(-hi, 0)}–${pct(-lo, 0)} lower` : lo > 0 ? `${pct(lo, 0)}–${pct(hi, 0)} higher` : "within a few percent"} for 2027–2030. The figures above also count more owners claiming the bigger exemption, which adds ${B(st(2031) - yr(2031).all)} by 2031.`; })()}</div></li>
-    <li><b>${pct(all(2027).share_pay_less, 0)} of homeowners would pay less: about ${r100(all(2027).avg_gain_if_less)} a year in 2027 and ${r100(all(2031).avg_gain_if_less)} by 2031</b> on average among those who gain.</li>
-    <li><b>Homeowners in the highest-income fifth of Florida households would get ${pct(topFifth, 0)} of the cut.</b> The top tenth by income would save about ${r100(D[10].avg_change)} a year on average, the bottom tenth about ${r100(D[1].avg_change)} (2027); the bottom half of households get ${pct(bottomHalf, 0)}.</li>
-    ${(() => { // 7 and 8: if local governments replace the revenue (10-mill cap, no state reimbursement), 2027
-      const N = yr(2027), X = run.neutral.yearly.find(r => r.year === 2027) || {}, XA = run.neutral.groups.find(r => r.year === 2027 && r.grouping === "all") || {};
-      const own = X.tax - N.tax, oth = X.nonowner - N.nonowner, d = run.rates && run.rates["2027"];
-      if (!d) return "";
-      const cty = G.governments.counties.map((c, i) => ({ cur: c.general ? c.general["2027"] : null, d: d.county[i] })).filter(c => c.cur);
-      const cit = G.governments.cities.map(c => ({ cur: c.rate["2027"], d: d.city[c.i] }));
-      const up = cty.filter(c => c.d > 0.0005).length, med = cty.map(c => c.d).sort((a, b) => a - b)[Math.floor(cty.length / 2)];
-      const capped = cty.concat(cit).filter(c => c.cur * (1 + c.d) > Math.max(10, c.cur) + 0.0005).length;
-      return `<li><b>If local governments raised rates to replace the money, rentals, second homes and businesses would pay ${B(oth)} more and homeowners ${B(own)} more in 2027</b>, and ${pct(XA.share_pay_more, 0)} of homeowners would end up paying more than under current law.</li>
-      <li><b>${up === cty.length ? "Every county" : `${up} of ${cty.length} counties`} would have to raise its general tax rate, by a median ${pct(med, 0)}, and ${capped} counties and cities would hit the Constitution's 10-mill cap</b> and could not replace all of it.</li>`; })()}
-  </ol><div class="note">Model results for owner-occupied homes and all property, compared with current law; details and other scenarios below.</div>`;
+  const N = y => a3yr(run, "none", y), f = fifths(a3dec(run, "none", 2027));
+  const pair = EX.examples.find(e => e.kind === "pair"), hh = w => pair.households.find(h => h.who === w).written.none["2028"].total;
+  const oth = a3yr(run, "neutral", 2027).nonowner - N(2027).nonowner;
+  $("a3-tiles").innerHTML = [
+    [bnB(N(2027).all), `Lost by Florida's local governments in 2027, and ${bnB(N(2031).all)} a year by 2031, with tax rates unchanged`, "lead"],
+    [pct(f.top, 0), "Of homeowners' tax cut that goes to the highest-income fifth of households (2027)"],
+    [usd(hh("newcomer") - hh("floridian")), "More a year paid for four years by a buyer moving from another state than by a Florida buyer of the same Cape Coral house"],
+    [bnB(oth), "More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue"],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const st = y => (run.none_static || run.none).yearly.find(r => r.year === y).all, d = y => st(y) / (REC.by_roll_year[y] * 1e6) - 1;
+  const lo = Math.min(d(2027), d(2030)), hi = Math.max(d(2027), d(2030));
+  $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect; scored the same way, this model is ` +
+    (hi < 0 ? `${pct(-hi, 0)}–${pct(-lo, 0)} lower` : lo > 0 ? `${pct(lo, 0)}–${pct(hi, 0)} higher` : "within a few percent") + " for 2027–2030.";
 })();
 
-// Amendment 3 page
-const A3_PARTS = [["full", "Whole amendment"], ["exempt", "Larger homestead exemption"], ["cap", "5% cap on other property"]];
-const A3_COURT = [["written", "As written"], ["struck", "Struck down by the courts"]];
-$("a3-parts").innerHTML = A3_PARTS.map(([k, l]) => `<button role="radio" data-k="${k}" id="a3p-${k}">${l}</button>`).join("");
-$("a3-court").innerHTML = A3_COURT.map(([k, l]) => `<button role="radio" data-k="${k}" id="a3c-${k}">${l}</button>`).join("");
-$("a3-parts").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; A3.part = b.dataset.k; renderA3(); });
-$("a3-court").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; A3.court = b.dataset.k; renderA3(); });
 function renderA3() {
-  document.querySelectorAll("#a3-parts button").forEach(b => b.setAttribute("aria-checked", b.dataset.k === A3.part));
-  document.querySelectorAll("#a3-court button").forEach(b => { b.setAttribute("aria-checked", b.dataset.k === A3.court); b.disabled = A3.part === "cap"; });
-  $("a3-court-note").textContent = A3.part === "cap" ? "The five-year rule doesn't affect the cap." :
-    A3.court === "written" ? "As written: owners who move to Florida after 2026 get the first $50,000 exempt for four years, then the full amount. Who is new: Census survey (ACS 2024) share of recent buyers who came from another state or abroad (23%, more at older ages), plus newcomers who rent first and buy later." :
-    "If courts strike the residency rule, new residents get the full exemption straight away.";
-  const e = G.amendment3.find(a => a.id === a3id()), run = G.runs[e.id];
-  const rows = run.none.yearly.filter(r => r.all !== null && r.all !== undefined), resp = run.respond.yearly;
-  const r27 = rows.find(r => r.year === 2027), r31 = rows.find(r => r.year === 2031);
-  const lessB = v => "$" + (Math.abs(v) / 1e9).toFixed(1) + " billion";
-  $("a3-rev-title").textContent = `How much less property tax: ${e.label.toLowerCase()}`;
-  $("a3-rev-intro").textContent = `With local tax rates unchanged, this ${A3.part === "full" ? "amendment" : "part"} lowers property tax on all property by about ${lessB(r27.all)} in 2027 and ${lessB(r31.all)} in 2031; owners' share is ${lessB(r27.tax)} and ${lessB(r31.tax)}. ` +
-    (A3.part === "full" ? `The state's Revenue Estimating Conference (July 10, 2026) estimates ${lessB(REC.by_roll_year[2027] * 1e6)} for the 2027 tax year and ${lessB(REC.recurring * 1e6)} a year when fully in effect; its figures are in the table. ` : "") +
-    "Other property (rentals, second homes, businesses) is estimated from each county's tax base and average rates. If governments respond, some of the cut comes back through higher rates; if localities replace the lost revenue, total collections stay the same and the tax moves between payers.";
-  const recCol = A3.part === "full";
-  $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Owners (rates unchanged)</th><th>Other property, est.</th><th>All property (rates unchanged)</th>${recCol ? "<th>State estimate (REC)</th>" : ""}<th>All property, governments respond</th></tr></thead><tbody>` +
-    rows.map(r => { const g = resp.find(x => x.year === r.year) || {}, rc = REC.by_roll_year[r.year];
-      return `<tr><td>${r.year}</td><td>${bnS(r.tax)}</td><td>${bnS(r.nonowner)}</td><td>${bnS(r.all)}</td>${recCol ? `<td>${rc !== undefined ? bnS(rc * 1e6) : ""}</td>` : ""}<td>${g.all !== undefined && g.all !== null ? bnS(g.all) : ""}</td></tr>`; }).join("") +
-    (() => { const t = f => rows.reduce((a, r) => a + (f(r) || 0), 0), tg = resp.filter(x => x.year > 2026).reduce((a, x) => a + (x.all || 0), 0);
-      return `<tr class="total"><td>${rows[0].year}–${rows[rows.length - 1].year}</td><td>${bnS(t(r => r.tax))}</td><td>${bnS(t(r => r.nonowner))}</td><td>${bnS(t(r => r.all))}</td>${recCol ? "<td></td>" : ""}<td>${bnS(tg)}</td></tr>`; })() + "</tbody>";
-  renderPolicy();
+  const run = G.runs[a3id()], y = A3.year, m = A3.mode;
+  radios("a3-years", "y", y); radios("a3-mode", "k", m); radios("a3-court", "k", A3.court);
+  document.querySelectorAll("#a3-gov-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === A3.gov));
+  document.querySelectorAll("#a3-group-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === A3.group));
+  const mt = m === "none" ? "With local tax rates unchanged" : "If local governments raise rates to replace the lost revenue";
+  const gov = govRows(run, y, A3_OPT), held = gov.county.concat(gov.city).filter(x => x.capped);
+
+  // revenue
+  const N = a3yr(run, "none", y), X = a3yr(run, "neutral", y), S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null;
+  $("a3-rev-title").textContent = `Revenue lost to local governments, ${y}`;
+  const own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
+  $("a3-rev-intro").textContent = m === "none" ?
+    `With tax rates unchanged, local governments collect ${bnAbs(N.all)} less in ${y}, ${pct(-N.all / allTax(y), 1)} of all property tax; ${bnAbs(N.tax)} of it is homeowners' tax.` +
+      (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimate leaves out.` : "") :
+    `If localities replace what they can, higher rates raise ${bnAbs(own + oth)} in ${y}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses. ` +
+      (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.");
+  (function () {
+    const rows = run.none.yearly.filter(r => r.all != null), ys = rows.map(r => r.year);
+    const lines = [["none", "var(--accent)", ""], ["neutral", "var(--neutral)", "2 3"]].map(([k, c, d]) => ({ c, d, pts: run[k].yearly.filter(r => r.all != null).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));
+    const rec = Object.entries(REC.by_roll_year).map(([yy, v]) => ({ year: +yy, v: -v / 1e3 }));
+    const vals = lines.flatMap(l => l.pts.map(p => p.v)).concat(rec.map(p => p.v), [0]);
+    const hi = 4 * Math.ceil(Math.max(...vals) * 1.05 / 4), lo = Math.min(0, ...vals);   // whole-billion ticks
+    const W = 520, H = 260, L = 50, R_ = 22, T = 14, B = 30, s = svg(W, H);
+    const x = v => L + (W - L - R_) * (v - ys[0]) / (ys[ys.length - 1] - ys[0]), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    s.setAttribute("aria-label", "Revenue lost by year");
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, "$" + v.toFixed(0) + "B"); }
+    ys.forEach((v, i) => { if (i % 3 === 0) el(s, "text", { x: x(v), y: H - 8, "text-anchor": "middle" }, String(v)); });
+    el(s, "line", { x1: x(y), x2: x(y), y1: T, y2: H - B, stroke: "var(--muted)", "stroke-dasharray": "2 3" });
+    lines.forEach(l => el(s, "polyline", { points: l.pts.map(p => `${x(p.year)},${yy(p.v)}`).join(" "), fill: "none", stroke: l.c, "stroke-width": 2.5, "stroke-dasharray": l.d }));
+    rec.forEach(p => el(s, "circle", { cx: x(p.year), cy: yy(p.v), r: 4.5, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 2 }));
+    $("a3-c-rev").innerHTML = ""; $("a3-c-rev").appendChild(s);
+    const recOf = yy => REC.by_roll_year[yy], b = v => bnS(v).replace("+", "");
+    $("a3-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Lost, rates unchanged</th><th>State estimate</th><th>Still lost after replacement</th></tr></thead><tbody>` +
+      rows.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${recOf(r.year) !== undefined ? b(-recOf(r.year) * 1e6) : ""}</td><td>${b(-a3yr(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
+  })();
+
+  // who pays less and who pays more
+  const A = a3all(run, m, y), D = a3dec(run, m, y), f = fifths(D);
+  $("a3-who-title").textContent = `Who pays less and who pays more, ${y}`;
+  $("a3-who-intro").textContent = `${mt}, ${pct(A.share_pay_less, 0)} of homeowners pay less (on average ${usd(Math.abs(A.avg_gain_if_less))} a year)` +
+    (A.share_pay_more >= 0.005 ? ` and ${pct(A.share_pay_more, 0)} pay more (on average ${usd(Math.abs(A.avg_loss_if_more))})` : "") + "." +
+    (f.tot < 0 ? ` Households in the highest-income fifth get ${pct(f.top, 0)} of the cut; the bottom half gets ${pct(f.bottom, 0)}.` : "");
+  (function () {
+    const vals = D.map(r => r.avg_change).concat([0]);
+    const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].find(k => k * p >= raw) * p;   // round tick steps
+    const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
+    const W = 520, H = 260, L = 56, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10, s = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    s.setAttribute("aria-label", "Average change per owner by income tenth");
+    for (let v = lo; v <= hi + step / 2; v += step) { el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
+    el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+    D.forEach((r, i) => { const v = r.avg_change;
+      el(s, "rect", { x: L + i * bw + bw * 0.16, y: Math.min(yy(v), yy(0)), width: bw * 0.68, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? "var(--gain2)" : "var(--lose2)", rx: 2 });
+      el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+    $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(s);
+    const CATS = [["gain_more_5pct", "Over 5% less", "var(--gain2)"], ["gain_less_5pct", "Up to 5% less", "var(--gain1)"],
+      ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Over 5% more", "var(--lose2)"]];
+    $("a3-win-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
+    const rows = D.concat([A]), Wb = 520, rowH = 17, gap = 5, Lb = 62, Rb = 8, Hb = 6 + rows.length * (rowH + gap) + 4, sb = svg(Wb, Hb);
+    sb.setAttribute("aria-label", "Share of owners paying less or more by income tenth");
+    rows.forEach((r, i) => { const y0 = 6 + i * (rowH + gap); let acc = 0;
+      el(sb, "text", { x: Lb - 8, y: y0 + rowH / 2 + 4, "text-anchor": "end" }, i === rows.length - 1 ? "All" : "Tenth " + (i + 1));
+      CATS.forEach(([k, , c]) => { const v = r[k] || 0, w = (Wb - Lb - Rb) * v;
+        if (w > 0.3) el(sb, "rect", { x: Lb + (Wb - Lb - Rb) * acc, y: y0, width: w, height: rowH, fill: c });
+        if (v >= 0.14) el(sb, "text", { x: Lb + (Wb - Lb - Rb) * (acc + v / 2), y: y0 + rowH / 2 + 4, "text-anchor": "middle", class: "bar-label" }, pct(v, 0));
+        acc += v; }); });
+    $("a3-c-win").innerHTML = ""; $("a3-c-win").appendChild(sb);
+  })();
+
+  renderA3Ex(y, m === "none" ? "none" : "replace");
+
+  // each government's rate: what it would take to replace the revenue, whichever rate setting is chosen above
+  const med = list => { const v = list.map(x => x.d).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : 0; };
+  $("a3-gov-intro").textContent = `The rate each government would need in ${y} to raise what it would under current law, and the rate it can set under the 10-mill cap on county general and city levies. ` +
+    `${gov.county.filter(x => x.d > 0.0005).length} of ${gov.county.length} counties raise their general rate (median ${pctS(med(gov.county), 0)}); ${held.length} counties and cities are held at the cap and can't raise ${bnM(held.reduce((t, x) => t + x.short, 0))}.`;
+  const g = A3.gov, list = gov[g].slice().sort((a, b) => b.d - a.d || a.name.localeCompare(b.name)), capCol = g !== "school";
+  $("a3-t-gov").innerHTML = `<thead><tr><th>${g === "city" ? "City" : "County"}</th>${g === "city" ? "<th>County</th>" : ""}<th>Current law (mills)</th><th>Needed to replace (mills)</th>${capCol ? "<th>Can set (mills)</th><th>Can't raise</th>" : ""}<th>Revenue lost, rates unchanged</th></tr></thead><tbody>` +
+    list.map(x => `<tr><td>${x.name}</td>${g === "city" ? `<td>${x.county}</td>` : ""}<td>${x.cur.toFixed(3)}</td><td>${x.want.toFixed(3)}</td>${capCol ? `<td class="${x.capped ? "over" : ""}">${x.pol.toFixed(3)}</td><td>${x.short > 0 ? usd(x.short) : ""}</td>` : ""}<td>${usd(Math.abs(x.lost))}</td></tr>`).join("") + "</tbody>";
+
+  // homeowners by group
+  let gr = a3grp(run, m, y, A3.group);
+  if (A3.group === "income_decile") gr = gr.sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
+  const grow = (r, n) => `<td>${n}</td><td>${Math.round(r.owners).toLocaleString("en-US")}</td><td>${usdS(r.avg_change)}</td><td>${pctS(r.pct_change)}</td><td>${pct(r.share_pay_less, 0)}</td><td>${pct(r.share_pay_more, 0)}</td>`;
+  $("a3-t-groups").innerHTML = `<thead><tr><th>Group</th><th>Owners</th><th>Average change</th><th>% change</th><th>Pay less</th><th>Pay more</th></tr></thead><tbody>` +
+    gr.map(r => `<tr>${grow(r, r.group)}</tr>`).join("") + `<tr class="total">${grow(A, "All owners")}</tr></tbody>`;
 }
 
-// Amendment 3 example property owners (scripts/a3_examples.py), as written
-const EX = __A3EX__;
-const A3EX = { year: 2028, mode: "none" };
-const EX_MODES = [["none", "Local tax rates unchanged"], ["replace", "Local governments replace the lost revenue"]];
-$("a3-ex-mode").innerHTML = EX_MODES.map(([k, l]) => `<button role="radio" data-k="${k}">${l}</button>`).join("");
-$("a3-ex-years").innerHTML = EX.years.filter(y => y > 2026).map(y => `<button role="radio" data-y="${y}">${y}</button>`).join("");
-$("a3-ex-mode").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; A3EX.mode = b.dataset.k; renderA3Ex(); });
-$("a3-ex-years").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; A3EX.year = +b.dataset.y; renderA3Ex(); });
-function renderA3Ex() {
-  const y = String(A3EX.year), m = A3EX.mode;
-  document.querySelectorAll("#a3-ex-mode button").forEach(b => b.setAttribute("aria-checked", b.dataset.k === m));
-  document.querySelectorAll("#a3-ex-years button").forEach(b => b.setAttribute("aria-checked", b.dataset.y === y));
+// example owners: follow the page's year, rate response and five-year rule
+function renderA3Ex(year, mode) {
+  const y = String(year), court = A3.court;
+  $("a3-ex-title").textContent = `Six property owners, ${y}`;
   const rows = [];
   for (const e of EX.examples) for (const [j, h] of e.households.entries()) {
-    const cur = h.current[y], a3 = h.written[m][y];
+    const cur = h.current[y], a3 = h[court][mode][y];
     const name = e.kind === "pair" ? (h.who === "newcomer" ? "Buyer moving from another state" : "Buyer already living in Florida") : e.title;
-    const who = e.kind === "pair" ? (j === 0 ? e.who : "Same house, same price, same year.") : e.who;
-    rows.push({ id: e.id, who: h.who, name, desc: who, place: e.place_name, cur, a3, d: cur && a3 ? a3.total - cur.total : null });
+    const desc = e.kind === "pair" ? (j === 0 ? e.who : "Same house, same price, same year.") : e.who;
+    rows.push({ id: e.id, who: h.who, name, desc, place: e.place_name, cur, a3, d: cur && a3 ? a3.total - cur.total : null });
   }
   const big = Math.max(...rows.map(r => Math.abs(r.d || 0)), 1);
-  const money = v => usd(v);
   $("a3-t-ex").innerHTML = `<thead><tr><th>Owner</th><th>Current law</th><th>Amendment 3</th><th>Change</th><th>Change, %</th><th></th></tr></thead><tbody>` +
     rows.map(r => {
       if (!r.cur) return `<tr><td>${r.name}<span class="ex-who">${r.desc} ${r.place}.</span></td><td colspan="5" style="text-align:left;font-family:var(--body)">Buys during 2027; first homestead year 2028.</td></tr>`;
-      const cls = r.d < -0.5 ? "gain" : r.d > 0.5 ? "loss" : "";
-      const w = Math.round(120 * Math.abs(r.d) / big);
-      return `<tr><td>${r.name}<span class="ex-who">${r.desc} ${r.place}.</span></td><td>${money(r.cur.total)}</td><td>${money(r.a3.total)}</td>` +
+      const cls = r.d < -0.5 ? "gain" : r.d > 0.5 ? "loss" : "", w = Math.round(120 * Math.abs(r.d) / big);
+      return `<tr><td>${r.name}<span class="ex-who">${r.desc} ${r.place}.</span></td><td>${usd(r.cur.total)}</td><td>${usd(r.a3.total)}</td>` +
         `<td class="${cls}">${usdS(r.d)}</td><td class="${cls}">${r.cur.total ? pctS(r.d / r.cur.total) : ""}</td>` +
         `<td class="barcell"><span class="ex-bar" style="width:${w}px;background:var(${r.d < 0 ? "--gain2" : "--lose2"})"></span></td></tr>`;
     }).join("") + "</tbody>";
   const get = (id, who = "owner") => rows.find(r => r.id === id && r.who === who) || {};
   const amt = v => usd(Math.abs(v));
   const save = r => r.d == null ? "" : r.d < -0.5 ? `saves ${amt(r.d)}` : r.d > 0.5 ? `pays ${amt(r.d)} more` : "pays the same";
-  const rich = get("longtime_rich"), buy = get("recent_buyer"), sen = get("lowinc_senior"), nw = get("newcomer_pair", "newcomer"),
-    fl = get("newcomer_pair", "floridian"), apt = get("apartments"), shop = get("storefront");
-  const mt = m === "none" ? "with local tax rates unchanged" : "if local governments raise rates to replace the lost revenue";
-  let s = `In ${y}, ${mt}, the long-time owner of the expensive Miami-Dade home ${save(rich)} a year and the Orlando buyer ${save(buy)}, while the low-income senior in Polk ${save(sen)}. `;
-  if (nw.cur && fl.cur) s += `The buyer who moved from another state ${nw.a3.total > fl.a3.total + 0.5 ? `pays ${amt(nw.a3.total - fl.a3.total)} more than the Florida buyer of the same house` : "pays the same as the Florida buyer of the same house"}. `;
-  s += `The Tampa rental building ${save(apt)} and the Orlando business property ${save(shop)}.`;
+  const nw = get("newcomer_pair", "newcomer"), fl = get("newcomer_pair", "floridian");
+  let s = `${mode === "none" ? "With local tax rates unchanged" : "If local governments replace the lost revenue"}, the long-time owner of the expensive Miami-Dade home ${save(get("longtime_rich"))} in ${y} and the Orlando buyer ${save(get("recent_buyer"))}, while the low-income senior in Polk ${save(get("lowinc_senior"))}. `;
+  if (nw.cur && fl.cur) s += nw.a3.total > fl.a3.total + 0.5 ? `The buyer from another state pays ${amt(nw.a3.total - fl.a3.total)} more than the Florida buyer of the same house. ` : "The buyer from another state pays the same as the Florida buyer of the same house. ";
+  s += `The Tampa rental building ${save(get("apartments"))} and the Orlando business property ${save(get("storefront"))}.`;
   $("a3-ex-lead").textContent = s;
-  $("a3-ex-note").textContent = "Typical cases, not averages. Values from the 2026 parcel rolls (medians and percentiles for the place and home type; the business property is an illustrative $1 million). " +
-    "Tax is property tax only, at each place's real 2026 district rates, moved each year as in the projection (central economic scenario); non-ad valorem fees are left out. " +
-    "Above $250,000 of assessed value every homestead gets the same extra exemption, so savings depend on local tax rates more than on home value. " +
-    "\"Local governments replace the lost revenue\" uses each county's and city's rate from the run where they raise rates up to the 10-mill cap, with no state reimbursement. " +
-    "Amendment 3 as written: if courts strike the five-year rule, the buyer from another state pays what the Florida buyer pays. Rent effects of higher taxes on rental property are not modelled.";
+  $("a3-ex-note").textContent = "Typical cases, not averages: values from the 2026 parcel rolls (the business property is an illustrative $1 million), each place's real 2026 tax rates, property tax only. " +
+    "Above $250,000 of assessed value every homestead gets the same extra exemption, so savings depend on local tax rates more than on home value. Rent effects are not modelled.";
 }
-renderA3Ex();
 
 // views: 2026 today / policy comparisons / Amendment 3
 const VIEWS = {
@@ -1429,12 +1551,10 @@ function showView(v) {
   $("view-today").hidden = v !== "today";
   $("view-policy").hidden = v !== "policy";
   $("view-a3").hidden = v !== "a3";
-  if (v === "a3") $("a3-results-slot").appendChild($("pol-results"));
-  if (v === "policy") $("view-policy").appendChild($("pol-results"));
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1;
   $("lede").textContent = v === "today" ? LEDE_TODAY : v === "a3" ?
-    "Amendment 3 would raise the homestead exemption for county, city and special district taxes to $250,000, make newcomers to Florida wait for it, and cap yearly assessment increases on other property at 5%. Every result is compared with current law on the same households and economy." :
+    "Who gains and who pays under the proposed constitutional amendment, compared with current law on the same households and economy." :
     "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
   if (v === "policy") { setLever(POL.lever, true); renderPolicy(); }
   if (v === "a3") renderA3();

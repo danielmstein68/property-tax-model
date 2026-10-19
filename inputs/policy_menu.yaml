@@ -192,7 +192,7 @@ presets:
 amendment3:
   - id: a3_full
     label: Whole amendment
-    description: The larger homestead exemption, the four-year wait for new residents and the 5% cap on non-homestead property.
+    description: The larger homestead exemption, the four-year wait for new residents and a 5% assessment cap for rentals, second homes and businesses.
     file: inputs/policies/amendment3.yaml
   - id: a3_full_nowait
     label: Whole amendment, five-year rule struck down
@@ -208,6 +208,6 @@ amendment3:
     description: Non-school homestead exemption on the first $150,000 (2027) and $250,000 (2028, indexed after) for everyone.
     file: inputs/policies/amendment3_exemption.yaml
   - id: a3_cap
-    label: 5% cap on non-homestead property
+    label: 5% assessment cap for rentals, second homes and businesses
     description: Non-school assessments of non-homestead homes, rentals and commercial property rise at most 5% a year (10% now).
     file: inputs/policies/amendment3_cap.yaml
