@@ -4,6 +4,7 @@ Usage:
     python scripts/build_display.py     # display/template.html + data/processed/results/fl_2026_status_quo.json
                                         #   + fl_projections.json (scripts/results_projections.py)
                                         #   + fl_policy_grid.json (scripts/policy_grid.py)
+                                        #   + fl_a3_examples.json (scripts/a3_examples.py)
                                         # -> display/fl_2026_status_quo.html (published as a private artifact)
 """
 
@@ -27,8 +28,9 @@ def main() -> None:
     import yaml
     fin = json.dumps(yaml.safe_load((ROOT / "inputs" / "fl_local_finance_fy2024.yaml").read_text(encoding="utf-8")))
     rec = json.dumps(yaml.safe_load((ROOT / "inputs" / "fl_rec_amendment3.yaml").read_text(encoding="utf-8")))
+    a3ex = (res / "fl_a3_examples.json").read_text(encoding="utf-8")      # scripts/a3_examples.py
     page = (page.replace("__DATA__", data).replace("__PROJ__", proj).replace("__GRID__", grid).replace("__FIN__", fin)
-            .replace("__REC__", rec))
+            .replace("__REC__", rec).replace("__A3EX__", a3ex))
     dest = ROOT / "display" / "fl_2026_status_quo.html"
     dest.write_text(page, encoding="utf-8")
     print(f"wrote {dest}")
