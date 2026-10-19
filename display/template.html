@@ -1428,6 +1428,7 @@ syncReimb();
 // One set of controls (year, local rate response, five-year rule) drives every section. Modes: "none" = rates
 // unchanged (how the state scores it), "neutral" = localities replace the revenue (10-mill cap, no reimbursement).
 const EX = __A3EX__;   // example owners (scripts/a3_examples.py)
+const RENT = __A3RENT__;   // tax on non-homestead homes and apartments (scripts/a3_rentals.py)
 const HH = __HHDEC__;  // all households by 2026 income tenth (scripts/household_deciles.py)
 // change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
 const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
@@ -1490,7 +1491,7 @@ function recGap() {
     [bnB(N(2027).all), `Lost by Florida's local governments in 2027, and ${bnB(N(2031).all)} a year by 2031, with tax rates unchanged`, "lead"],
     [pct(f.top, 0), "Of homeowners' tax cut that goes to the highest-income fifth of households (2027)"],
     [usd(hh("newcomer") - hh("floridian")), "More a year paid for four years by a buyer moving from another state than by a Florida buyer of the same Cape Coral house"],
-    [bnB(oth), "More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue"],
+    [bnB(oth), `More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue; about ${usd(RENT.years["2027"].a3_full_neutral / RENT.units)} a year per rental or second-home unit`],
   ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
   $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect; scored the same way, this model is ${recGap()} for 2027–2030.`;
 })();
@@ -1506,12 +1507,15 @@ function renderA3() {
   // revenue
   const N = a3yr(run, "none", y), X = a3yr(run, "neutral", y), S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null;
   $("a3-rev-title").textContent = `Revenue lost to local governments, ${y}`;
+  const rr = RENT.years[String(y)], rent = rr ? { current: rr.current, none: rr[`${a3id()}_none`], neutral: rr[`${a3id()}_neutral`] } : null;
   const own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
   $("a3-rev-intro").textContent = m === "none" ?
     `With tax rates unchanged, local governments collect ${bnAbs(N.all)} less in ${y}, ${pct(-N.all / allTax(y), 1)} of all property tax; ${bnAbs(N.tax)} of it is homeowners' tax.` +
-      (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimate leaves out.` : "") :
+      (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimate leaves out.` : "") +
+      (rent && rent.none < -1e6 ? ` Rentals and second homes save about ${usd(-rent.none / RENT.units)} a unit from the 5% assessment cap.` : "") :
     `If localities replace what they can, higher rates raise ${bnAbs(own + oth)} in ${y}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses. ` +
-      (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.");
+      (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.") +
+      (rent ? ` Homes and apartments without a homestead exemption (rentals and second homes) pay ${bnM(rent.neutral)} more, about ${usd(rent.neutral / RENT.units)} a year per unit (${pctS(rent.neutral / rent.current, 0)}); the model doesn't estimate how much of that reaches renters.` : "");
   (function () {
     const rows = run.none.yearly.filter(r => r.all != null), ys = rows.map(r => r.year);
     const lines = [["none", "var(--accent)", ""], ["neutral", "var(--neutral)", "2 3"]].map(([k, c, d]) => ({ c, d, pts: run[k].yearly.filter(r => r.all != null).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));

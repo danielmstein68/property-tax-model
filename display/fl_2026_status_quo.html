@@ -4244,6 +4244,83 @@ const EX = {
   }
  ]
 };   // example owners (scripts/a3_examples.py)
+const RENT = {
+ "years": {
+  "2027": {
+   "current": 20527411421,
+   "a3_full_none": -100876988,
+   "a3_full_neutral": 1511969663,
+   "a3_full_nowait_none": -105110357,
+   "a3_full_nowait_neutral": 1530544706
+  },
+  "2028": {
+   "current": 21359382800,
+   "a3_full_none": -154209427,
+   "a3_full_neutral": 2839732452,
+   "a3_full_nowait_none": -181761489,
+   "a3_full_nowait_neutral": 2912521349
+  },
+  "2029": {
+   "current": 22393166350,
+   "a3_full_none": -183432754,
+   "a3_full_neutral": 2936481239,
+   "a3_full_nowait_none": -226693093,
+   "a3_full_nowait_neutral": 3037530936
+  },
+  "2030": {
+   "current": 23656201474,
+   "a3_full_none": -199446111,
+   "a3_full_neutral": 3045517863,
+   "a3_full_nowait_none": -245024655,
+   "a3_full_nowait_neutral": 3194058447
+  },
+  "2031": {
+   "current": 24965742508,
+   "a3_full_none": -218507739,
+   "a3_full_neutral": 3202557498,
+   "a3_full_nowait_none": -258586774,
+   "a3_full_nowait_neutral": 3360654928
+  },
+  "2032": {
+   "current": 26327857042,
+   "a3_full_none": -241117931,
+   "a3_full_neutral": 3344745922,
+   "a3_full_nowait_none": -261555158,
+   "a3_full_nowait_neutral": 3526867037
+  },
+  "2033": {
+   "current": 27727346334,
+   "a3_full_none": -243541911,
+   "a3_full_neutral": 3499067616,
+   "a3_full_nowait_none": -249155863,
+   "a3_full_nowait_neutral": 3698379925
+  },
+  "2034": {
+   "current": 29077906756,
+   "a3_full_none": -221721458,
+   "a3_full_neutral": 3665777940,
+   "a3_full_nowait_none": -227583226,
+   "a3_full_nowait_neutral": 3864917674
+  },
+  "2035": {
+   "current": 30350113933,
+   "a3_full_none": -192013085,
+   "a3_full_neutral": 3833562480,
+   "a3_full_nowait_none": -197899518,
+   "a3_full_nowait_neutral": 4027193093
+  },
+  "2036": {
+   "current": 31398618795,
+   "a3_full_none": -163240349,
+   "a3_full_neutral": 3978821697,
+   "a3_full_nowait_none": -168994597,
+   "a3_full_nowait_neutral": 4165291015
+  }
+ },
+ "roll_units": 4935653,
+ "model_owner_occupied": 903985,
+ "units": 4031668
+};   // tax on non-homestead homes and apartments (scripts/a3_rentals.py)
 const HH = {
  "year": 2026,
  "income": "household income (2026), negatives as 0",
@@ -4371,7 +4448,7 @@ function recGap() {
     [bnB(N(2027).all), `Lost by Florida's local governments in 2027, and ${bnB(N(2031).all)} a year by 2031, with tax rates unchanged`, "lead"],
     [pct(f.top, 0), "Of homeowners' tax cut that goes to the highest-income fifth of households (2027)"],
     [usd(hh("newcomer") - hh("floridian")), "More a year paid for four years by a buyer moving from another state than by a Florida buyer of the same Cape Coral house"],
-    [bnB(oth), "More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue"],
+    [bnB(oth), `More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue; about ${usd(RENT.years["2027"].a3_full_neutral / RENT.units)} a year per rental or second-home unit`],
   ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
   $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect; scored the same way, this model is ${recGap()} for 2027–2030.`;
 })();
@@ -4387,12 +4464,15 @@ function renderA3() {
   // revenue
   const N = a3yr(run, "none", y), X = a3yr(run, "neutral", y), S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null;
   $("a3-rev-title").textContent = `Revenue lost to local governments, ${y}`;
+  const rr = RENT.years[String(y)], rent = rr ? { current: rr.current, none: rr[`${a3id()}_none`], neutral: rr[`${a3id()}_neutral`] } : null;
   const own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
   $("a3-rev-intro").textContent = m === "none" ?
     `With tax rates unchanged, local governments collect ${bnAbs(N.all)} less in ${y}, ${pct(-N.all / allTax(y), 1)} of all property tax; ${bnAbs(N.tax)} of it is homeowners' tax.` +
-      (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimate leaves out.` : "") :
+      (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimate leaves out.` : "") +
+      (rent && rent.none < -1e6 ? ` Rentals and second homes save about ${usd(-rent.none / RENT.units)} a unit from the 5% assessment cap.` : "") :
     `If localities replace what they can, higher rates raise ${bnAbs(own + oth)} in ${y}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses. ` +
-      (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.");
+      (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.") +
+      (rent ? ` Homes and apartments without a homestead exemption (rentals and second homes) pay ${bnM(rent.neutral)} more, about ${usd(rent.neutral / RENT.units)} a year per unit (${pctS(rent.neutral / rent.current, 0)}); the model doesn't estimate how much of that reaches renters.` : "");
   (function () {
     const rows = run.none.yearly.filter(r => r.all != null), ys = rows.map(r => r.year);
     const lines = [["none", "var(--accent)", ""], ["neutral", "var(--neutral)", "2 3"]].map(([k, c, d]) => ({ c, d, pts: run[k].yearly.filter(r => r.all != null).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));
