@@ -389,6 +389,20 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     </section>
 
     <section class="pol-sec">
+      <div class="eyebrow">Other taxes</div>
+      <h2 id="pol-off-title">Paying for it with other taxes</h2>
+      <p id="pol-off-intro"></p>
+      <div class="figures" id="pol-off-tiles"></div>
+      <div class="chart">
+        <h3>Property tax cut and sales tax increase together, by household income</h3>
+        <p>Change in what a household pays a year if the state sales tax rises enough to replace the lost property tax (rates unchanged); below zero = pays less.</p>
+        <div id="pol-off-chart"></div>
+        <div class="legend"><span><i style="background:var(--gain2)"></i>Average homeowner: property tax cut minus sales tax increase</span><span><i style="background:var(--lose2)"></i>Average renter: sales tax increase only</span></div>
+      </div>
+      <p class="muted-p" id="pol-off-note"></p>
+    </section>
+
+    <section class="pol-sec">
       <div class="eyebrow">Homeowners</div>
       <h2 id="pol-who-title">Who pays less and who pays more</h2>
       <p id="pol-who-intro"></p>
@@ -464,6 +478,20 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
         <div class="tablebox"><table id="a3-t-rev"></table></div>
       </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Other taxes</div>
+      <h2 id="a3-off-title">Paying for it with other taxes</h2>
+      <p id="a3-off-intro"></p>
+      <div class="figures" id="a3-off-tiles"></div>
+      <div class="chart">
+        <h3>Property tax cut and sales tax increase together, by household income</h3>
+        <p>Change in what a household pays a year if the state sales tax rises enough to replace the lost property tax (rates unchanged); below zero = pays less.</p>
+        <div id="a3-off-chart"></div>
+        <div class="legend"><span><i style="background:var(--gain2)"></i>Average homeowner: property tax cut minus sales tax increase</span><span><i style="background:var(--lose2)"></i>Average renter: sales tax increase only</span></div>
+      </div>
+      <p class="muted-p" id="a3-off-note"></p>
     </section>
 
     <section>
@@ -1093,6 +1121,8 @@ function renderPolicy() {
   $("pol-t-rev").innerHTML = `<thead><tr><th>Year</th><th>Lost, rates unchanged</th><th>Governments respond</th><th>Still lost after replacement</th></tr></thead><tbody>` +
     rowsY.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${b(-yrow(run, "respond", r.year).all)}</td><td>${b(-yrow(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
 
+  renderOffset("pol", run, y, false);
+
   // who pays less and who pays more
   $("pol-who-title").textContent = `Who pays less and who pays more, ${y}`;
   $("pol-who-intro").textContent = whoText(mt, Am, D);
@@ -1187,6 +1217,7 @@ syncReimb();
 const EX = __A3EX__;   // example owners (scripts/a3_examples.py)
 const RENT = __A3RENT__;   // tax on non-homestead homes and apartments (scripts/a3_rentals.py)
 const HH = __HHDEC__;  // all households by 2026 income tenth (scripts/household_deciles.py)
+const OFF = __OFFSET__;  // what a point of other taxes raises; taxable spending by income tenth (scripts/offset_taxes.py)
 // change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
 const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
 const hhIncomeShare = () => { const t = HH.deciles.reduce((a, d) => a + d.income, 0); return HH.deciles.map(d => d.income / t); };
@@ -1242,6 +1273,51 @@ function whoText(mt, A, D) {
     (ph[0] * ph[9] > 0 && Math.abs(ph[0]) >= 1 ? `, ${(ph[9] / ph[0]).toFixed(1)} times as much.` : ".") +
     ` The top tenth ${v} ${pct(D[9].total_change / f.tot, 0)} of the ${w}, with ${pct(inc[9], 0)} of household income; the bottom tenth ${v} ${pct(D[0].total_change / f.tot, 0)}.`;
   return t;
+}
+// "Paying for it with other taxes": the property tax lost with rates unchanged, divided by what one point of
+// each tax raises that year; who pays a sales tax increase, by income tenth (owners vs renters)
+function renderOffset(p, run, y, a3) {
+  const ys = String(y), O = OFF.years[ys], N = run.none.yearly.find(r => r.year === y) || {}, loss = -(N.all || 0);
+  $(`${p}-off-title`).textContent = `Paying for it with other taxes, ${y}`;
+  if (!O || loss < 5e6) {
+    $(`${p}-off-intro`).textContent = loss <= -5e6 ? "This policy raises property tax revenue, so there is nothing to replace." : "This policy hardly changes property tax revenue, so there is nothing to replace.";
+    $(`${p}-off-tiles`).innerHTML = ""; $(`${p}-off-chart`).innerHTML = ""; $(`${p}-off-note`).textContent = ""; return;
+  }
+  const sp = loss / O.sales_point, cp = loss / O.cit_point, su = loss / O.surtax_point;
+  const short = a3 && OFF.a3_counties_short_of_surtax_room[ys];
+  $(`${p}-off-tiles`).innerHTML = [
+    [`+${sp.toFixed(2)} points`, `State sales tax, from ${OFF.state_rate}% to ${(OFF.state_rate + sp).toFixed(2)}%`, "lead"],
+    [`+${cp.toFixed(1)} points`, `Corporate income tax, from ${OFF.cit_rate}% to ${(OFF.cit_rate + cp).toFixed(1)}%`],
+    [`+${su.toFixed(2)} points`, `County sales surtaxes, on average` + (short ? `; ${short.counties_short} of ${short.counties} counties couldn't replace their own loss even at their maximum surtax rates` : "")],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  // who pays: the same taxable spending per household for owners and renters in a tenth (CE 2024, grown with prices)
+  const D = run.none.groups.filter(r => r.year === y && r.grouping === "income_decile").sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
+  const sales = OFF.taxable_spending_2024.map(v => v * O.cpi_from_2024 * sp / 100);
+  const owner = D.map((r, i) => r.avg_change + sales[i]), renter = sales.map(v => v);
+  const direct = HH.deciles.reduce((t, d, i) => t + d.households * sales[i], 0) / loss;
+  const r1 = HH.deciles[0], inc1 = r1.income / r1.households;
+  $(`${p}-off-intro`).textContent = `To replace the ${bnB(loss)} local governments lose in ${y} with rates unchanged, the state would have to raise its 6% sales tax to about ${(OFF.state_rate + sp).toFixed(1)}%, ` +
+    `or its corporate income tax from 5.5% to ${(OFF.cit_rate + cp).toFixed(1)}%, and share the money with counties and cities. ` +
+    `At the register, a renter household in the bottom income tenth would pay about ${usd(sales[0])} more a year (${pct(sales[0] / inc1, 1)} of its income) and get no property tax cut; in the top tenth, ${usd(sales[9])}. ` +
+    `The average homeowner ${owner[0] < 0 ? `in the bottom tenth still comes out ${usd(-owner[0])} ahead` : `in the bottom tenth ends up ${usd(owner[0])} behind`}, and in the top tenth ${owner[9] < 0 ? `${usd(-owner[9])} ahead` : `${usd(owner[9])} behind`}.`;
+  // chart: two bars per tenth
+  const vals = owner.concat(renter, [0]);
+  const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, pw = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].find(k => k * pw >= raw) * pw;
+  const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
+  const W = 1040, H = 260, L = 64, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10, s2 = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+  s2.setAttribute("aria-label", "Change in what homeowners and renters pay by income tenth, property tax cut plus sales tax increase");
+  for (let v = lo; v <= hi + step / 2; v += step) { el(s2, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s2, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
+  el(s2, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+  D.forEach((r, i) => {
+    [[owner[i], "var(--gain2)", 0], [renter[i], "var(--lose2)", 1]].forEach(([v, c, j]) => {
+      el(s2, "rect", { x: L + i * bw + bw * 0.14 + j * bw * 0.37, y: Math.min(yy(v), yy(0)), width: bw * 0.33, height: Math.abs(yy(v) - yy(0)), fill: c, rx: 2 });
+      el(s2, "text", { x: L + i * bw + bw * 0.14 + j * bw * 0.37 + bw * 0.165, y: v < 0 ? yy(v) + 13 : yy(v) - 5, "text-anchor": "middle", class: "val" }, usdS(v)); });
+    el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, "Tenth " + (i + 1)); });
+  $(`${p}-off-chart`).innerHTML = ""; $(`${p}-off-chart`).appendChild(s2);
+  $(`${p}-off-note`).textContent = `What one point raises in ${y}: state sales tax ${bnB(O.sales_point)}, corporate income tax ${bnB(O.cit_point)}, county surtaxes ${bnB(O.surtax_point)} (General Revenue Estimating Conference, August 2026; DOR surtax estimates; surtaxes apply only to the first $5,000 of an item). ` +
+    `Florida households pay about ${pct(direct, 0)} of a sales tax increase directly at the register (taxable spending by income tenth from the federal Consumer Expenditure Survey, 2024); businesses and tourists pay the rest, and businesses pass part of it on in prices, so the amounts above are a lower bound. ` +
+    `Owners and renters in a tenth are assumed to spend alike. County surtaxes need voter approval and can only pay for the uses the law lists (infrastructure, schools, transportation, hospitals), so they can't simply replace a county's general operating money. Florida's Constitution bars a personal income tax.`;
 }
 // each tenth's share of the total change, against an equal share (10%: each tenth is a tenth of households)
 function shareSvg(D) {
@@ -1336,6 +1412,8 @@ function renderA3() {
       rows.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${recOf(r.year) !== undefined ? b(-recOf(r.year) * 1e6) : ""}</td><td>${b(-a3yr(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
   })();
 
+  renderOffset("a3", run, y, true);
+
   // who pays less and who pays more
   const A = a3all(run, m, y), D = a3dec(run, m, y);
   $("a3-who-title").textContent = `Who pays less and who pays more, ${y}`;
@@ -1420,8 +1498,9 @@ const VAL = __VAL__;   // homestead check against the parcel rolls (scripts/vali
     rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") + "</tbody>";
   $("about-checks").classList.add("wrap-cells");
   const r27 = A3GOV.rows.find(r => r.year === 2027);
-  $("about-gov-note").textContent = `Split by type of government, the model's Amendment 3 losses for counties and special districts match the state's closely at first ($${(r27.model_county / 1e9).toFixed(2)} billion vs $${(r27.rec_county / 1e9).toFixed(2)} billion in 2027), but its city losses are about a third lower ($${(r27.model_city / 1e9).toFixed(2)} billion vs $${(r27.rec_city / 1e9).toFixed(2)} billion). ` +
-    "The totals are close, so this is mainly how the loss is divided, not its size: the model places slightly less homestead value inside cities than the rolls do (42% vs 45%), taxes rentals and businesses at county-average city rates though more of that property is in cities, and may count some city-related levies in the county column. This is on the list to fix. From 2029 the model's county losses also run below the state's, as its statewide total does.";
+  const gap = k => r27[`model_${k}`] / r27[`rec_${k}`] - 1;
+  $("about-gov-note").textContent = `Split by type of government, the model's Amendment 3 losses in 2027 are ${pct(Math.abs(gap("county")), 0)} ${gap("county") < 0 ? "below" : "above"} the state's for counties and special districts ($${(r27.model_county / 1e9).toFixed(2)} billion vs $${(r27.rec_county / 1e9).toFixed(2)} billion) and ${pct(Math.abs(gap("city")), 0)} ${gap("city") < 0 ? "below" : "above"} for cities ($${(r27.model_city / 1e9).toFixed(2)} billion vs $${(r27.rec_city / 1e9).toFixed(2)} billion), so the split matches the statewide total, which runs below the state's estimate and drifts further below in later years. ` +
+    "Jacksonville, which the state lists as a city, is counted with counties here because the model treats Duval's consolidated government as the county. Levies of districts that depend on a city count as county in the model.";
 })();
 
 // views: 2026 today / policy comparisons / Amendment 3
