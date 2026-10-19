@@ -32,6 +32,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 - [x] (2026-10-19) Fixed the county/city split: `district_classes` missed 60 city districts (all of Polk and Volusia, Port St. Lucie, St. Cloud, parts of Lake; note formats and Table 1 'Operating' names); other property's city levies now use each city's own base and rate (`Projection._nonowner`); Jacksonville is a municipality in REC, county in the model (moved in the check). City-dependent districts and city debt stay in county (Table 1 doesn't separate them). Was: model city losses are ~33-45% below REC (homestead value in cities 42% vs roll 45%; non-owner property taxed at county-average city rates though 52% of non-homestead residential value is in cities; check which levies `district_classes` counts as municipal: city-dependent districts, debt service).
 - [x] Tests for 2026-10-15/16 features: `tests/test_policy_features.py` (10 tests; suite 78).
 
+- [x] Paying for it with other taxes (2026-10-19, `scripts/offset_taxes.py`): state sales tax, corporate income tax and county surtax increases needed to replace each policy's loss (rates unchanged), and who pays a sales tax increase by income tenth (owners vs renters; CE 2024 taxable spending). On both the Amendment 3 and Policy pages.
+
 **Bigger**
 - [ ] Live engine so users can combine changes freely (replaces the pre-computed grid).
 - [ ] Texas (next; research in `docs/research/texas_homestead_takeup.md`), then Ohio (HB 920; rollback-then-cap).
