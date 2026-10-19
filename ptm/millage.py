@@ -125,7 +125,7 @@ def district_classes(year: int = 2025, base_year: int = 2026) -> pd.DataFrame:
 
     city_mills, county_gov = {}, {}
     strong = set()   # Table 1 names that are certainly cities ("City of X", Volusia's "X Operating")
-    exact = {"Palm Beach": "Palm Beach County", "Volusia": "Volusia County General Fund"}
+    exact = {"Palm Beach": "Palm Beach County", "Volusia": "Volusia County General Fund", "Clay": "County Services"}
     for county, fips in county_fips_by_name().items():
         t1 = parse_table1(pdf_text(ROOT / "data" / "raw" / f"fl_rates_{year}" / "table1" / f"{county}.pdf"))
         cities = t1[t1["authority"].str.match(r"(?i)^(city|town|village) of ") | t1["authority"].str.match(r"(?i)^[A-Za-z .'-]+ operating$")]

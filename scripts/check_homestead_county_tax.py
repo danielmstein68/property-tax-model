@@ -25,7 +25,7 @@ from ptm.millage import county_fips_by_name  # noqa: E402
 from ptm.rates import parse_table1, pdf_text  # noqa: E402
 
 COUNTY_GOV = r"BCC|Board of County|County Commission"
-COUNTY_GOV_EXACT = {"Palm Beach": "Palm Beach County", "Volusia": "Volusia County General Fund"}
+COUNTY_GOV_EXACT = {"Palm Beach": "Palm Beach County", "Volusia": "Volusia County General Fund", "Clay": "County Services"}
 # Duval is a consolidated city-county with separate general-government levies for Baldwin, the
 # Beaches and the rest, so no single countywide rate applies; it is skipped.
 SKIP = {"Duval"}
@@ -41,7 +41,8 @@ def main() -> None:
         if county in COUNTY_GOV_EXACT:
             gov = t1[t1["authority"] == COUNTY_GOV_EXACT[county]]
         else:
-            gov = t1[t1["authority"].str.contains(COUNTY_GOV, case=False)]
+            gov = t1[t1["authority"].str.contains(COUNTY_GOV, case=False)
+                     & ~t1["authority"].str.contains(r"\b(?:mstu|msbu|district|center)\b", case=False)]   # Clay: "BCC-Challenger Center Mstu"
         if gov.empty:
             failed.append(county)
             continue
