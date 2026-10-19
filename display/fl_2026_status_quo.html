@@ -131,6 +131,7 @@ tbody tr.total td { font-weight: 700; border-bottom: 0; background: var(--accent
 .reimb input[type=range] { width: 100%; accent-color: var(--neutral); }
 .tablebox.tall { max-height: 520px; overflow-y: auto; }
 .sub-h { margin: 18px 0 8px; }
+.tabs.small button { font-size: 13px; padding: 4px 12px; }
 .about-link { color: var(--muted); font-size: 15px; }
 .about-list { margin: 0; padding-left: 18px; display: grid; gap: 10px; font-size: 15.5px; max-width: 86ch; }
 .about-list b { color: var(--ink); }
@@ -422,12 +423,20 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
           <div class="legend pol-legend"></div>
         </div>
         <div class="chart">
-          <h3>Average change per owner by income decile</h3>
+          <h3 id="pol-c-dec-title">Average change per owner by income decile</h3>
+          <div class="tabs small" role="radiogroup" aria-label="Per owner or per household" id="pol-dec-unit"></div>
           <p id="pol-c-dec-sub">Dollars a year in the selected year.</p>
           <div id="pol-c-dec"></div>
           <div class="legend pol-legend"></div>
         </div>
+        <div class="chart">
+          <h3 id="pol-c-share-title">Who gets the tax change</h3>
+          <p id="pol-c-share-sub">Each income decile's share, with rates unchanged, next to its share of all household income.</p>
+          <div id="pol-c-share"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Share of the change</span><span><i style="background:var(--income)"></i>Share of household income</span><span><i style="background:transparent;border-top:2px dashed var(--muted);border-radius:0;height:0;vertical-align:3px"></i>Share of households (10%)</span></div>
+        </div>
       </div>
+      <p class="muted-p">Per household counts renters at $0: the model doesn't track rent, so what landlords pass on isn't included.</p>
       <div class="tabs" role="tablist" id="pol-group-tabs"></div>
       <div class="tabletools"><button class="copy" data-table="pol-t-groups" id="copy-pol-groups">Copy table</button></div>
       <div class="tablebox"><table id="pol-t-groups"></table></div>
@@ -1831,10 +1840,19 @@ function renderPolicy() {
 
   // 2b. by decile
   (function () {
-    $("pol-c-dec-sub").textContent = `Dollars a year in ${y}.`;
-    if (!run) { $("pol-c-dec").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; return; }
+    const hh = POL.unit === "household";
+    document.querySelectorAll("#pol-dec-unit button").forEach(b => b.setAttribute("aria-checked", (b.dataset.k === "household") === hh));
+    $("pol-c-dec-title").textContent = hh ? "Average change per household by income decile" : "Average change per owner by income decile";
+    $("pol-c-dec-sub").textContent = `Dollars a year in ${y}${hh ? "; renters count as $0" : ""}.`;
+    if (!run) { $("pol-c-dec").innerHTML = '<p class="muted-p">No change: this is current law.</p>'; $("pol-c-share").innerHTML = ""; return; }
     const sortD = rows => rows.slice().sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
-    const D = M.map(m => sortD(grp(run, m, y, "income_decile"))), dr = D[0];
+    const D = M.map(m => { const rows = sortD(grp(run, m, y, "income_decile")), ph = perHousehold(rows);
+      return rows.map((r, i) => ({ ...r, avg_change: hh ? ph[i] : r.avg_change })); }), dr = D[0];
+    // who gets the change: rates unchanged ("none")
+    const DN = sortD(grp(run, "none", y, "income_decile")), totN = DN.reduce((a, r) => a + r.total_change, 0);
+    $("pol-c-share-title").textContent = totN < 0 ? "Who gets the tax cut" : "Who pays the tax increase";
+    if (Math.abs(totN) < 1e7) $("pol-c-share").innerHTML = '<p class="muted-p">Owner tax changes by less than $10 million with rates unchanged.</p>';
+    else { $("pol-c-share").innerHTML = ""; $("pol-c-share").appendChild(shareSvg(DN)); }
     const vals = D.flat().map(r => r.avg_change).concat([0]);
     let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.12 || 1; lo = Math.min(lo - pad, 0); hi = Math.max(hi + pad, 0);
     const W = 520, H = 280, L = 56, R_ = 10, T = 14, B = 36, bw = (W - L - R_) / 10;
@@ -2108,6 +2126,9 @@ $("pol-slider").addEventListener("input", e => { POL.idx = +e.target.value; POL.
 $("pol-years").innerHTML = G.years.map(y => `<button role="radio" data-y="${y}" id="pyear-${y}">${y}</button>`).join("");
 $("pol-years").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.year = +b.dataset.y; renderPolicy(); });
 const GROUP_TABS = [["age_group", "Age"], ["homestead", "Homestead"], ["region", "Region"], ["income_decile", "Income decile"]];
+POL.unit = "owner";
+$("pol-dec-unit").innerHTML = [["owner", "Per owner"], ["household", "Per household"]].map(([k, l]) => `<button role="radio" data-k="${k}">${l}</button>`).join("");
+$("pol-dec-unit").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.unit = b.dataset.k; renderPolicy(); });
 $("pol-group-tabs").innerHTML = GROUP_TABS.map(([g, l]) => `<button role="tab" data-g="${g}" id="pgroup-${g}">${l}</button>`).join("");
 $("pol-group-tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; POL.group = b.dataset.g; renderPolicy(); });
 setLever(POL.lever);
@@ -4280,6 +4301,24 @@ const HH = {
   }
  ]
 };  // all households by 2026 income tenth (scripts/household_deciles.py)
+// change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
+const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
+const hhIncomeShare = () => { const t = HH.deciles.reduce((a, d) => a + d.income, 0); return HH.deciles.map(d => d.income / t); };
+// each tenth's share of the total change next to its share of household income, with the 10% household line
+function shareSvg(D) {
+  const tot = D.reduce((a, r) => a + r.total_change, 0), sh = D.map(r => tot ? r.total_change / tot : 0), inc = hhIncomeShare();
+  const W = 520, H = 260, L = 56, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10;
+  const top = Math.ceil(Math.max(...sh, ...inc) * 20) / 20, bot = Math.min(0, Math.floor(Math.min(...sh) * 20) / 20);
+  const s2 = svg(W, H), y2 = v => T + (H - T - B) * (1 - (v - bot) / (top - bot));
+  s2.setAttribute("aria-label", "Share of the tax change and of household income by income tenth");
+  for (let v = bot; v <= top + 1e-9; v += 0.05) { el(s2, "line", { x1: L, x2: W - R_, y1: y2(v), y2: y2(v), stroke: "var(--rule)" }); el(s2, "text", { x: L - 6, y: y2(v) + 4, "text-anchor": "end" }, pct(v, 0)); }
+  el(s2, "line", { x1: L, x2: W - R_, y1: y2(0.1), y2: y2(0.1), stroke: "var(--muted)", "stroke-dasharray": "5 4", "stroke-width": 1.5 });
+  D.forEach((r, i) => {
+    [[sh[i], "var(--accent)", 0], [inc[i], "var(--income)", 1]].forEach(([v, c, j]) =>
+      el(s2, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(y2(v), y2(0)), width: bw * 0.36, height: Math.abs(y2(v) - y2(0)), fill: c, rx: 2 }));
+    el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+  return s2;
+}
 const A3_OPT = { reimb: 0, nocap: false, fc: false };
 const A3_MODES = [["none", "Unchanged"], ["neutral", "Raised to replace lost revenue"]];
 const A3_COURT = [["written", "As written"], ["struck", "Struck down by the courts"]];
@@ -4371,12 +4410,10 @@ function renderA3() {
     (A.share_pay_more >= 0.005 ? ` and ${pct(A.share_pay_more, 0)} pay more (on average ${usd(Math.abs(A.avg_loss_if_more))})` : "") + "." +
     (f.tot < 0 ? ` Households in the highest-income fifth get ${pct(f.top, 0)} of the cut; the bottom half gets ${pct(f.bottom, 0)}.` : "");
   // all households: renters at $0; households grow with each tenth's owners (same ownership rate as 2026)
-  const hhOf = (r, i) => HH.deciles[i].households * r.owners / HH.deciles[i].owners;
-  const perHH = D.map((r, i) => r.total_change / hhOf(r, i));
-  const incTot = HH.deciles.reduce((t, d) => t + d.income, 0);
+  const perHH = perHousehold(D), incSh = hhIncomeShare();
   if (f.tot < 0) $("a3-who-intro").textContent += ` Counting renters, who get nothing directly, the average household in the bottom tenth gets ${usd(Math.abs(perHH[0]))} a year and in the top tenth ${usd(Math.abs(perHH[9]))}` +
     (perHH[0] < 0 ? `, ${(perHH[9] / perHH[0]).toFixed(1)} times as much.` : ".") +
-    ` The top tenth gets ${pct(D[9].total_change / f.tot, 0)} of the cut, with ${pct(HH.deciles[9].income / incTot, 0)} of household income; the bottom tenth gets ${pct(D[0].total_change / f.tot, 0)}.`;
+    ` The top tenth gets ${pct(D[9].total_change / f.tot, 0)} of the cut, with ${pct(incSh[9], 0)} of household income; the bottom tenth gets ${pct(D[0].total_change / f.tot, 0)}.`;
   $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income and households are for 2026.";
   (function () {
     const vals = D.map(r => r.avg_change).concat(perHH, [0]);
@@ -4392,18 +4429,7 @@ function renderA3() {
         el(s, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(yy(v), yy(0)), width: bw * 0.36, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? cg : cl, rx: 2 }));
       el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
     $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(s);
-    // share of the cut vs share of income (and the 10% share of households)
-    const sh = D.map(r => f.tot ? r.total_change / f.tot : 0), inc = HH.deciles.map(d => d.income / incTot);
-    const top = Math.ceil(Math.max(...sh, ...inc) * 20) / 20, bot = Math.min(0, Math.floor(Math.min(...sh) * 20) / 20);
-    const s2 = svg(W, H), y2 = v => T + (H - T - B) * (1 - (v - bot) / (top - bot));
-    s2.setAttribute("aria-label", "Share of the tax cut and of household income by income tenth");
-    for (let v = bot; v <= top + 1e-9; v += 0.05) { el(s2, "line", { x1: L, x2: W - R_, y1: y2(v), y2: y2(v), stroke: "var(--rule)" }); el(s2, "text", { x: L - 6, y: y2(v) + 4, "text-anchor": "end" }, pct(v, 0)); }
-    el(s2, "line", { x1: L, x2: W - R_, y1: y2(0.1), y2: y2(0.1), stroke: "var(--muted)", "stroke-dasharray": "5 4", "stroke-width": 1.5 });
-    D.forEach((r, i) => {
-      [[sh[i], "var(--accent)", 0], [inc[i], "var(--income)", 1]].forEach(([v, c, j]) =>
-        el(s2, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(y2(v), y2(0)), width: bw * 0.36, height: Math.abs(y2(v) - y2(0)), fill: c, rx: 2 }));
-      el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
-    $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(s2);
+    $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(shareSvg(D));
     const CATS = [["gain_more_5pct", "Over 5% less", "var(--gain2)"], ["gain_less_5pct", "Up to 5% less", "var(--gain1)"],
       ["no_change", "About the same", "var(--same)"], ["lose_less_5pct", "Up to 5% more", "var(--lose1)"], ["lose_more_5pct", "Over 5% more", "var(--lose2)"]];
     $("a3-win-legend").innerHTML = CATS.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
