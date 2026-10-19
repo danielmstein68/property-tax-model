@@ -758,6 +758,15 @@ rates:
       by majority vote; the binding legal limit on replacement is the 10-mill cap (millage_caps).
       The act also re-enacts ss. 218.12, 218.125 and 218.136 (state offsets for fiscally
       constrained counties' losses from constitutional amendments, subject to appropriation).
+      Strike-through checked 2026-10-19 (enrolled CS/SB 4-F, s. 2,
+      https://www.flsenate.gov/Session/Bill/2026F/4F/BillText/er/HTML): (5)(a) deletes "based on the
+      amount of taxes which would have been levied in the prior year if the maximum millage rate had
+      been applied, adjusted for change in per capita Florida personal income" (and the adopted-rate
+      and county hospital surtax carve-outs) and inserts "computed pursuant to subsection (1)"; the
+      110% tier deletes "based on the previous year's maximum millage rate, adjusted for change in per
+      capita Florida personal income". So both tiers are multiples of the plain rolled-back rate, as
+      encoded. (5)(b) still lets a county or city exceed its own maximum if its total county or
+      municipal taxes stay within the aggregate maximum (not modelled).
 
   school_required_local_effort:
     description: >

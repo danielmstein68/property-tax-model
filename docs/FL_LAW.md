@@ -15,7 +15,7 @@ _Generated from `inputs/fl_law.yaml` by `scripts/law_page.py`. **Do not edit thi
 - **senior_lowinc_county** (🟡 medium): Amount varies by county (roll median $45,389). Decided (2026-10-14): use each county's own amount from the roll instead of the statewide median. Not yet done.
 - **senior_lowinc_municipal** (🟡 medium): Decided (2026-10-14): assign separately from the county version, matching the roll's counts of EXMPT_04 by area, with each city's own amount. Not yet done.
 - **exemption_order** (🟡 medium): Not stated whether the $5,000 exemptions (196.202, 196.24) count as "other homestead exemptions" — they apply to any property. Decided (2026-10-14): treat them as other homestead exemptions (applied after the first two, lowest-taxable order); the roll test will confirm. With fixed-dollar exemptions the order only matters near a $0 floor.
-- **maximum_millage_vote** (🟡 medium): 2026 Florida Statutes text; ch. 2026-239 is described as "remedial and clarifying". Before 2026 the majority-vote maximum was the rolled-back rate adjusted for the change in per capita personal income (s. 200.185) — earlier years not encoded yet. Medium confidence only because the 2026 session laws themselves haven't been read; check effective date.
+- **fiscally_constrained_offset** (🟡 medium): Counties: the 29 entirely within the three rural areas of opportunity (North Central, Northwest, South Central). 24 of them raise $5M or less per mill (2026 school taxable value); Columbia, Putnam, Hendry, Highlands and Okeechobee are above $5M but inside a rural area — 29 in all, matching EDR's FY 2025-26 count (House Select Committee on Property Taxes, Sept 22, 2025). Base-year millage for a new amendment: 2026 (assumption). Who is constrained is held at 2026.
 
 ## Assessment
 
@@ -106,6 +106,21 @@ Non-homestead residential property (9 or fewer units, incl. residential vacant l
 
 > "For all levies other than school district levies, assessments of residential real property, as defined by general law, which contains nine units or fewer and which is not subject to the assessment limitations set forth in subsections (a) through (d) ... shall not exceed ten percent (10%) of the assessment for the prior year." (Const. §4(g)); "...shall be assessed at just value as of January 1 of the year following a change of ownership or control." (193.1554(5))
 
+### nonresidential_cap
+
+Non-homestead real property other than 9-or-fewer-unit residential (commercial, industrial, residential with 10+ units, vacant non-residential land): for all levies except school, assessed value rises at most 10% a year and never above just value; resets to just value after a qualifying improvement or a change of ownership or control. School levies use just value. Applied to each county's and city's tax base in ptm.rate_setting (the model has no such parcels as households).
+
+| Parameter | Value |
+|---|---|
+| applies_to | county, municipal, special |
+| cap | 2024: 10.0% |
+
+**Source:** [Fla. Const. Art. VII s. 4(h); s. 193.1555, F.S.](https://www.flsenate.gov/Laws/Statutes/2026/193.1555) · **Confidence:** ✅ high
+
+> "For all levies other than school district levies, assessments of real property that is not subject to the assessment limitations set forth in subsections (a) through (d) and (g) ... shall not exceed ten percent (10%) of the assessment for the prior year." (Const. s. 4(h))
+
+_Note:_ Amendment 3 (CS/HJR 1-F) lowers this cap and the s. 4(g) cap (nonhomestead_residential_cap) to 5% beginning January 1, 2027.
+
 ### school_assessed_just_value_nonhomestead
 
 For non-homestead property, school levies are assessed at just value (no cap).
@@ -159,6 +174,51 @@ Additional homestead exemption on assessed value above $50,000, up to an indexed
 > "Every person who qualifies to receive the exemption provided in paragraph (a) is entitled to an additional exemption of up to $25,000 on the assessed valuation greater than $50,000 for all levies other than school district levies. The $25,000 value of the additional exemption ... shall be adjusted annually on January 1 of each year for inflation using the percentage change in the Consumer Price Index ... if such percent change is positive."
 
 _Note:_ Roll check: 4.55M parcels carry exactly $26,411 in 2026. The band therefore runs $50,000-$76,411 in 2026 although the Constitution's text still says "up to seventy-five thousand dollars" — the indexing clause (a)(2) governs.
+
+### 2.1. homestead_nonschool_total
+
+Policy lever (Amendment 3 shape): homestead exemption on the first `amount` of assessed value for all levies other than school district levies, replacing the $25,000 + second exemption for those levies (set homestead_second to 0 with it). Measured on raw assessed value; the first $25,000 (homestead_first) counts toward it. 0 = not in effect (current law). Not given to new residents still waiting (homestead_new_resident).
+
+| Parameter | Value |
+|---|---|
+| kind | band |
+| amount_is_total | True |
+| order | 2.1 |
+| household_flag | homestead |
+| exclude_flag | new_resident_waiting |
+| applies_to | county, municipal, special |
+| band_start | 25,000 |
+| amount | 2024: 0; 2026: 0 |
+| projection | {'key': 'amount', 'method': 'index_cpi', 'cpi_lag': 1, 'floor_zero': True, 'round': 1} |
+| indexed | CPI-U, positive changes only, after the last scheduled year |
+
+**Source:** [CS/HJR 1-F (2026), proposed Fla. Const. Art. VII s. 6(a)(1)a.2. and (a)(2)a.](https://www.flsenate.gov/Session/Bill/2026F/1F) · **Confidence:** ✅ high
+
+> "For all levies other than school district levies, I. Beginning on January 1, 2027, up to the assessed valuation of one hundred and fifty thousand dollars. II. Beginning on January 1, 2028, up to the assessed valuation of two hundred and fifty thousand dollars." Indexed to CPI-U (positive changes only) from January 1, 2029.
+
+### 2.2. homestead_new_resident
+
+Policy lever (Amendment 3 shape): non-school homestead exemption on the first `amount` of assessed value for owners who were not Florida residents on December 31, 2026, until their fifth year of exemption (then homestead_nonschool_total). `waiting_years` = years at this (0 under current law; Amendment 3: 4) amount (4: full amount from the fifth year; 0: no waiting, e.g. if struck down). `reference_year`: residents on December 31 of this year are not new residents. Who is a new resident: projection settings `new_residents` (PUMS movers from out of state).
+
+| Parameter | Value |
+|---|---|
+| kind | band |
+| amount_is_total | True |
+| order | 2.2 |
+| household_flag | new_resident_waiting |
+| applies_to | county, municipal, special |
+| band_start | 25,000 |
+| amount | 2024: 0; 2026: 0 |
+| waiting_years | 2024: 0 |
+| reference_year | 2,026 |
+| projection | {'key': 'amount', 'method': 'index_cpi', 'cpi_lag': 1, 'floor_zero': True, 'round': 1} |
+| indexed | CPI-U, positive changes only, after the last scheduled year |
+
+**Source:** [CS/HJR 1-F (2026), proposed Fla. Const. Art. VII s. 6(a)(1)b. and (a)(2)b.](https://www.flsenate.gov/Session/Bill/2026F/1F) · **Confidence:** ✅ high
+
+> "...who had not maintained a permanent residence in this state as of December 31, 2026, ... For all levies other than school district levies, up to the assessed valuation of fifty thousand dollars. ... beginning with the fifth year of exemption under this subparagraph, such person shall be exempt up to the amount of assessed valuation provided by sub-sub-subparagraph a.2.II., as adjusted..." Indexed to CPI-U from January 1, 2028.
+
+_Note:_ Florida TaxWatch notes a similar five-year wait was struck down by the Florida Supreme Court in 1982; set waiting_years to 0 to show that case. From 2030 a county or city may shorten the wait by a two-thirds vote (not modelled).
 
 ### 3. vet_total
 
@@ -494,6 +554,22 @@ Constitutional caps on operating millage (excluding voted debt and short-term vo
 
 > "...shall not be levied in excess of the following millages upon the assessed value of real estate and tangible personal property: for all county purposes, ten mills; for all municipal purposes, ten mills; for all school purposes, ten mills; for water management purposes for the northwest portion of the state ... 0.05 mill; for water management purposes for the remaining portions of the state, 1.0 mill..."
 
+### fiscally_constrained_offset
+
+State payments to fiscally constrained counties for ad valorem revenue lost to revisions of Art. VII of the Constitution: 95% of the reduction in taxable value directly attributable to the revision, for all county taxing jurisdictions (county, MSTUs, dependent districts; not cities or schools), times the lesser of the base-year millage or the current millage. Paid only if the Legislature appropriates it (it has for earlier amendments: $76.9M projected for FY 2026-27 across ss. 218.12, 218.125, 218.136). Off by default; a page setting in the revenue-neutral mode ("the state offsets fiscally constrained counties as before").
+
+| Parameter | Value |
+|---|---|
+| counties | Baker, Bradford, Columbia, Dixie, Gilchrist, Hamilton, Jefferson, Lafayette, Levy, Madison, Putnam, Suwannee, Taylor, Union, Calhoun, Franklin, Gadsden, Gulf, Holmes, Jackson, Liberty, Wakulla, Washington, DeSoto, Glades, Hardee, Hendry, Highlands, Okeechobee |
+| share_of_value | 95.0% |
+| millage_base_year | 2,026 |
+
+**Source:** [ss. 218.12(2), 218.125(2), 218.136(2), 218.67, F.S. (re-enacted by ch. 2026-240)](https://www.flsenate.gov/Session/Bill/2026F/4F) · **Confidence:** 🟡 medium
+
+> "...each fiscally constrained county's reduction in ad valorem tax revenue shall be calculated as 95 percent of the estimated reduction in taxable value multiplied by the lesser of the 2010 applicable millage rate or the applicable millage rate for each county taxing jurisdiction in the current year." (s. 218.125(2)). Fiscally constrained: "Each county that is entirely within a rural area of opportunity ... or each county for which the value of a mill will raise no more than $5 million in revenue..." (s. 218.67(1)).
+
+_Note:_ Counties: the 29 entirely within the three rural areas of opportunity (North Central, Northwest, South Central). 24 of them raise $5M or less per mill (2026 school taxable value); Columbia, Putnam, Hendry, Highlands and Okeechobee are above $5M but inside a rural area — 29 in all, matching EDR's FY 2025-26 count (House Select Committee on Property Taxes, Sept 22, 2025). Base-year millage for a new amendment: 2026 (assumption). Who is constrained is held at 2026.
+
 ## Setting rates (TRIM)
 
 ### rolled_back_rate
@@ -520,11 +596,11 @@ From 2026, the most a county, city or dependent special district may adopt by ma
 | majority_vote_max_of_rolled_back | 2026: 1.0 |
 | two_thirds_vote_max_of_rolled_back | 2026: 1.1 |
 
-**Source:** [s. 200.065(5)(a), F.S., as amended by ch. 2026-239 and ch. 2026-240](http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0200-0299/0200/Sections/0200.065.html) · **Confidence:** 🟡 medium
+**Source:** [s. 200.065(5)(a), F.S., as amended by ch. 2026-239 and ch. 2026-240 (CS/SB 4-F, approved June 24, 2026)](http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0200-0299/0200/Sections/0200.065.html) · **Confidence:** ✅ high
 
 > "The maximum millage rate that a county, municipality, special district dependent to a county or municipality ... is the rolled-back rate computed pursuant to subsection (1)." "A rate of not more than 110 percent of the rolled-back rate may be adopted if approved by a two-thirds vote" "A rate in excess of 110 percent may be adopted if approved by a unanimous vote of the membership of the governing body ... or by a three-fourths vote of the membership of the governing body if the governing body has nine or more members"
 
-_Note:_ 2026 Florida Statutes text; ch. 2026-239 is described as "remedial and clarifying". Before 2026 the majority-vote maximum was the rolled-back rate adjusted for the change in per capita personal income (s. 200.185) — earlier years not encoded yet. Medium confidence only because the 2026 session laws themselves haven't been read; check effective date.
+_Note:_ 2026 Florida Statutes text; ch. 2026-240 (enrolled CS/SB 4-F, read 2026-10-16) applies the limits to counties, municipalities, dependent districts, MSTUs and independent special districts and takes effect on becoming law (June 24, 2026). Before 2026 the majority-vote maximum was the rolled-back rate adjusted for the change in per capita personal income (s. 200.185) — earlier years not encoded yet. Because the rolled-back rate is last year's levy over this year's taxable value, a government can replace revenue lost to an exemption by majority vote; the binding legal limit on replacement is the 10-mill cap (millage_caps). The act also re-enacts ss. 218.12, 218.125 and 218.136 (state offsets for fiscally constrained counties' losses from constitutional amendments, subject to appropriation). Strike-through checked 2026-10-19 (enrolled CS/SB 4-F, s. 2, https://www.flsenate.gov/Session/Bill/2026F/4F/BillText/er/HTML): (5)(a) deletes "based on the amount of taxes which would have been levied in the prior year if the maximum millage rate had been applied, adjusted for change in per capita Florida personal income" (and the adopted-rate and county hospital surtax carve-outs) and inserts "computed pursuant to subsection (1)"; the 110% tier deletes "based on the previous year's maximum millage rate, adjusted for change in per capita Florida personal income". So both tiers are multiples of the plain rolled-back rate, as encoded. (5)(b) still lets a county or city exceed its own maximum if its total county or municipal taxes stay within the aggregate maximum (not modelled).
 
 ### school_required_local_effort
 

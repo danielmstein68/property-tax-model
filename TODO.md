@@ -44,7 +44,7 @@ Steps we're working through one at a time. Each gets discussed before it's built
 **Needs Daniel**
 - [ ] Request the 2024 final NAL roll from DOR (draft ready; Daniel sends).
 - [ ] Check the 29 fiscally constrained counties against EDR's map (Property-Tax-FiscallyConstrainedCounties.pdf, slide 3).
-- [ ] Check the strike-through in SB 4-F s. 200.065(5)(a) (per capita income adjustment struck?).
+- [x] Check the strike-through in SB 4-F s. 200.065(5)(a) (2026-10-19): the per capita income adjustment is struck from both the majority and the 110% tiers; both are now multiples of the plain rolled-back rate, as the model already encodes. Note in inputs/fl_law.yaml.
 
 ---
 # History and notes
