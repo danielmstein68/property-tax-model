@@ -431,9 +431,9 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
         <div class="chart">
           <h3 id="pol-c-share-title">Who gets the tax change</h3>
-          <p id="pol-c-share-sub">Each income decile's share, with rates unchanged, next to its share of all household income.</p>
+          <p id="pol-c-share-sub">Each income decile's share, with rates unchanged. Each decile is a tenth of all households, so an equal share would be 10%.</p>
           <div id="pol-c-share"></div>
-          <div class="legend"><span><i style="background:var(--accent)"></i>Share of the change</span><span><i style="background:var(--income)"></i>Share of household income</span><span><i style="background:transparent;border-top:2px dashed var(--muted);border-radius:0;height:0;vertical-align:3px"></i>Share of households (10%)</span></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>More than an equal share</span><span><i style="background:var(--income)"></i>Less than an equal share</span></div>
         </div>
       </div>
       <p class="muted-p">Per household counts renters at $0: the model doesn't track rent, so what landlords pass on isn't included.</p>
@@ -497,9 +497,9 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
         <div class="chart">
           <h3>Who gets the tax cut</h3>
-          <p>Each income tenth's share of the homeowner tax cut, compared with its share of all household income.</p>
+          <p>Each income tenth's share of the homeowner tax cut. Each tenth is a tenth of all households, so an equal share would be 10%.</p>
           <div id="a3-c-share"></div>
-          <div class="legend"><span><i style="background:var(--accent)"></i>Share of the tax cut</span><span><i style="background:var(--income)"></i>Share of household income</span><span><i style="background:transparent;border-top:2px dashed var(--muted);border-radius:0;height:0;vertical-align:3px"></i>Share of households (10%)</span></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>More than an equal share</span><span><i style="background:var(--income)"></i>Less than an equal share</span></div>
         </div>
       </div>
       <div class="chart">
@@ -1426,19 +1426,20 @@ const HH = __HHDEC__;  // all households by 2026 income tenth (scripts/household
 // change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
 const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
 const hhIncomeShare = () => { const t = HH.deciles.reduce((a, d) => a + d.income, 0); return HH.deciles.map(d => d.income / t); };
-// each tenth's share of the total change next to its share of household income, with the 10% household line
+// each tenth's share of the total change, against an equal share (10%: each tenth is a tenth of households)
 function shareSvg(D) {
-  const tot = D.reduce((a, r) => a + r.total_change, 0), sh = D.map(r => tot ? r.total_change / tot : 0), inc = hhIncomeShare();
-  const W = 520, H = 260, L = 56, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10;
-  const top = Math.ceil(Math.max(...sh, ...inc) * 20) / 20, bot = Math.min(0, Math.floor(Math.min(...sh) * 20) / 20);
+  const tot = D.reduce((a, r) => a + r.total_change, 0), sh = D.map(r => tot ? r.total_change / tot : 0);
+  const W = 520, H = 260, L = 44, R_ = 10, T = 18, B = 26, bw = (W - L - R_) / 10;
+  const top = Math.max(0.15, Math.ceil(Math.max(...sh) * 20 + 0.2) / 20), bot = Math.min(0, Math.floor(Math.min(...sh) * 20) / 20);
   const s2 = svg(W, H), y2 = v => T + (H - T - B) * (1 - (v - bot) / (top - bot));
-  s2.setAttribute("aria-label", "Share of the tax change and of household income by income tenth");
+  s2.setAttribute("aria-label", "Each income tenth's share of the tax change, against an equal 10% share");
   for (let v = bot; v <= top + 1e-9; v += 0.05) { el(s2, "line", { x1: L, x2: W - R_, y1: y2(v), y2: y2(v), stroke: "var(--rule)" }); el(s2, "text", { x: L - 6, y: y2(v) + 4, "text-anchor": "end" }, pct(v, 0)); }
-  el(s2, "line", { x1: L, x2: W - R_, y1: y2(0.1), y2: y2(0.1), stroke: "var(--muted)", "stroke-dasharray": "5 4", "stroke-width": 1.5 });
-  D.forEach((r, i) => {
-    [[sh[i], "var(--accent)", 0], [inc[i], "var(--income)", 1]].forEach(([v, c, j]) =>
-      el(s2, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(y2(v), y2(0)), width: bw * 0.36, height: Math.abs(y2(v) - y2(0)), fill: c, rx: 2 }));
-    el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+  D.forEach((r, i) => { const v = sh[i], x = L + i * bw;
+    el(s2, "rect", { x: x + bw * 0.18, y: Math.min(y2(v), y2(0)), width: bw * 0.64, height: Math.abs(y2(v) - y2(0)), fill: v > 0.1 ? "var(--accent)" : "var(--income)", rx: 2 });
+    el(s2, "text", { x: x + bw / 2, y: (v >= 0 ? y2(v) - 5 : y2(v) + 13), "text-anchor": "middle", class: "val" }, pct(v, 0));
+    el(s2, "text", { x: x + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+  el(s2, "line", { x1: L, x2: W - R_, y1: y2(0.1), y2: y2(0.1), stroke: "var(--ink)", "stroke-dasharray": "5 4", "stroke-width": 1.5 });
+  el(s2, "text", { x: L + 4, y: y2(0.1) - 5 }, "Equal share (10%)");
   return s2;
 }
 const A3_OPT = { reimb: 0, nocap: false, fc: false };
@@ -1543,7 +1544,7 @@ function renderA3() {
     [sCur.toFixed(2), "Suits index under current law, on the same footing"],
     [signed(sNew - sCur, v => v.toFixed(2)), `Change: ${sNew - sCur > 0.005 ? "less regressive" : sNew - sCur < -0.005 ? "more regressive" : "about the same"}`],
   ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  $("a3-who-note").textContent = "The Suits index runs from −1 (fully regressive) to +1 (fully progressive), 0 = a flat share of income; here it is computed from income tenths of owners. Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income and households are for 2026.";
+  $("a3-who-note").textContent = "The Suits index runs from −1 (fully regressive) to +1 (fully progressive), 0 = a flat share of income; here it is computed from income tenths of owners. Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
   (function () {
     const vals = D.map(r => r.avg_change).concat(perHH, [0]);
     const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(raw)));
