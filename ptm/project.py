@@ -649,6 +649,9 @@ class Projection:
         m_y = rate0 * self.rates.city_draws.mean(axis=0)
         city_tax_nh, city_tax_nr = city_nh * m_y / 1000, y["nr"] * m_y / 1000
         county_tax = b_ns * m_c / 1000
+        # per county, each year (2026 first): tax on non-homestead residential property and its non-school base
+        nh_res_c = nh_ns * m_c / 1000 + nh_s * m_s / 1000 + np.bincount(cc[on], weights=city_tax_nh[on], minlength=nc)
+        self.nh_res_by_county = getattr(self, "nh_res_by_county", []) + [{"tax": nh_res_c, "base": nh_ns}]
         return {"nonowner_tax_nonschool": float(county_tax.sum() + city_tax_nh.sum() + city_tax_nr.sum()),
                 "nonowner_tax_school": float((b_s * m_s).sum() / 1000),
                 "nonowner_tax_county": float(county_tax.sum()),

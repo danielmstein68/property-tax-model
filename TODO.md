@@ -34,6 +34,8 @@ Steps we're working through one at a time. Each gets discussed before it's built
 
 - [x] Paying for it with other taxes (2026-10-19, `scripts/offset_taxes.py`): state sales tax, corporate income tax and county surtax increases needed to replace each policy's loss (rates unchanged), and who pays a sales tax increase by income tenth (owners vs renters; CE 2024 taxable spending). On both the Amendment 3 and Policy pages.
 
+- [x] Checked against Walczak (2026), "Amendment 3 Could Shift Tax Burdens to Renters" (parcel-level, 2025 final rolls, REC losses): 2028 extra tax per non-homestead unit $706 vs $707; per apartment $371 vs $406 (apartments = DOR use codes 003/008; each county's extra split by their share of its non-homestead residential base). Shown on the About tab and the Amendment 3 revenue text (2026-10-19). Rent pass-through not added (Daniel).
+
 **Bigger**
 - [ ] Live engine so users can combine changes freely (replaces the pre-computed grid).
 - [ ] Texas (next; research in `docs/research/texas_homestead_takeup.md`), then Ohio (HB 920; rollback-then-cap).
