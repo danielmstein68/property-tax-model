@@ -6,10 +6,10 @@ code,group,amount,school,county,municipal,statute,description
 05,vet_total,total,yes,yes,yes,196.081,Permanently and totally disabled veterans and surviving spouses
 06,vet_total,total,yes,yes,yes,196.091,Disabled veterans confined to wheelchairs and surviving spouses
 08,disabled_total,total,yes,yes,yes,196.101,Totally and permanently disabled persons
-31,small,$500,yes,yes,yes,196.202,Blind persons
-32,small,$500,yes,yes,yes,196.202,Widowers
-33,small,$500,yes,yes,yes,196.202,Widows
-34,small,$500,yes,yes,yes,196.202,Totally and permanently disabled persons
+31,small,"$5,000",yes,yes,yes,196.202,Blind persons
+32,small,"$5,000",yes,yes,yes,196.202,Widowers
+33,small,"$5,000",yes,yes,yes,196.202,Widows
+34,small,"$5,000",yes,yes,yes,196.202,Totally and permanently disabled persons
 35,small,"$5,000",yes,yes,yes,196.24,Disabled ex-service members
 38,military,up to 100%,yes,yes,yes,196.173,Homestead of deployed military personnel
 39,senior_longterm,total,no,yes,no,196.075,Low-income seniors 65+ with 25+ years residence (county option)

@@ -50,8 +50,9 @@ def load_households(path: str | Path, owners_only: bool = False) -> pd.DataFrame
             df[f"{var.lower()}_adj"] = df[var] * df["adjhsg"]
 
     # Top-coded values are replaced by a single state-specific amount,
-    # so they show up as ties at the column maximum.
-    for var in ["VALP", "TAXAMT", "HINCP"]:
+    # so they show up as ties at the column maximum. Household income (HINCP) isn't flagged:
+    # PUMS top-codes income components per person, so household income has no tie at the max.
+    for var in ["VALP", "TAXAMT"]:
         df[f"flag_topcode_{var.lower()}"] = df[var].notna() & (df[var] == df[var].max())
 
     owner = df["tenure"] == "owner"

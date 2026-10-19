@@ -9,10 +9,10 @@ Steps we're working through one at a time. Each gets discussed before it's built
 - [ ] County checks: Putnam (homestead tax 12% above the roll), Escambia (8% below; 41 parcels missing just value), homesteads under $100k (9% below).
 - [ ] Senior long-term exemption: sliders barely move results (PUMS `MV` tenure bands); check eligibility by tenure.
 - [ ] Separate 10-mill caps for county-dependent districts and MSTUs (needs per-authority rates); special-district class (independent districts, water management districts).
-- [ ] Fix `inputs/fl_exemption_codes.csv`: codes 31-34 are $5,000 (not $500).
+- [x] Fix `inputs/fl_exemption_codes.csv`: codes 31-34 are $5,000 (not $500) (2026-10-19; documentation table only, the rules file already had $5,000).
 - [ ] Replace `SCHOOL_SHARE` (0.37) in `ptm/aging.py` tax aging with county millage.
 - [ ] Reprocess NAL rolls so the stored `own_out_of_state` flag is correct (code recomputes it).
-- [ ] Income top-coding flag (`flag_topcode_hincp`) is meaningless; drop or detect from the person file.
+- [x] Income top-coding flag (`flag_topcode_hincp`) is meaningless: dropped from `ptm/load.py` (2026-10-19; nothing used it; the stored baseline keeps the column until its next rebuild).
 
 **Projections**
 - [ ] Inflation: average CBO, SS Trustees, Philadelphia Fed SPF; expose an inflation control.
@@ -118,7 +118,7 @@ Finishing the baseline = linking to parcels + calibration. Agreed order; decisio
   - [x] Exemptions engine (`ptm/engine/exemptions.py`) — 15 hand-worked tests.
   - [x] Roll test (`scripts/roll_test.py`): 9,854,810 residential parcels, **99.39% exact** on both school and county taxable value (school 99.51%, county 99.43%); **99.82%** excluding explained cases (exemptions outside the spec, $10 condo common elements, Gadsden's preliminary roll using the 2025 second-band amount). 17,343 parcels left to explain (standard homesteads 9.5k, county senior 3.7k, veterans' discount 2.0k, $5,000 ex-service 1.7k).
   - [x] Exemption assignment updates (2026-10-14, `ptm/exemptions.py`, `ptm/millage.py`): county codes only for county senior counts (city 04/40 separate, eligibility-based so cities without a county ordinance get candidates); county-group senior amounts; long-term senior statutory test (just value < $250k in first qualifying year, deflated; 25+ years); total disability excludes Brevard's $5,000 code-08 entries (roll: 3,608 homesteads, not 14,967) with $0 reporters and the $37,712 gross-income limit first; new $5,000 exemptions assigned (widow/blind/disabled 561k, disabled ex-service 161k). Owner tax $25.441B → $25.425B; official-levy check 1.048; modelled/reported median 0.904.
-  - [ ] Fix `inputs/fl_exemption_codes.csv`: codes 31–34 are $5,000 (not $500, per ch. 2022-97 and the roll).
+  - [x] Fix `inputs/fl_exemption_codes.csv`: codes 31–34 are $5,000 (not $500, per ch. 2022-97 and the roll).
   - [x] Assessment rules (`ptm/engine/assess.py`) — Save Our Homes cap with recapture, reset on sale / first homestead year, improvements, non-homestead 10% cap (school at just value). 12 hand-worked tests. Reset-on-sale checked against 2025 sales in the roll (non-homesteads 99.8%; homesteads 74.7%, rest explained by portability). Full test needs the 2025 roll (requested).
   - [x] Year-step (`ptm/engine/step.py`): `step()` = assessment → exemptions → taxable → tax (rates plug in as `millage_<class>` columns), `carry_forward()` for the next year. 6 tests incl. tax by hand and a three-year path. ~3.5 s per million units per year.
   - [x] Step 4 — wire the engine into the baseline (done: `engine_tax` in `ptm/millage.py`) (coordinate with the rates chat: `ptm/baseline.py`, `ptm/millage.py`, `ptm/exemptions.py`, `ptm/aging.py`): household taxable values from the engine (four levy classes) instead of `exemptions.py`'s calculation; `millage.py` uses them.
@@ -156,7 +156,7 @@ Also to decide:
 - How to treat `TEN` 4 (occupied without paying rent): no burden, or a burden based on similar rented homes.
 
 ## Open questions from loading
-- **Income top-coding.** `flag_topcode_hincp` is meaningless: PUMS top-codes income components (wages, etc.) per person, not household income, so there's no tie at the max. Decide whether to drop it or detect top-coding properly from the person file.
+- **Income top-coding.** `flag_topcode_hincp` was meaningless (PUMS top-codes income components per person, not household income, so there's no tie at the max); dropped 2026-10-19.
 
 ## Future option: link voter file
 Florida's voter file (Division of Elections, on request; check use terms and exempt voters) could be joined to parcels to study the political economy of property tax (e.g. turnout of Save Our Homes beneficiaries, Amendment 3 gains by party, homeowner vs renter turnout). Approach: match voters to parcels on **property address** (covers renters), using owner name only during matching; keep only derived parcel-level attributes; drop names and birth dates; report in aggregate only. Waiting on which research question to prioritize.
