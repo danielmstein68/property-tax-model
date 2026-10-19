@@ -9,6 +9,7 @@ Usage:
                                         #   + fl_household_deciles.json (scripts/household_deciles.py)
                                         #   + fl_offset_taxes.json (scripts/offset_taxes.py)
                                         #   + fl_a3_rentals.json (scripts/a3_rentals.py)
+                                        #   + fl_a3_takeup_range.json (scripts/a3_takeup_range.py)
                                         #   + fl_a3_rec_by_government.json (scripts/check_rec_by_government.py)
                                         # -> display/fl_2026_status_quo.html (published as a private artifact)
 """
@@ -36,11 +37,12 @@ def main() -> None:
     a3ex = (res / "fl_a3_examples.json").read_text(encoding="utf-8")      # scripts/a3_examples.py
     a3gov = (res / "fl_a3_rec_by_government.json").read_text(encoding="utf-8")   # scripts/check_rec_by_government.py
     a3rent = (res / "fl_a3_rentals.json").read_text(encoding="utf-8")   # scripts/a3_rentals.py
+    a3range = (res / "fl_a3_takeup_range.json").read_text(encoding="utf-8")   # scripts/a3_takeup_range.py
     offset = (res / "fl_offset_taxes.json").read_text(encoding="utf-8")   # scripts/offset_taxes.py
     hhdec = (res / "fl_household_deciles.json").read_text(encoding="utf-8")   # scripts/household_deciles.py
     val = json.dumps(json.loads((res / "fl_2026_validation.json").read_text(encoding="utf-8"))["statewide_homestead"])
     page = (page.replace("__DATA__", data).replace("__PROJ__", proj).replace("__GRID__", grid).replace("__FIN__", fin)
-            .replace("__REC__", rec).replace("__A3EX__", a3ex).replace("__VAL__", val).replace("__HHDEC__", hhdec).replace("__OFFSET__", offset).replace("__A3RENT__", a3rent).replace("__A3GOV__", a3gov))
+            .replace("__REC__", rec).replace("__A3EX__", a3ex).replace("__VAL__", val).replace("__HHDEC__", hhdec).replace("__OFFSET__", offset).replace("__A3RENT__", a3rent).replace("__A3RANGE__", a3range).replace("__A3GOV__", a3gov))
     dest = ROOT / "display" / "fl_2026_status_quo.html"
     dest.write_text(page, encoding="utf-8")
     print(f"wrote {dest}")

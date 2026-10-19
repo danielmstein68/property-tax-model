@@ -85,6 +85,13 @@ def project_law(law: Law, econ: Economy, last_year: int) -> Law:
     return law
 
 
+def _behaviour_level(spec: dict) -> str:
+    """Which take-up / residency-switch value to use: env PTM_BEHAVIOUR_LEVEL (low, central, high) for
+    range runs (scripts/a3_takeup_range.py), else the assumptions file's `use`."""
+    import os
+    return os.environ.get("PTM_BEHAVIOUR_LEVEL") or spec.get("use", "central")
+
+
 def claim_probability(gain: np.ndarray, share_at_ref: float, gain_ref: float) -> np.ndarray:
     """Chance of responding (claiming, or switching residence) to a yearly gain: 1 - exp(-k x gain),
     with k set so the chance at gain_ref is share_at_ref. No gain (or a loss): 0."""
@@ -699,7 +706,7 @@ class Projection:
             reason = self.units["non_claim_reason"] if "non_claim_reason" in self.units else pd.Series("", index=self.units.index)
             self.tk_cand = (~self.hs) & self.orig & (reason.fillna("").to_numpy() == "possibly_eligible")
             self.tk_u = np.random.default_rng(seed + 104729).random(n)
-            self.tk_share = float(tk["share_at_ref"][tk.get("use", "central")])
+            self.tk_share = float(tk["share_at_ref"][_behaviour_level(tk)])
         self.rs = rs if self.behaviour and rs.get("enabled") else None
         self.sb_ex = {"county": np.zeros(len(self.rates.counties)), "school": np.zeros(len(self.rates.counties))}
         if self.rs:
@@ -713,7 +720,7 @@ class Projection:
                 self.sb_ci = smp["county_fips"].map(cpos).fillna(-1).astype(int).to_numpy()
                 self.sb_w = len(pool) / m
                 self.sb_jv = smp["JV"].to_numpy(dtype=float)
-                self.sb_share_ref = float(rs["share_at_ref"][rs.get("use", "central")])
+                self.sb_share_ref = float(rs["share_at_ref"][_behaviour_level(rs)])
                 self.sb_share = np.zeros(m)          # cumulative share of each sampled parcel switched
                 self.sb_cohorts = {}                 # year -> new share switched that year
 

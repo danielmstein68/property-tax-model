@@ -203,6 +203,6 @@ Modelled on the Maine property tax model's "Municipality Engine" (it re-solves e
 - [ ] Separate 10-mill caps for county-dependent districts and MSTUs (needs per-authority rates).
 
 - [x] Revenue section: headline 'lost by Florida's local governments' and a 'for scale' line from statewide county and city Annual Financial Reports, FY 2023-24 (inputs/fl_local_finance_fy2024.yaml) (2026-10-16). Per-government revenue shares dropped: unadjusted county AFR files mix in custodial (pass-through) taxes.
-- [ ] (optional) Compare Amendment 3 county/city/special district impacts with REC's per-government tables (impact0710.pdf pages 5-18) to see where the model differs.
-- [x] Homestead status changes in response to policy: take-up by possibly-eligible non-claimers and second-home residency switching, on by default, static run kept for comparison (2026-10-16). Still to do: settle the central values (Texas 2023 evidence); un-claiming when exemptions shrink; switching in city bases and history-mode rate responses.
+- [x] (optional) Compare Amendment 3 county/city/special district impacts with REC's per-government tables (done 2026-10-19, see Amendment 3 and policy above).
+- [x] Homestead status changes in response to policy: take-up by possibly-eligible non-claimers and second-home residency switching, on by default, static run kept for comparison (2026-10-16). Central values kept; the Amendment 3 page shows a range from the assumptions file's low (10%/2%) and high (40%/10%) values (2026-10-19, `scripts/a3_takeup_range.py`; 2031 loss $9.25-9.72B vs $9.41B central). Still to do: un-claiming when exemptions shrink; switching in city bases and history-mode rate responses.
 
