@@ -23,6 +23,12 @@ RAW = ROOT / "data" / "raw" / "tx_cpa"
 # homesteads): loss per homestead 37.4k, 59.3k, 15.1k, 10.1k. Counts come from the smallest step
 # (THRD), which almost no home is worth less than.
 STEPS = {"LOSS INCR HMSTD": 40_000, "LOSS PREV INCR HMSTD": 60_000, "LOSS SCND INCR HMSTD": 15_000, "LOSS THRD INCR HMSTD": 10_000}
+# The $10,000 step's column by export year (labels shift each time a step is added): 2024 SCND, 2025 THRD.
+TEN_K_STEP = {2024: "LOSS SCND INCR HMSTD", 2025: "LOSS THRD INCR HMSTD"}
+# Homestead counts for 2026 where there's no roll: the 2024 count (2025's is off in some districts:
+# Tarrant 374k in 2025 vs 412k in 2024 and 422k on the 2026 roll) grown by 3%, the growth the 2026 rolls
+# show over 2024 (El Paso +4.8%, Tarrant +2.4%). Provisional (docs/TX_DECISIONS.md).
+GROWTH_2024_2026 = 1.03
 
 
 def load_pvs(year: int = 2025, kind: str = "final") -> pd.DataFrame:
@@ -35,7 +41,7 @@ def load_pvs(year: int = 2025, kind: str = "final") -> pd.DataFrame:
     num = [c for c in d.columns if c not in {"CAD NAME", "COUNTY NAME", "SPLIT ID", "TU NAME", "VERSION TYPE",
                                               "VERSION DATE", "VAL ASGN CD", "FINDING STATUS", "FINDING CD", "cdn", "county_fips"}]
     d[num] = d[num].apply(pd.to_numeric, errors="coerce")
-    d["homesteads_est"] = d["LOSS THRD INCR HMSTD"] / STEPS["LOSS THRD INCR HMSTD"]
+    d["homesteads_est"] = d[TEN_K_STEP[year]] / 10_000
     return d
 
 
@@ -49,6 +55,12 @@ def county_controls(year: int = 2025) -> pd.DataFrame:
             "LOSS TO NON HOME CAP": "loss_circuit_breaker", "O65 FREEZE LOCL": "loss_freeze", "LOCL T2": "taxable_t2"}
     g = d.groupby(["county_fips", "CAD NAME"])[list(cols)].sum().rename(columns=cols).reset_index()
     return g.rename(columns={"CAD NAME": "cad_name"})
+
+
+def homestead_targets_2026() -> pd.Series:
+    """2026 homesteads by county FIPS from the PVS (2024 count x GROWTH_2024_2026); rolls override these."""
+    c = county_controls(2024)
+    return (c.set_index("county_fips")["homesteads"] * GROWTH_2024_2026).rename("homesteads_2026")
 
 
 if __name__ == "__main__":

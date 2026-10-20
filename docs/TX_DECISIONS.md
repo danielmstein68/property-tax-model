@@ -25,3 +25,5 @@ Milestones: (1) data collected, (2) law encoded, (3) 2026 baseline checked, (4) 
 - **"Disabled" for the over-65/disabled exemptions (provisional).** The law means eligible for Social Security disability (s. 11.13(m)). Proxy: under 65 with an ACS disability and Social Security or SSI income. Why: closest survey match; calibrated to the rolls' counts where the rolls show over-65/disabled exemptions.
 - **School compression after 2026 (provisional).** Baseline MCRs follow the current-law formula (2.5% value-growth limit, state compression percentage from the GAA's value growth) with no new compression; more compression is a policy option. Why: current law.
 
+- **Homestead counts without a roll (provisional).** The 2024 value study's count grown 3% to 2026 (the 2026 rolls run 2.4-4.8% above 2024); the 2025 study undercounts some districts (Tarrant 374k vs 412k in 2024 and 422k on the 2026 roll). Counties with a roll use the roll.
+- **Homestead PVS counts.** Counted from the value lost to the $10,000 step of the school exemption (almost no home is worth less), matching the Comptroller research note (Harris 850,527 in 2024).
