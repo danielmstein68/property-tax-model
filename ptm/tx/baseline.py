@@ -163,6 +163,30 @@ def compute_tax(hh: pd.DataFrame, rows: pd.DataFrame, law, year: int = 2026, rat
     return t, x
 
 
+def calibrate_freezes(hh: pd.DataFrame, rows: pd.DataFrame, law, min_weight: float = 2_000) -> pd.DataFrame:
+    """Over-65/disabled school tax freezes, calibrated to TEA's 2026-27 frozen levy by school district.
+    Most rolls don't carry freeze ceilings (only El Paso's and Travis's do), so the model's school M&O tax on
+    over-65/disabled homesteads ran at 1.93x TEA's ACTUAL_FROZEN_LEVY statewide. For each district: ratio =
+    TEA frozen levy / the model's uncapped M&O on its over-65/disabled homesteads, at most 1; the ratio
+    scales those homes' whole school tax (the freeze covers M&O and I&S). Districts with fewer than
+    `min_weight` weighted over-65 homesteads, or not in TEA's file, take the statewide ratio."""
+    from ptm.tx.school import load_sof
+    sof = load_sof().set_index("cdn")["ACTUAL_FROZEN_LEVY"]
+    x = rows.copy()
+    o65 = x["hid"].map(hh["over65_or_disabled"]).fillna(False) & (x["levy_class"] == "school")
+    t, xr = compute_tax(hh, x.assign(ceiling_ratio=np.nan), law)
+    xr["cdn"] = xr["unit_id"].astype(str).str.split("-").str[:2].str.join("")
+    mo = xr["taxable"] * xr["mo_rate"].fillna(0) / 100 * xr["hid"].map(hh["WGTP"])
+    g = mo[o65.to_numpy()].groupby(xr.loc[o65.to_numpy(), "cdn"]).sum()
+    wt = xr.loc[o65.to_numpy()].assign(w=xr["hid"].map(hh["WGTP"])).groupby("cdn")["w"].sum()
+    tea = sof.reindex(g.index)
+    statewide = min(1.0, float(sof.sum() / g.sum())) if g.sum() > 0 else 1.0
+    ratio = (tea / g).where((wt >= min_weight) & tea.notna() & (g > 0)).clip(upper=1).fillna(statewide)
+    x.loc[o65, "ceiling_ratio"] = xr.loc[o65.to_numpy(), "cdn"].map(ratio).fillna(statewide).to_numpy()
+    x.loc[~o65 & (x["levy_class"] == "school"), "ceiling_ratio"] = np.nan
+    return x
+
+
 def unit_tax(hh: pd.DataFrame, units: pd.DataFrame, law, year: int = 2026) -> pd.DataFrame:
     """Tax by levy class for households with roll donors (kept for the checks)."""
     return compute_tax(hh, donor_rows(hh, units), law, year)[0]
@@ -285,6 +309,7 @@ def build_full(districts: list[str] | None = None, seed: int = 2026) -> tuple[pd
         o = o.join(units_drawn)
     rows = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=ROW_COLS)
     if len(rows):
+        rows = calibrate_freezes(o[o["homestead"]], rows, law)
         o = o.join(compute_tax(o[o["homestead"]], rows, law)[0])
     return o, rows
 

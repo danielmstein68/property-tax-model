@@ -35,3 +35,10 @@ Milestones: (1) data collected, (2) law encoded, (3) 2026 baseline checked, (4) 
 - **School funding in projections (provisional).** Entitlements, weighted students and the basic allotment are held at 2026-27 levels (current law), so as values rise state aid falls and recapture rises (state aid $24.6B in 2026-27 to $16.3B by 2036 in the central case). The Legislature resets funding every session, so the school-finance path is a current-law benchmark, not a forecast.
 - **Households fixed in projections (provisional).** No new homes, sales only reset the cap (5% a year); per-homestead results are the focus.
 - **Owners without a homestead exemption (provisional).** Taxed at full value with no exemptions, at their county's median combined homestead rate (they have no roll donor yet).
+- **Freezes calibrated to TEA (2026-10-20).** Only El Paso's and Travis's rolls carry school freeze ceilings, so the model's school M&O on over-65/disabled homesteads ran at 1.93x TEA's frozen levy (ACTUAL_FROZEN_LEVY, 2026-27 SOF). Each district's over-65/disabled school tax is now scaled by TEA frozen levy / model uncapped levy (at most 1; small districts take the statewide ratio): 1.107x after. Homestead tax 2026 $30.6B -> $29.1B.
+
+## Statewide check (scripts/tx_validate_2026.py, 2026-10-20)
+Model vs Comptroller PVS 2025 final (same $140k/$60k exemptions) and TEA:
+- homesteads 0.984; state homestead exemption (sum of min(appraised, $140k)) 1.044; frozen school M&O levy 1.107
+- over-65/disabled school exemption 1.19 (roll counties 1.23): too many over-65/disabled, or their values too high; likely the over-65 inference from exemption amounts in roll counties (it also catches local school exemptions). Tax effect about 0.6%. Open.
+- 100% disabled veterans 1.22 (roll counties 1.77): the rolls' total-exemption flags count more homes than the PVS dollar total implies. Tax effect about 0.5%. Open.
