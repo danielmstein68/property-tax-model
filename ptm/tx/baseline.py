@@ -84,8 +84,10 @@ def roll_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     import pyarrow.parquet as pq
     f = PROC / f"{district}_units.parquet"
     have = set(pq.read_schema(f).names)
-    want = ["prop_id", "entity_cd", "entity_name", "appraised_value", "taxable_val", "hs_local_amt", "freeze_ceiling"]
+    want = ["prop_id", "entity_cd", "entity_name", "appraised_value", "taxable_val", "hs_local_amt", "freeze_ceiling", "hs_share"]
     e = pd.read_parquet(f, columns=[c for c in want if c in have])
+    if "hs_share" not in e:
+        e["hs_share"] = 1.0       # share of the property that is the homestead (Williamson reports it)
     e = e[e["prop_id"].isin(set(p["prop_id"]))]
     m = unit_map(district, e.drop_duplicates("entity_cd")[["entity_cd", "entity_name"]])
     e = e.merge(m[["entity_cd", "levy_class", "unit_id", "total_rate"]].dropna(subset=["unit_id"]), on="entity_cd")
@@ -100,12 +102,12 @@ def roll_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     o65 = e["prop_id"].isin(set(p.loc[p["o65"], "prop_id"]))
     state = np.where(e["levy_class"] == "school", law.rule("school_homestead").get("amount", 2026)
                      + np.where(o65, law.rule("school_over65_disabled").get("amount", 2026), 0), 0.0)
-    state = np.minimum(state, e["appraised_value"])
+    state = np.minimum(state, e["appraised_value"] * e["hs_share"])
     e["other_fixed"] = np.maximum(0, e["appraised_value"] - e["taxable_val"] - e["hs_local_amt"] - state)
     e.loc[e["taxable_val"] <= 0, "other_fixed"] = np.inf          # fully exempt in this unit (e.g. 100% veteran)
     tax_uncapped = e["taxable_val"] * e["total_rate"] / 100
     e["ceiling_ratio"] = np.where((e["freeze_ceiling"] > 0) & (tax_uncapped > 0), (e["freeze_ceiling"] / tax_uncapped).clip(0, 1), np.nan)
-    keep = ["prop_id", "levy_class", "unit_id", "total_rate", "local_pct", "other_fixed", "ceiling_ratio"]
+    keep = ["prop_id", "levy_class", "unit_id", "total_rate", "local_pct", "other_fixed", "ceiling_ratio", "hs_share"]
     p["prop_id"] = district + ":" + p["prop_id"].astype(str)        # donor keys: text, unique across districts
     e = e[keep].assign(prop_id=district + ":" + e["prop_id"].astype(str))
     return p, e
@@ -121,6 +123,7 @@ def unit_tax(hh: pd.DataFrame, units: pd.DataFrame, law, year: int = 2026) -> pd
     ap = x["appraised"]
     local = np.where(x["local_pct"] > 0, np.maximum(x["local_pct"] * ap, 5000), 0.0)
     state = np.where(x["levy_class"] == "school", school_hs + np.where(x["over65_or_disabled"], school_65, 0), 0.0)
+    state = np.minimum(state, ap * x["hs_share"].fillna(1))
     taxable = np.maximum(0, ap - state - local - x["other_fixed"].fillna(0))
     taxable = np.where(x["dv_total"], 0.0, taxable)
     tax = taxable * x["total_rate"].fillna(0) / 100

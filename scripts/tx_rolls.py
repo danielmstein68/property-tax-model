@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 from ptm.tx.collin import read_collin  # noqa: E402
 from ptm.tx.harris import read_harris  # noqa: E402
 from ptm.tx.pacs import read_pacs  # noqa: E402
+from ptm.tx.williamson import read_williamson  # noqa: E402
 
 RAW, OUT = ROOT / "data" / "raw" / "tx_rolls", ROOT / "data" / "processed" / "tx_rolls"
 PACS = {"tarrant": "000_Tarrant_All_Taxing_Units.zip", "travis": "2026_certified_export_supp0.zip",
@@ -27,7 +28,8 @@ def main(names: list[str]) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for n in names or [k for k, f in PACS.items() if (RAW / k / f).exists()] + ["harris"]:
         t = time.time()
-        p, e = read_harris() if n == "harris" else read_collin() if n == "collin" else read_pacs(RAW / n / PACS[n])
+        readers = {"harris": read_harris, "collin": read_collin, "williamson": read_williamson}
+        p, e = readers[n]() if n in readers else read_pacs(RAW / n / PACS[n])
         p.to_parquet(OUT / f"{n}_props.parquet", index=False)
         e.to_parquet(OUT / f"{n}_units.parquet", index=False)
         hs = (p["hs_exempt"] == "T").sum()

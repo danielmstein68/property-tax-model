@@ -23,6 +23,12 @@ DISTRICTS = {"el_paso": ("141", 71), "tarrant": ("439", 220), "travis": ("453", 
              "dallas": ("113", 57), "collin": ("085", 43), "williamson": ("491", 246), "fort_bend": ("157", 79),
              "galveston": ("167", 84), "bell": ("027", 14)}
 # appraisal district numbers are the Comptroller's alphabetical county numbers (ptm.tx.units.cad_id)
+# districts whose exports give unit codes without names: matched by type prefix and total market value
+VALUE_MATCHED = {"williamson": {"S": "school", "C": "city", "J": "college", "G": "county", "RFM": "county_fmfc", "H": "hospital"},
+                 "fort_bend": {"S": "school", "C": "city", "J": "college", "G": "county", "H": "hospital"}}
+# exports whose school taxable values still use the pre-2025 school exemptions ($100k + $10k over-65):
+# the roll check and the donors add the 2025 increases ($40k, and $50k more for over-65/disabled)
+SCHOOL_EXEMPTION_LAG = {"williamson": (40_000, 50_000)}
 NOT_TAXING = re.compile(r"\b(central appraisal|appraisal district|^cad$)\b", re.I)
 
 
@@ -52,9 +58,58 @@ def _norm(name: str) -> str:
     return re.sub(r"\s+", " ", n).strip()
 
 
+def code_market(district: str) -> pd.Series:
+    """Total market value per unit code across all property in the export (for VALUE_MATCHED districts)."""
+    if district == "williamson":
+        a = pd.read_csv(ROOT / "data" / "raw" / "tx_rolls" / "williamson" / "wcad_asmt_certified.csv",
+                        usecols=["taxingunitcode", "mktvalue"], dtype={"taxingunitcode": str})
+        return a.groupby("taxingunitcode")["mktvalue"].sum()
+    raise KeyError(district)
+
+
+def unit_map_by_value(district: str, codes: list[str], year: int = 2025) -> pd.DataFrame:
+    """Codes -> Comptroller units: class from the code's first letter, then the unmatched unit of that class
+    with the closest market value (within 20%; 2026 roll vs 2025 Comptroller values). A county road / FMFC
+    code (Williamson "RFM") takes the county's FMFC rate and the general county code the rest."""
+    _, cad = DISTRICTS[district]
+    u = load_units(year)
+    u = u[u["cad_id"] == cad].copy()
+    mv = code_market(district)
+    prefix = VALUE_MATCHED[district]
+    used, out = set(), []
+    for cd in sorted(codes, key=lambda c: -mv.get(c, 0)):
+        cls = prefix.get(cd, prefix.get(cd[0], "special"))
+        row = {"entity_cd": cd, "entity_name": cd, "levy_class": "county" if cls == "county_fmfc" else cls, "score": 0.0}
+        cand = u[(u["levy_class"] == ("county" if cls == "county_fmfc" else cls)) & ~u.index.isin(used if cls != "county_fmfc" else set())]
+        m = mv.get(cd, 0)
+        if len(cand) and m > 0:
+            r = np.abs(np.log(cand["market_value"].clip(lower=1) / m))
+            # tiebreak on the code's letters, which usually echo the name (SLH Liberty Hill ISD, SHU Hutto ISD)
+            letters = cd[1:].upper()
+            words = cand["name"].str.upper().str.replace(r"[^A-Z ]", " ", regex=True).str.split()
+            hint = words.map(lambda w: letters[:2] in ("".join(x[0] for x in w[:2]), w[0][:2] if w else "", w[0][:3] if w else ""))
+            # special districts: the prefix names the kind (F emergency services, W water, M utility, R road)
+            kind = {"F": r"ESD|EMERGENCY", "W": r"WCID|WATER|WSD|FWSD", "M": r"MUD|MMD|UTILITY|MANAGEMENT", "R": r"ROAD"}.get(cd[0])
+            if cls == "special" and kind:
+                r = r - 0.2 * cand["name"].str.upper().str.contains(kind).astype(float) + 0.2
+            r = r - 0.05 * hint.astype(float)
+            i = r.idxmin()
+            if r[i] <= np.log(1.2):
+                b = u.loc[i]
+                rate = b["fmfc_rate"] if cls == "county_fmfc" else b["total_rate"] - (b["fmfc_rate"] if cls == "county" else 0)
+                row.update(unit_id=b["unit_id"], unit_name=b["name"], mo_rate=b["mo_rate"], is_rate=b["is_rate"], total_rate=rate,
+                           fmfc_rate=b["fmfc_rate"], score=round(float(np.exp(-r[i])), 3))
+                if cls != "county_fmfc":
+                    used.add(i)
+        out.append(row)
+    return pd.DataFrame(out)
+
+
 def unit_map(district: str, entities: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
     """entities: entity_cd, entity_name (one row each). Returns entity_cd, entity_name, levy_class,
     unit_id, unit_name, score, rates (mo, is, total, fmfc)."""
+    if district in VALUE_MATCHED:
+        return unit_map_by_value(district, list(entities["entity_cd"]), year)
     _, cad = DISTRICTS[district]
     u = load_units(year)
     u = u[u["cad_id"] == cad].copy()
@@ -126,6 +181,11 @@ def parcel_tax(district: str, homesteads_only: bool = True) -> pd.DataFrame:
     names = e.drop_duplicates("entity_cd")[["entity_cd", "entity_name"]]
     m = unit_map(district, names)
     e = e.merge(m[["entity_cd", "levy_class", "unit_id", "total_rate"]], on="entity_cd", how="inner")
+    if district in SCHOOL_EXEMPTION_LAG:
+        add, add65 = SCHOOL_EXEMPTION_LAG[district]
+        o65 = e["prop_id"].isin(set(props.loc[props["over65"] | props["disabled"], "prop_id"]))
+        sch = e["levy_class"] == "school"
+        e.loc[sch, "taxable_val"] = (e.loc[sch, "taxable_val"] - add - np.where(o65[sch], add65, 0)).clip(lower=0)
     e["tax"] = e["taxable_val"] * e["total_rate"].fillna(0) / 100
     frozen = e["freeze_ceiling"] > 0
     e.loc[frozen, "tax"] = np.minimum(e.loc[frozen, "tax"], e.loc[frozen, "freeze_ceiling"])
