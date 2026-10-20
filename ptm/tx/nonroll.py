@@ -69,6 +69,48 @@ def county_units(year: int = 2025) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     return school, city, comb
 
 
+def local_exemptions() -> pd.DataFrame:
+    """Collected local-option exemptions (inputs/tx_local_exemptions_*.csv, from appraisal districts'
+    published unit tables) matched to the Comptroller's units: unit_id, local_pct, over65_amount,
+    disabled_amount. Units not listed keep the typical values (exemption_stats)."""
+    import glob
+    import difflib
+    from ptm.tx.pvs import county_fips_by_name
+    from ptm.tx.rolls import _norm
+    files = sorted(glob.glob(str(ROOT / "inputs" / "tx_local_exemptions_*.csv")))
+    if not files:
+        return pd.DataFrame(columns=["unit_id", "levy_class", "county_fips", "local_pct", "over65_amount", "disabled_amount"])
+    x = pd.concat([pd.read_csv(f, dtype=str) for f in files], ignore_index=True)
+    x = x[x["county"].notna() & x["unit_name"].notna()].copy()
+    x["county_fips"] = county_fips_by_name(x["county"].str.strip())
+    typ = {"county": "county", "city": "city", "school": "school", "isd": "school", "college": "college", "hospital": "hospital"}
+    x["levy_class"] = x["unit_type"].str.strip().str.lower().map(typ).fillna("special")
+    for c in ["local_pct", "local_min", "over65_amount", "disabled_amount"]:
+        x[c] = pd.to_numeric(x[c].astype(str).str.replace(r"[$,%\s]", "", regex=True), errors="coerce").fillna(0)
+    x.loc[x["local_pct"] > 1, "local_pct"] = x.loc[x["local_pct"] > 1, "local_pct"] / 100     # "20" -> 0.20
+    x["local_pct"] = x["local_pct"].clip(0, 0.2)
+    u = load_units()
+    out = []
+    for (c, cls), g in x.groupby(["county_fips", "levy_class"]):
+        cand = u[(u["county_fips"] == c) & (u["levy_class"] == cls)]
+        if cand.empty:
+            continue
+        norms = cand["name"].map(_norm).tolist()
+        for _, r in g.iterrows():
+            if cls == "county" or len(cand.drop_duplicates("unit_key")) == 1:     # the only unit of its class
+                i = 0
+            else:
+                sc = [difflib.SequenceMatcher(None, _norm(r["unit_name"]), n).ratio() for n in norms]
+                i = int(np.argmax(sc))
+                if sc[i] < 0.6:
+                    continue
+            # a flat-dollar homestead exemption with no percentage (Guadalupe: San Marcos $15,000)
+            flat = r["local_min"] if r["local_pct"] == 0 else 0.0
+            out.append({"unit_id": cand["unit_id"].iloc[i], "levy_class": cls, "county_fips": c, "local_pct": r["local_pct"], "flat": flat,
+                        "over65_amount": r["over65_amount"], "disabled_amount": r["disabled_amount"]})
+    return pd.DataFrame(out).drop_duplicates("unit_id")
+
+
 def nonroll_rows(hh: pd.DataFrame, rng: np.random.Generator, stats: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """hh: homesteads in counties without a roll (county_fips_tax, over65_or_disabled, ceiling_ratio).
     Returns (household x unit rows in ptm.tx.baseline.ROW_COLS form, the drawn school district and city)."""
@@ -109,4 +151,22 @@ def nonroll_rows(hh: pd.DataFrame, rng: np.random.Generator, stats: pd.DataFrame
                     add(gi[inside], "city", ct["unit_id"].to_numpy()[k][inside], ct["mo_rate"].fillna(0).to_numpy()[k][inside],
                         ct["is_rate"].fillna(0).to_numpy()[k][inside], st.loc["city", "local_pct_eff"], fx("city")[inside])
     rows = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    # collected unit-by-unit exemptions where we have them (by unit, or for the averaged college / hospital
+    # rows, the county's own unit of that class)
+    loc = local_exemptions()
+    if len(rows) and len(loc) and stats["local_pct_eff"].sum() > 0:     # not for non-homestead owners
+        o65 = rows["hid"].map(hh["over65_or_disabled"]).fillna(False).to_numpy()
+        dis = rows["hid"].map(hh["disabled"] if "disabled" in hh else hh["over65_or_disabled"] & False).fillna(False).to_numpy()
+        by_unit = loc.set_index("unit_id")
+        avg_key = loc[loc["levy_class"].isin(["college", "hospital"])].assign(k=lambda d: "avg:" + d["county_fips"] + ":" + d["levy_class"]).drop_duplicates("k").set_index("k")
+        # school districts keep their own PVS local-option loss; other units take the collected % and amounts
+        nonschool = (rows["levy_class"] != "school").to_numpy()
+        for src in (by_unit, avg_key):
+            m = rows["unit_id"].isin(src.index).to_numpy() & nonschool
+            if not m.any():
+                continue
+            r = src.reindex(rows.loc[m, "unit_id"])
+            rows.loc[m, "local_pct"] = r["local_pct"].to_numpy()
+            amt = np.where(dis[m] & (r["disabled_amount"].to_numpy() > 0), r["disabled_amount"].to_numpy(), r["over65_amount"].to_numpy())
+            rows.loc[m, "other_fixed"] = np.where(o65[m], amt, 0.0) + r["flat"].fillna(0).to_numpy()
     return rows, drawn

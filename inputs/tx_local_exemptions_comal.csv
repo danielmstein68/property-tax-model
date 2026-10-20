@@ -1,0 +1,43 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Comal,Comal County (046),county,0.20,5000,50000,0,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Lateral Road & Flood Control (046LR),special,0.20,,50000,0,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal ISD (SCIS),school,0.20,,0,0,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,New Braunfels ISD (SNBI),school,0,,3750,3750,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Boerne ISD (SBOE),school,0,,0,0,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Wimberley ISD (SWIM),school,0,,0,0,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of New Braunfels (CNB),city,0.20,5000,3750,3750,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of Garden Ridge (CGR),city,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of Bulverde (CBUL),city,0,,40000,0,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of Fair Oaks (CFO),city,0,5000,50000,50000,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of Schertz (CSCH),city,0,,10000,3000,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of Selma (CSEL),city,0.01,5000,20000,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,City of Spring Branch (CSB),city,0.20,5000,50000,50000,Y,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #1 (ES1),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #2 (ES2),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #3 (ES3),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #4 (ES4),special,0,10000,10000,10000,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #5 (ES5),special,0,,10000,10000,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #6 (ES6),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Emergency Serv Dist #7 (ES7),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Canyon Ranch MUD (MCR),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Central Comal County MUD 1 (MCC1),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Flying W MUD (MFW),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Johnson Ranch MUD (MJR),special,0,,75000,75000,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Kynwood MUD (MK),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Meyer Ranch MUD (MMR),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Purlsong MUD (MP),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Simmons Valley MUD (MSV),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Sky Ranch MUD (MSR),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,West Comal County MUD (MWCC1),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,York Creek Improvement District (WYC),special,0,5000,3000,3000,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID 1A (WC1A),special,0,,10000,10000,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID 1B (WC1B),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID 1C (WC1C),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID 1D (WC1D),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID 1E (WC1E),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID 1F (WC1F),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WID Master,special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WCID #3 (WCI3),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WCID #3A (MWCI3A),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Comal County WCID #6 (WCI6),special,0.05,5000,10000,10000,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf
+Comal,Lake Dunlap WID (WCLD),special,0,,0,0,N,2025,https://comalad.org/wp-content/uploads/2026/03/Exemption-Schedule-2025-Tax-Year-Effective-11-04-2025-1.pdf

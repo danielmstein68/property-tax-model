@@ -1,0 +1,25 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Smith,Smith County,county,0,,25000,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Arp City,city,0,,3000,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Bullard City,city,0,,3000,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Lindale City,city,0,,3500,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Overton City,city,0.20,5000,6000,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Troup City,city,0,,5000,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Tyler City,city,0.10,5000,6000,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Whitehouse City,city,0,,3000,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Winona City,city,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Arp ISD,school,0.20,5000,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Bullard ISD,school,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Chapel Hill ISD,school,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Gladewater ISD,school,0.20,5000,6000,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Lindale ISD,school,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Troup ISD,school,0,,5000,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Tyler ISD,school,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Van ISD,school,0.20,5000,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Whitehouse ISD,school,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Winona ISD,school,0,,0,0,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Tyler Jr. College,college,0,,20000,10000,Y,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Kilgore College,college,0,,30000,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,SCESD #1,special,0,,0,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,SCESD #2,special,0,,0,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf
+Smith,Smith Co. MUD,special,0,,5000,0,N,2026,https://www.smithcad.org/Forms/Exemptions.pdf

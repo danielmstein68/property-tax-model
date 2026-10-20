@@ -1,0 +1,31 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Jefferson,BEAUMONT ISD,school,0,,5000,0,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,HAMSHIRE FANNETT ISD,school,0,,0,0,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,HARDIN JEFFERSON ISD,school,0.15,,0,0,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,NEDERLAND ISD,school,0,,0,0,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,PORT ARTHUR ISD,school,0,,15000,15000,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,PORT NECHES-GROVES ISD,school,0.20,,0,0,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,SABINE PASS ISD,school,0.20,,10000,10000,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,CITY OF BEAUMONT,city,0,,17500,17500,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,CITY OF BEVIL OAKS,city,0.20,,20000,20000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,CITY OF GROVES,city,0,,12000,12000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,CITY OF NEDERLAND,city,0,,15000,15000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,CITY OF PORT ARTHUR,city,0.20,,25000,25000,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,CITY OF PORT NECHES,city,0.20,,16600,16600,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,TAYLOR LANDING,city,0,,17500,17500,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,PORT OF BEAUMONT,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,PORT OF PORT ARTHUR,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,PORT OF SABINE PASS,special,0.20,,30000,30000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,TRININTY BAY CD,special,0.20,,60000,60000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,WCID #10,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,JC ESD #5,special,0,,0,0,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,JC ESD #4,special,0,,0,0,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,JC ESD #3,special,0,,0,0,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,JC ESD #2,special,0,,0,0,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,JC ESD #1,special,0,,0,0,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,NORTHWEST FOREST MUD,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,SABINE NECHES NAV DIST,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,DRAINAGE DIST #3,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,DRAINAGE DIST #6,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,DRAINAGE DIST #7,special,0.20,,40000,40000,N,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf
+Jefferson,JEFFERSON COUNTY,county,0.20,,40000,40000,Y,2025,https://jcad.org/wp-content/uploads/2025/10/2025-TAX-RATES.pdf

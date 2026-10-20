@@ -1,0 +1,23 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Lubbock,Lubbock County,county,0,,16500,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Lubbock County Hospital District,hospital,0,,16500,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,High Plains Water District,special,0,,16500,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of Lubbock,city,0,,16700,10000,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of Wolfforth,city,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of Abernathy,city,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of Shallowater,city,0,,0,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of Idalou,city,0,,0,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of New Deal,city,0,5000,0,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Town of Ransom Canyon,city,0,,0,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,City of Slaton,city,0,,0,0,N,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Lubbock ISD,school,0,,5000,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Frenship ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Lubbock-Cooper ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Slaton ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Idalou ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Shallowater ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,New Deal ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Roosevelt ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Abernathy ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Lorenzo ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf
+Lubbock,Southland ISD,school,0,,0,0,Y,2026,https://lubbockcad.org/Portals/0/Documents/Property%20and%20Tax%20Information/Appraisal/Exemption%20Table.pdf

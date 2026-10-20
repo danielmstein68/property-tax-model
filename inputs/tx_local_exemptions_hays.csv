@@ -1,0 +1,40 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Hays,Hays County,county,0.01,5000,45000,45000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Special Road (Homestead Only),special,0,3000,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Special Road (Over 65 Only),special,0.01,5000,45000,45000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Austin Community College,college,0.01,5000,75000,75000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Austin,city,0.20,5000,192000,192000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Buda,city,0.01,5000,35000,35000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Dripping Springs,city,0.01,10000,25000,25000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Hays,city,0.20,5000,10000,10000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Kyle,city,0.20,5000,10000,10000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Mountain City,city,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Niederwald,city,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of San Marcos,city,0.20,5000,35000,35000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Uhland,city,0.01,5000,10000,10000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,City of Woodcreek,city,0,,30000,30000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Village of Bear Creek,city,0,,10000,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Blanco ISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Comal ISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Dripping Springs ISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays CISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Johnson City ISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,San Marcos CISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Wimberley ISD,school,0,,0,0,Y,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Caldwell Hays ESD #1,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays Co. ESD #9,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays County ESD #5,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays County ESD #6,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays County ESD #8,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,North Hays County ESD #1,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Northeast Hays County ESD #2,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,South Hays County ESD #3,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Wimberley Fire Hays County ESD #4,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Wimberley Hays County ESD #7,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Plum Creek Conservation,special,0,,10000,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Plum Creek Groundwater,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Driftwood Conservation District,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Driftwood Economic Development MMD,special,0,,0,0,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,York Creek Improvement,special,0.01,5000,3000,3000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays County WCID #1,special,0.16,5000,45000,45000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf
+Hays,Hays County WCID #2,special,0.12,5000,35000,35000,,2025,https://hayscad.com/wp-content/uploads/2025/12/2025-ALL-HAYS-CAD-JURISDICTIONS.pdf

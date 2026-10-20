@@ -1,0 +1,46 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Hidalgo,Hidalgo County,county,0,,15000,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Drainage District #1,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,South Texas College (JCC),college,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Alamo,city,0,,5000,5000,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Alton,city,0,,5000,3000,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Donna,city,0,,6000,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Edcouch,city,0,,5000,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Edinburg,city,0,5000,5450,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Elsa,city,0,,5000,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Granjeno,city,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Hidalgo,city,0,5000,10000,10000,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of La Joya,city,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of La Villa,city,0,,3000,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of McAllen,city,0,,10000,10000,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Mercedes,city,0,,4500,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Mission,city,0,,10000,10000,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Palmview,city,0,,10000,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Penitas,city,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Pharr,city,0,,10000,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Progreso,city,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of San Juan,city,0,,5000,5000,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Sullivan City,city,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,City of Weslaco,city,0,,10000,10000,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Donna ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Edcouch-Elsa ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Edinburg CISD,school,0,,5450,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Hidalgo ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,La Joya ISD,school,0,,5000,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,La Villa ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,McAllen ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Mercedes ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Mission CISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Monte Alto ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Progreso ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,PSJA ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Sharyland ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Valley View ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Weslaco ISD,school,0,,0,0,Y,2025,https://www.hidalgoad.org/reports
+Hidalgo,Donna Water District #1,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,Delta Lake Water District,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,Engleman Irrigation District #6,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,EMS District #1,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,EMS District #2,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,EMS District #3,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports
+Hidalgo,EMS District #4,special,0,,0,0,N,2025,https://www.hidalgoad.org/reports

@@ -1,0 +1,31 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Kaufman,Kaufman County,county,0,,15000,15000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Road and Bridge,county,0,,15000,15000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Crandall,city,0,,15000,10000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Seagoville,city,0.10,,30000,30000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Forney,city,0,,65000,35000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Heath,city,0,,3000,3000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Kaufman,city,0,,15000,0,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Mabank,city,0,,3000,0,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Combine,city,0,,35000,35000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Kemp,city,0,,5000,0,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Mesquite,city,0,,65000,15000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Talty,city,0,,,0,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,City of Terrell,city,0.10,,5000,0,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Crandall ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Forney ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Mabank ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kemp ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Quinlan ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Rockwall ISD,school,0,,20000,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Scurry-Rosser ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Terrell ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Wills Point ISD,school,0,,0,0,Y,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Trinity Valley CC,college,0,,15000,0,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman County MUD #4,special,0,,20000,20000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman County MUD #2,special,0,,20000,20000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman County MUD #3,special,0,,20000,20000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman County MUD #7,special,0,,10000,10000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman County Fresh Water Dist 1B,special,0,,10000,10000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf
+Kaufman,Kaufman County Fresh Water Dist 1C,special,0,,20000,20000,,2026,https://kaufman-cad.org/wp-content/uploads/2026/07/2026-STATE-LOCAL-TAX-EXEMPTION-AMOUNTS.pdf

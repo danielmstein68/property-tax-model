@@ -1,0 +1,34 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Johnson,Johnson County,county,0.05,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Farm-to-Market/Lateral Road (FMLR),county,0.05,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Alvarado,city,0.01,5000,15000,15000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Burleson,city,0.05,5000,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Cleburne,city,0.10,5000,6000,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Godley,city,0.10,5000,10000,10000,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Grandview,city,0,,5000,5000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Joshua,city,0.10,10000,25000,25000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Keene,city,0,,15000,15000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Rio Vista,city,0,,5000,5000,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,City of Venus,city,0,,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Alvarado ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Burleson ISD,school,0,,25000,25000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Cleburne ISD,school,0,,7000,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Godley ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Grandview ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Joshua ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Keene ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Rio Vista ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Venus ISD,school,0,,0,0,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Alvarado ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Cleburne ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Godley ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Grandview ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Joshua ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Keene ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Rio Vista ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Hill College - Venus ISD,college,0.01,5000,10000,10000,Y,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,ESD #1,special,0.01,5000,10000,10000,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Prairie Ridge 1A MMD,special,0,,0,0,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Wright Farm MMD,special,0,,0,0,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,CR 915 MUD,special,0,,0,0,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions
+Johnson,Cresson Crossroads 2 MUD,special,0,,0,0,N,2026,https://johnsoncounty.propertytaxpayments.net/rates-and-exemptions

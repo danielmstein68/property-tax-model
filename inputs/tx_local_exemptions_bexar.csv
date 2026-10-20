@@ -1,0 +1,65 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Bexar,Road & Flood (T),special,0.20,,0,5000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,SA River Auth,special,0.04,,5000,5000,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Comm. Coll. (T),college,0.01,5000,50000,50000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Univ Health (T),hospital,0.20,5000,30000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar County (T),county,0.20,5000,50000,5000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of San Antonio (T),city,0.20,5000,85000,85000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Alamo Heights (T),city,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Balcones Heights,city,0.15,5000,65000,65000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Castle Hills,city,0.10,,5000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,China Grove,city,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Converse (T),city,0.01,,15000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Elmendorf (T),city,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Grey Forest,city,0.01,,50000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Hill Country Vlg,city,0.20,5000,50000,50000,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Hollywood Park,city,0,,20000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Kirby (T),city,0,,15000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Leon Valley (T),city,0.20,,50000,50000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Live Oak (T),city,0.20,,40000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Olmos Park,city,0,,10000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Selma (T),city,0.01,,20000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Shavano Park,city,0,,5000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Somerset,city,0,,10000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,St. Hedwig,city,0,,60000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Terrell Hills,city,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Universal City (T),city,0.01,,10000,10000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Windcrest,city,0.05,,15000,15000,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Helotes (T),city,0,,20000,12000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of Schertz (T),city,0,,10000,3000,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of Lytle,city,0.20,5000,10000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of Fair Oaks Ranch,city,0,,50000,50000,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of Von Ormy,city,0,,5000,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of Sandy Oaks,city,0.15,,15000,15000,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,City of Cibolo,city,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Alamo Heights (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,East Central (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Edgewood (T),school,0,,10000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Harlandale (T),school,0,,5000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Judson (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,North East (T),school,0,,13330,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Northside (T),school,0,,13330,13330,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,San Antonio (T),school,0.0001,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,South San (T),school,0,,15000,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Southside,school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Boerne (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Comal (T),school,0.20,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Schertz-Cibolo (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Floresville,school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Medina Valley (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Somerset (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Southwest (T),school,0,,0,0,Y,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #1 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #2 (T),special,0.0001,,3000,3000,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #3 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #4 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #5,special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #6 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #7,special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #8 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #9,special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #10 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #11 (T),special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Bexar Co Emg Dist #12,special,0,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,S.A. MUD #1 (T),special,0.20,,0,0,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf
+Bexar,Cibolo Canyons SID,special,0,,65000,12500,N,2025,https://bcad.org/wp-content/uploads/2026/09/BCAD-Tax-Rate-Chart.pdf

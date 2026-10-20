@@ -1,0 +1,22 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Gregg,Clarksville City,city,0.20,,25000,25000,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,East Mountain,city,0,,3000,3000,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Easton City,city,0,,0,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Gladewater City,city,0,,6000,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Kilgore City,city,0.20,,15000,15000,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Lakeport City,city,0,,25000,25000,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Longview City,city,0,,10000,10000,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Warren City,city,0.20,,6000,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,White Oak City,city,0.20,,20000,20000,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Gregg County,county,0.20,,25000,25000,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Gregg Co Rural Fire District,special,0,,0,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Gregg Co Rural Fire District 2,special,0,,0,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Gregg Co Rural Fire District 3,special,0,,0,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Kilgore College,college,0,,30000,0,N,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Gladewater,school,0.20,,6000,0,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Kilgore,school,0,,0,0,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Longview,school,0,,5700,5700,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Pine Tree,school,0.20,,10000,0,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Sabine,school,0.20,,5000,15000,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,Spring Hill,school,0.15,,4000,4000,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png
+Gregg,White Oak,school,0.20,,15000,15000,Y,2025,https://gcad.org/wp-content/uploads/sites/24/2026/09/image.png

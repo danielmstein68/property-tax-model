@@ -1,0 +1,45 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+McLennan,McLennan County,county,0.20,5000,35000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,McLennan Community College,college,0.20,5000,12000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Axtell ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Bosqueville ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Bruceville-Eddy ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,China Spring ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Connally ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Crawford ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Gholson ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Hallsburg ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,La Vega ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Lorena ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Mart ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,McGregor ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Midway ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Moody ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Riesel ISD,school,0.10,5000,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Robinson ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Waco ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,West ISD,school,0,,0,0,Y,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Bellmead,city,0,,7500,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Beverly Hills,city,0,,12000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Bruceville-Eddy,city,0,,10000,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Crawford,city,0,,12000,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Gholson,city,0.20,5000,10000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Golinda,city,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Hewitt,city,0.20,5000,4000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Hallsburg,city,0,,3000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Lacy-Lakeview,city,0,,5000,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Lorena,city,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Mart,city,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Leroy,city,0,,350000,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of McGregor,city,0,,5000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Moody,city,0,,5000,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Riesel,city,0.10,5000,10000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Robinson,city,0,,10000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Waco,city,0.15,5000,50000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of West,city,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,City of Woodway,city,0,,20000,,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Castleman Creek,special,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Elm Creek Watershed,special,0,,5000,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Tehuacana Creek W/C #1,special,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,Waco Imp #1,special,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF
+McLennan,McGregor Imp #1,special,0,,0,0,,2025,https://www.mclennan.gov/DocumentCenter/View/17542/2025-Tax-Rates-for-McLennan-County-Taxing-Districts-PDF

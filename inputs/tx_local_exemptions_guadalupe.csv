@@ -1,0 +1,33 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Guadalupe,Guadalupe County,county,0.01,5000,10000,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Lateral Road,county,0.01,5000,7000,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Seguin,city,0,,15000,15000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Cibolo,city,0,,5000,5000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Schertz,city,0,,10000,3000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Marion,city,0,,7500,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Selma,city,0.01,5000,20000,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of New Braunfels,city,0.20,,3750,3750,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of San Marcos,city,0,15000,35000,35000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Luling,city,0,,3000,3000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,City of Santa Clara,city,0.10,7500,7500,7500,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Universal City,city,0.01,5000,10000,10000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Seguin ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Schertz-Cibolo-UC ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Navarro ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Marion ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Comal ISD,school,0.20,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,New Braunfels ISD,school,0,,3750,3750,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Nixon-Smiley ISD,school,0.20,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,La Vernia ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Prairie Lea ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Luling ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,San Marcos ISD,school,0,,0,0,Y,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,York Creek Water,special,0.01,5000,3000,3000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Lake McQueeney WCID #1,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Lake Placid WCID #1,special,0,,10000,10000,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Lake Dunlap WCID,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Lone Oak Farm MUD,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Guadalupe Co MUD 4,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Guadalupe Co MUD 6,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Guadalupe Co MUD 9,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf
+Guadalupe,Guadalupe Co MUD 10,special,0,,0,0,,2025,https://guadalupead.org/wp-content/uploads/2025/11/2025-Residential-Exemptions.pdf

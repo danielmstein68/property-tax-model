@@ -1,0 +1,33 @@
+county,unit_name,unit_type,local_pct,local_min,over65_amount,disabled_amount,freeze,tax_year,source_url
+Hunt,Hunt County,county,0,,20000,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Hospital District,hospital,0,,30000,0,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Trinity Valley Jr. College,college,0,,15000,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Caddo Mills,city,0,,10000,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Campbell,city,0.01,5000,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Celeste,city,0,,10000,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Commerce,city,0,,6000,0,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Greenville,city,0.10,,20000,20000,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Hawk Cove,city,0,,0,0,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Josephine,city,0,,10000,10000,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Lone Oak,city,0,,10000,0,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Quinlan,city,0,,5000,0,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Royse City,city,0,,6000,5000,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Union Valley,city,0,,50000,50000,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Wolfe City,city,,5000,10000,0,N,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,West Tawakoni,city,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Bland ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Boles ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Caddo Mills ISD,school,0,,5000,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Campbell ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Celeste ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Commerce ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Community ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Cooper ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Cumby ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Fannindel ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Greenville ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Leonard ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Lone Oak ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Royse City ISD,school,0,,15000,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Terrell ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
+Hunt,Wolfe City ISD,school,0,,0,0,Y,2025,https://www.republictitle.com/wp-content/uploads/2025/12/2025-DFW-Tax-Rates.pdf
