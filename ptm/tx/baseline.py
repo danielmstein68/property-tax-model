@@ -31,7 +31,7 @@ import pandas as pd
 
 from ptm.gaps import quantile_pick
 from ptm.law import load_law
-from ptm.tx.nonroll import exemption_stats, nonroll_tax
+from ptm.tx.nonroll import exemption_stats, nonroll_rows
 from ptm.tx.pvs import GROWTH_2024_2026, county_controls, homestead_targets_2026
 from ptm.tx.rolls import DISTRICTS, PROC, standard_props, unit_map
 from ptm.tx.survey import tx_households
@@ -90,7 +90,11 @@ def roll_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         e["hs_share"] = 1.0       # share of the property that is the homestead (Williamson reports it)
     e = e[e["prop_id"].isin(set(p["prop_id"]))]
     m = unit_map(district, e.drop_duplicates("entity_cd")[["entity_cd", "entity_name"]])
-    e = e.merge(m[["entity_cd", "levy_class", "unit_id", "total_rate"]].dropna(subset=["unit_id"]), on="entity_cd")
+    e = e.merge(m[["entity_cd", "levy_class", "unit_id", "total_rate", "mo_rate", "is_rate"]].dropna(subset=["unit_id"]), on="entity_cd")
+    # the matched rate split into maintenance & operations and debt (I&S) in the Comptroller's proportions
+    is_share = (e["is_rate"] / (e["mo_rate"] + e["is_rate"])).where((e["mo_rate"] + e["is_rate"]) > 0).fillna(0).clip(0, 1)
+    e["is_rate"] = e["total_rate"] * is_share
+    e["mo_rate"] = e["total_rate"] - e["is_rate"]
     av = e["appraised_value"].where(e["appraised_value"] > 0)
     e["local_pct"] = (e["hs_local_amt"] / av).fillna(0).clip(0, 0.2)
     # over-65/disabled donors: roll flags, else a school exemption beyond the general $140k, or a school freeze
@@ -107,37 +111,69 @@ def roll_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     e.loc[e["taxable_val"] <= 0, "other_fixed"] = np.inf          # fully exempt in this unit (e.g. 100% veteran)
     tax_uncapped = e["taxable_val"] * e["total_rate"] / 100
     e["ceiling_ratio"] = np.where((e["freeze_ceiling"] > 0) & (tax_uncapped > 0), (e["freeze_ceiling"] / tax_uncapped).clip(0, 1), np.nan)
-    keep = ["prop_id", "levy_class", "unit_id", "total_rate", "local_pct", "other_fixed", "ceiling_ratio", "hs_share"]
+    keep = ["prop_id", "levy_class", "unit_id", "mo_rate", "is_rate", "local_pct", "other_fixed", "ceiling_ratio", "hs_share"]
     p["prop_id"] = district + ":" + p["prop_id"].astype(str)        # donor keys: text, unique across districts
     e = e[keep].assign(prop_id=district + ":" + e["prop_id"].astype(str))
     return p, e
 
 
-def unit_tax(hh: pd.DataFrame, units: pd.DataFrame, law, year: int = 2026) -> pd.DataFrame:
-    """hh: one row per household with donor prop_id, appraised, over65 / disabled / dv_total flags.
-    Returns tax by levy class per household index."""
+ROW_COLS = ["hid", "levy_class", "unit_id", "mo_rate", "is_rate", "local_pct", "other_fixed", "ceiling_ratio", "hs_share"]
+
+
+def donor_rows(hh: pd.DataFrame, units: pd.DataFrame) -> pd.DataFrame:
+    """One row per household x taxing unit: the donor's units with their rates and exemption parameters."""
+    x = hh[["donor"]].reset_index(names="hid").merge(units, left_on="donor", right_on="prop_id", how="inner")
+    return x[ROW_COLS]
+
+
+def compute_tax(hh: pd.DataFrame, rows: pd.DataFrame, law, year: int = 2026, rates: pd.DataFrame | None = None,
+                appraised: pd.Series | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Tax by levy class per household from its unit rows.
+    taxable = appraised - state school exemptions (law spec) - local % (at least $5,000) - other fixed, >= 0;
+    0 for 100% disabled veterans; tax = taxable x (M&O + I&S rate) / 100, scaled by the freeze ratio for
+    over-65/disabled homes. `rates` (unit_id -> mo_rate, is_rate) overrides the rows' rates (projections);
+    `appraised` overrides the households' appraised values. Returns (tax by class, rows with tax)."""
     school_hs = law.rule("school_homestead").get("amount", year)
     school_65 = law.rule("school_over65_disabled").get("amount", year)
-    x = hh[["donor", "appraised", "over65_or_disabled", "dv_total"]].reset_index(names="hid").merge(
-        units, left_on="donor", right_on="prop_id", how="left")
-    ap = x["appraised"]
+    ap_h = hh["appraised"] if appraised is None else appraised
+    x = rows.copy()
+    x["appraised"] = x["hid"].map(ap_h)
+    o65 = x["hid"].map(hh["over65_or_disabled"]).fillna(False).to_numpy()
+    dvt = x["hid"].map(hh["dv_total"]).fillna(False).to_numpy()
+    ap = x["appraised"].to_numpy()
     local = np.where(x["local_pct"] > 0, np.maximum(x["local_pct"] * ap, 5000), 0.0)
-    state = np.where(x["levy_class"] == "school", school_hs + np.where(x["over65_or_disabled"], school_65, 0), 0.0)
+    state = np.where(x["levy_class"] == "school", school_hs + np.where(o65, school_65, 0), 0.0)
     state = np.minimum(state, ap * x["hs_share"].fillna(1))
-    taxable = np.maximum(0, ap - state - local - x["other_fixed"].fillna(0))
-    taxable = np.where(x["dv_total"], 0.0, taxable)
-    tax = taxable * x["total_rate"].fillna(0) / 100
-    capped = x["ceiling_ratio"].notna() & x["over65_or_disabled"]
-    tax = np.where(capped, tax * x["ceiling_ratio"].fillna(1), tax)
-    x["tax"], x["taxable"] = tax, taxable
+    taxable = np.maximum(0, ap - state - local - x["other_fixed"].fillna(0).to_numpy())
+    taxable = np.where(dvt, 0.0, taxable)
+    if rates is not None:
+        r = rates.reindex(x["unit_id"])
+        mo = np.where(r["mo_rate"].notna(), r["mo_rate"], x["mo_rate"])
+        is_ = np.where(r["is_rate"].notna(), r["is_rate"], x["is_rate"])
+    else:
+        mo, is_ = x["mo_rate"].fillna(0).to_numpy(), x["is_rate"].fillna(0).to_numpy()
+    tax = taxable * (np.nan_to_num(mo) + np.nan_to_num(is_)) / 100
+    capped = x["ceiling_ratio"].notna().to_numpy() & o65
+    tax = np.where(capped, tax * x["ceiling_ratio"].fillna(1).to_numpy(), tax)
+    x["taxable"], x["tax"] = taxable, tax
     t = x.pivot_table(index="hid", columns="levy_class", values="tax", aggfunc="sum", fill_value=0.0)
     t.columns = [f"tax_{c}" for c in t.columns]
     t["tax_total"] = t.sum(axis=1)
     t["taxable_school"] = x[x["levy_class"] == "school"].groupby("hid")["taxable"].sum()
-    return t
+    return t, x
+
+
+def unit_tax(hh: pd.DataFrame, units: pd.DataFrame, law, year: int = 2026) -> pd.DataFrame:
+    """Tax by levy class for households with roll donors (kept for the checks)."""
+    return compute_tax(hh, donor_rows(hh, units), law, year)[0]
 
 
 def build(districts: list[str] | None = None, seed: int = 2026) -> pd.DataFrame:
+    return build_full(districts, seed)[0]
+
+
+def build_full(districts: list[str] | None = None, seed: int = 2026) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(households with tax by class, household x taxing unit rows)."""
     rng = np.random.default_rng(seed)
     law = load_law("tx")
     h = tx_households()
@@ -191,11 +227,11 @@ def build(districts: list[str] | None = None, seed: int = 2026) -> pd.DataFrame:
             o.loc[g.index, "donor"] = pick["prop_id"].to_numpy()
             o.loc[g.index, "appraised"] = g["market"].to_numpy() * pick["ratio"].to_numpy()
     o["over65_or_disabled"] = o["over65_or_disabled"] & o["homestead"]
-    parts = []
+    rows = []
     for d, (p, units) in donors.items():
         hh = o[(o["county_fips_tax"] == DISTRICTS[d][0]) & o["homestead"] & o["donor"].notna()]
         if len(hh):
-            parts.append(unit_tax(hh, units, law))
+            rows.append(donor_rows(hh, units))
     # counties without a roll: veterans' total exemption from the PVS, structure from pooled roll donors,
     # units and local exemptions from ptm.tx.nonroll
     roll_fips = {DISTRICTS[d][0] for d in donors}
@@ -244,10 +280,13 @@ def build(districts: list[str] | None = None, seed: int = 2026) -> pd.DataFrame:
             o.loc[g.index, "appraised"] = g["market"].to_numpy() * pick["ratio"].to_numpy()
             o.loc[g.index, "ceiling_ratio"] = pick["ceiling_ratio"].to_numpy()
         stats = exemption_stats(donors)
-        parts.append(nonroll_tax(o[nr], law, rng, stats))
-    if parts:
-        o = o.join(pd.concat(parts))
-    return o
+        nr_rows, units_drawn = nonroll_rows(o[nr], rng, stats)
+        rows.append(nr_rows)
+        o = o.join(units_drawn)
+    rows = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=ROW_COLS)
+    if len(rows):
+        o = o.join(compute_tax(o[o["homestead"]], rows, law)[0])
+    return o, rows
 
 
 if __name__ == "__main__":

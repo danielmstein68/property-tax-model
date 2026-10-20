@@ -49,70 +49,64 @@ def exemption_stats(donor_units: dict[str, tuple[pd.DataFrame, pd.DataFrame]]) -
 
 
 def county_units(year: int = 2025) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """(school district shares by county, cities by county, combined class rates by county)."""
+    """(school district shares by county, cities by county, county rows and combined class rates by county)."""
     u = load_units(year)
     pv = load_pvs(2024)
     pv["unit_key"] = pv["cdn"].str[:3] + "-" + pv["cdn"].str[3:] + "-02"
-    sch = u[u["levy_class"] == "school"][["unit_key", "cad_id", "total_rate", "name"]]
-    s = pv.merge(sch, left_on=["unit_key", "cad_id"], right_on=["unit_key", "cad_id"], how="inner")
+    sch = u[u["levy_class"] == "school"][["unit_key", "unit_id", "county_fips", "cad_id", "mo_rate", "is_rate", "name"]]
+    s = pv.merge(sch, on=["unit_key", "cad_id"], how="inner", suffixes=("", "_u"))
     s = s.assign(local_per_hs=(s["LOSS LOCL HMSTD"] / s["homesteads_est"]).where(s["homesteads_est"] > 0).fillna(0))
-    school = s[["county_fips", "unit_key", "name", "total_rate", "homesteads_est", "local_per_hs"]]
-    cnty = u[u["levy_class"] == "county"][["county_fips", "market_value", "total_rate"]].rename(
-        columns={"market_value": "county_mv", "total_rate": "county_rate"})
-    city = u[u["levy_class"] == "city"][["county_fips", "unit_key", "name", "market_value", "total_rate"]]
+    school = s[["county_fips", "unit_key", "unit_id", "name", "mo_rate", "is_rate", "homesteads_est", "local_per_hs"]]
+    cnty = u[u["levy_class"] == "county"].drop_duplicates("county_fips")
+    cnty = cnty.assign(c_is=cnty["is_rate"].fillna(0), c_mo=cnty["total_rate"].fillna(0) - cnty["is_rate"].fillna(0))
+    city = u[u["levy_class"] == "city"][["county_fips", "unit_key", "unit_id", "name", "market_value", "mo_rate", "is_rate"]]
     comb = (u[u["levy_class"].isin(["college", "hospital", "special"])]
-            .merge(cnty[["county_fips", "county_mv"]], on="county_fips")
+            .merge(cnty[["county_fips", "market_value"]].rename(columns={"market_value": "county_mv"}), on="county_fips")
             .assign(w=lambda x: x["total_rate"].fillna(0) * (x["market_value"] / x["county_mv"]).clip(0, 1))
             .groupby(["county_fips", "levy_class"])["w"].sum().unstack(fill_value=0.0))
-    comb = comb.join(cnty.set_index("county_fips"), how="outer").fillna(0.0)
+    comb = cnty.set_index("county_fips")[["unit_id", "market_value", "c_mo", "c_is"]].rename(
+        columns={"unit_id": "county_unit", "market_value": "county_mv"}).join(comb, how="left").fillna(0.0)
     return school, city, comb
 
 
-def nonroll_tax(hh: pd.DataFrame, law, rng: np.random.Generator, stats: pd.DataFrame, year: int = 2026) -> pd.DataFrame:
-    """hh: homesteads in counties without a roll (county_fips_tax, appraised, over65_or_disabled, dv_total,
-    ceiling_ratio). Returns tax by levy class, taxable school value and the drawn school district / city."""
+def nonroll_rows(hh: pd.DataFrame, rng: np.random.Generator, stats: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """hh: homesteads in counties without a roll (county_fips_tax, over65_or_disabled, ceiling_ratio).
+    Returns (household x unit rows in ptm.tx.baseline.ROW_COLS form, the drawn school district and city)."""
     school, city, comb = county_units()
     st = stats.set_index("levy_class").reindex(["school"] + CLASSES).fillna(0.0)   # classes no roll county has: none
-    school_hs = law.rule("school_homestead").get("amount", year)
-    school_65 = law.rule("school_over65_disabled").get("amount", year)
-    out = pd.DataFrame(index=hh.index, columns=["school_unit", "city_unit"], dtype=object)
-    sch_rate = pd.Series(0.0, index=hh.index)
-    sch_local = pd.Series(0.0, index=hh.index)
-    city_rate = pd.Series(0.0, index=hh.index)
+    o65 = hh["over65_or_disabled"].to_numpy()
+    fixed = lambda cls: np.where(o65, st.loc[cls, "o65_fixed"], st.loc[cls, "base_fixed"])
+    drawn = pd.DataFrame(index=hh.index, columns=["school_unit", "city_unit"], dtype=object)
+    parts = []
+
+    def add(idx, cls, unit_id, mo, is_, local_pct, other_fixed, ceiling=np.nan):
+        parts.append(pd.DataFrame({"hid": idx, "levy_class": cls, "unit_id": unit_id, "mo_rate": mo, "is_rate": is_,
+                                   "local_pct": local_pct, "other_fixed": other_fixed, "ceiling_ratio": ceiling, "hs_share": 1.0}))
+
     for c, g in hh.groupby("county_fips_tax"):
+        gi = g.index.to_numpy()
+        go65 = g["over65_or_disabled"].to_numpy()
+        fx = lambda cls: np.where(go65, st.loc[cls, "o65_fixed"], st.loc[cls, "base_fixed"])
         s = school[school["county_fips"] == c]
         if len(s) and s["homesteads_est"].sum() > 0:
             k = rng.choice(len(s), size=len(g), p=(s["homesteads_est"] / s["homesteads_est"].sum()).to_numpy())
-            out.loc[g.index, "school_unit"] = s["unit_key"].to_numpy()[k]
-            sch_rate.loc[g.index] = s["total_rate"].to_numpy()[k]
-            sch_local.loc[g.index] = s["local_per_hs"].to_numpy()[k]
-        ct = city[city["county_fips"] == c]
-        mv = comb.loc[c, "county_mv"] if c in comb.index else 0
-        if len(ct) and mv > 0:
-            p_in = min(0.95, ct["market_value"].sum() / mv)
-            inside = rng.random(len(g)) < p_in
-            k = rng.choice(len(ct), size=len(g), p=(ct["market_value"] / ct["market_value"].sum()).to_numpy())
-            out.loc[g.index[inside], "city_unit"] = ct["unit_key"].to_numpy()[k][inside]
-            city_rate.loc[g.index[inside]] = ct["total_rate"].fillna(0).to_numpy()[k][inside]
-    ap = hh["appraised"]
-    o65 = hh["over65_or_disabled"]
-    res = pd.DataFrame(index=hh.index)
-
-    def taxable(cls, local_pct=None, local_fixed=0.0, state=0.0):
-        lp = st.loc[cls, "local_pct_eff"] if local_pct is None else local_pct
-        # mean dollar exemptions (lumpy: means, not medians): over-65/disabled and everyone else
-        fx = np.where(o65, st.loc[cls, "o65_fixed"], st.loc[cls, "base_fixed"]) if cls in st.index else 0.0
-        t = np.maximum(0, ap - state - lp * ap - local_fixed - fx)
-        return np.where(hh["dv_total"], 0.0, t)
-
-    tx_s = taxable("school", local_pct=0.0, local_fixed=sch_local, state=school_hs + np.where(o65, school_65, 0))
-    tax_s = tx_s * sch_rate / 100
-    tax_s = np.where(o65 & hh["ceiling_ratio"].notna(), tax_s * hh["ceiling_ratio"].fillna(1), tax_s)
-    res["tax_school"], res["taxable_school"] = tax_s, tx_s
-    res["tax_county"] = taxable("county") * hh["county_fips_tax"].map(comb["county_rate"]).fillna(0) / 100
-    res["tax_city"] = taxable("city") * city_rate / 100
-    for cls in ["college", "hospital", "special"]:
-        rate = hh["county_fips_tax"].map(comb[cls]) if cls in comb else 0.0
-        res[f"tax_{cls}"] = taxable(cls) * pd.Series(rate, index=hh.index).fillna(0) / 100
-    res["tax_total"] = res[[c for c in res if c.startswith("tax_") and c != "tax_total"]].sum(axis=1)
-    return res.join(out)
+            drawn.loc[gi, "school_unit"] = s["unit_id"].to_numpy()[k]
+            add(gi, "school", s["unit_id"].to_numpy()[k], s["mo_rate"].to_numpy()[k], s["is_rate"].to_numpy()[k], 0.0,
+                s["local_per_hs"].to_numpy()[k] + fx("school"), g["ceiling_ratio"].to_numpy())
+        if c in comb.index:
+            r = comb.loc[c]
+            add(gi, "county", r["county_unit"], r["c_mo"], r["c_is"], st.loc["county", "local_pct_eff"], fx("county"))
+            for cls in ["college", "hospital", "special"]:
+                if cls in comb and r.get(cls, 0) > 0:
+                    add(gi, cls, f"avg:{c}:{cls}", r[cls], 0.0, st.loc[cls, "local_pct_eff"], fx(cls))
+            ct = city[city["county_fips"] == c]
+            if len(ct) and r["county_mv"] > 0:
+                p_in = min(0.95, ct["market_value"].sum() / r["county_mv"])
+                inside = rng.random(len(g)) < p_in
+                k = rng.choice(len(ct), size=len(g), p=(ct["market_value"] / ct["market_value"].sum()).to_numpy())
+                if inside.any():
+                    drawn.loc[gi[inside], "city_unit"] = ct["unit_id"].to_numpy()[k][inside]
+                    add(gi[inside], "city", ct["unit_id"].to_numpy()[k][inside], ct["mo_rate"].fillna(0).to_numpy()[k][inside],
+                        ct["is_rate"].fillna(0).to_numpy()[k][inside], st.loc["city", "local_pct_eff"], fx("city")[inside])
+    rows = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    return rows, drawn
