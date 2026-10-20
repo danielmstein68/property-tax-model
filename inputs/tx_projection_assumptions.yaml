@@ -1,0 +1,36 @@
+# Texas projection assumptions, 2026 -> 2036 (provisional; docs/TX_DECISIONS.md). Read by ptm.tx.project.
+#
+# No official Texas forecast of property values goes past tax year 2026 (the GAA's 3.60%); the LBB/TEA
+# numbers for 2027+ come with the January 2027 budget cycle. Until then: Texas home prices are flat to
+# falling (FHFA: Travis -1.7% in 2025), so growth picks up gradually to a long-run rate near Texas's
+# 1991-2025 average (FHFA all-transactions index, about 4% nominal) less a margin.
+
+meta:
+  base_year: 2026
+  end_year: 2036
+
+# statewide market value growth by year (nominal); the same for every county
+scenarios:
+  central:  {2027: 0.015, 2028: 0.025, 2029: 0.030, 2030: 0.035}
+  low:      {2027: 0.000, 2028: 0.010, 2029: 0.015, 2030: 0.020}
+  high:     {2027: 0.030, 2028: 0.040, 2029: 0.045, 2030: 0.050}
+  stall:    {2027: 0.000, 2028: 0.000, 2029: 0.020, 2030: 0.035}
+  downturn: {2027: -0.050, 2028: -0.030, 2029: 0.020, 2030: 0.040, 2031: 0.035}
+
+new_construction: 0.015       # yearly growth of taxing units' bases from new property (not in the no-new-revenue rate)
+turnover: 0.05                # share of homesteads sold each year: appraised value resets to market
+
+rate_setting:
+  # non-school units adopt their voter-approval rate (Tax Code s. 26.04): M&O revenue on existing
+  # property x the multiplier, debt (I&S) rates held. Provisional: many units adopt between the
+  # no-new-revenue and voter-approval rates; "hold" (keep last year's rate) is the alternative.
+  rule: voter_approval
+  multiplier: {default: 1.035, hospital: 1.08, college: 1.08}
+
+school:
+  # current-law compression (Education Code ss. 48.255, 48.2551, 48.2552): when statewide value growth
+  # exceeds 2.5%, the state maximum compressed rate falls by 1.025 / (1 + growth); each district's MCR
+  # is the lesser of its own compressed rate and the state's, not below 90% of the state maximum.
+  # No compression beyond the formula (no new GAA buy-downs). Enrichment cents and I&S rates held.
+  growth_limit: 0.025
+  floor_share: 0.90
