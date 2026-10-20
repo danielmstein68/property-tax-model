@@ -117,9 +117,10 @@ def parcel_tax(district: str, homesteads_only: bool = True) -> pd.DataFrame:
     props = standard_props(district)
     if homesteads_only:
         props = props[props["homestead"]]
-    e = pd.read_parquet(PROC / f"{district}_units.parquet",
-                        columns=["prop_id", "entity_cd", "entity_name", "taxable_val", "appraised_value", "hs_state_amt",
-                                 "hs_local_amt", "ov65_amt", "dp_amt", "dv_amt", "freeze_ceiling"])
+    import pyarrow.parquet as pq
+    f = PROC / f"{district}_units.parquet"
+    want = ["prop_id", "entity_cd", "entity_name", "taxable_val", "appraised_value", "freeze_ceiling"]
+    e = pd.read_parquet(f, columns=[c for c in want if c in pq.read_schema(f).names])
     e = e[e["prop_id"].isin(set(props["prop_id"]))]
     names = e.drop_duplicates("entity_cd")[["entity_cd", "entity_name"]]
     m = unit_map(district, names)

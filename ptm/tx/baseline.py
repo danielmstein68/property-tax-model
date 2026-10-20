@@ -96,7 +96,9 @@ def roll_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     tax_uncapped = e["taxable_val"] * e["total_rate"] / 100
     e["ceiling_ratio"] = np.where((e["freeze_ceiling"] > 0) & (tax_uncapped > 0), (e["freeze_ceiling"] / tax_uncapped).clip(0, 1), np.nan)
     keep = ["prop_id", "levy_class", "unit_id", "total_rate", "local_pct", "other_fixed", "ceiling_ratio"]
-    return p, e[keep]
+    p["prop_id"] = district + ":" + p["prop_id"].astype(str)        # donor keys: text, unique across districts
+    e = e[keep].assign(prop_id=district + ":" + e["prop_id"].astype(str))
+    return p, e
 
 
 def unit_tax(hh: pd.DataFrame, units: pd.DataFrame, law, year: int = 2026) -> pd.DataFrame:
@@ -140,7 +142,7 @@ def build(districts: list[str] | None = None, seed: int = 2026) -> pd.DataFrame:
         o.loc[_fill(o, o["county_fips_tax"] == c, targets.get(c, 0), implied).loc[lambda s: s].index, "homestead"] = True
     o["market"] = o["valp_mv_aged"]
     o["dv_total"] = False
-    o["donor"] = np.nan
+    o["donor"] = pd.Series(None, index=o.index, dtype=object)
     o["appraised"] = o["market"]
     for d, (p, units) in donors.items():
         fips = DISTRICTS[d][0]

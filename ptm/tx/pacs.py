@@ -38,7 +38,8 @@ def _layout(file: str) -> pd.DataFrame:
 
 def _member(z: zipfile.ZipFile, stem: str) -> str:
     """The archive member for a PACS file (names vary: APPRAISAL_INFO.TXT, 2026-10-13_..._APPRAISAL_INFO.TXT)."""
-    hits = [n for n in z.namelist() if Path(n).name.upper().endswith(stem + ".TXT")]
+    short = {"APPRAISAL_INFO": "PROP.TXT", "APPRAISAL_ENTITY_INFO": "PROP_ENT.TXT"}[stem]   # layout's short names (Travis)
+    hits = [n for n in z.namelist() if Path(n).name.upper().endswith(stem + ".TXT") or Path(n).name.upper() == short]
     if not hits:
         raise FileNotFoundError(f"{stem}.TXT not in {z.filename}")
     return max(hits, key=lambda n: z.getinfo(n).file_size)
