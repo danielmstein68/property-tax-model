@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Florida Property Tax Model</title>
+<title>Property Tax Model</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap">
 <style>
@@ -208,22 +208,100 @@ td.over { color: var(--lose2); font-weight: 700; }
 .notes > div { background: var(--surface); border-radius: 16px; padding: 24px; display: grid; gap: 14px; align-content: start; min-width: 0; }
 .notes b { color: var(--ink); }
 a { color: var(--accent); }
+.states { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.states button { font: 700 13px var(--body); padding: 5px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; }
+.states button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.states button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.state-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) { .state-cards { grid-template-columns: 1fr; } }
+.state-card { background: var(--surface); border-radius: 18px; padding: 26px; display: grid; gap: 10px; align-content: start; cursor: pointer; border: 1.5px solid transparent; text-align: left; font: inherit; color: inherit; }
+.state-card:hover, .state-card:focus-visible { border-color: var(--accent); outline: none; }
+.state-card h3 { font-size: 24px; color: var(--accent); }
+.state-card .v { font: 700 28px/1.1 var(--body); color: var(--ink); }
+.state-card .l { color: var(--muted); font-size: 14.5px; }
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 13.5px; }
+.bar-row .lab { color: var(--muted); text-align: right; }
+.bar-row .track { height: 22px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar-row .track i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.bar-row .num { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+@media (max-width: 560px) { .bar-row { grid-template-columns: 70px minmax(0, 1fr) 54px; font-size: 12.5px; } }
 footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; }
 </style>
 
 <div class="hero">
   <div class="hero-in">
+    <nav class="states" aria-label="States" id="states">
+      <button data-s="home" id="state-btn-home">All states</button><button data-s="fl" id="state-btn-fl">Florida</button><button data-s="tx" id="state-btn-tx">Texas</button>
+    </nav>
     <nav class="views" aria-label="Views" id="views">
       <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button><button data-v="a3" id="view-btn-a3">Amendment 3</button><button data-v="about" id="view-btn-about">About the model</button>
     </nav>
     <div class="eyebrow" id="eyebrow">Florida · Tax year 2026 · Current law</div>
     <h1 id="h1">Who pays Florida's property tax on owner-occupied homes</h1>
     <p class="lede" id="lede"></p>
-    <span class="badge">Owners only. Renters are counted in the income groups, but the tax they pay through rent is not modelled yet.</span>
+    <span class="badge" id="badge">Owners only. Renters are counted in the income groups, but the tax they pay through rent is not modelled yet.</span>
   </div>
 </div>
 
 <div class="wrap">
+  <div id="view-home" class="wrap-inner" hidden>
+    <section>
+      <div class="eyebrow">Select a state</div>
+      <h2>Property tax on owner-occupied homes, state by state</h2>
+      <p>Each state's model applies its own property tax law to a representative sample of households, checked against the state's parcel rolls, and compares policies with current law on the same households and economy.</p>
+      <div class="state-cards" id="state-cards"></div>
+    </section>
+  </div>
+
+  <div id="view-tx" class="wrap-inner" hidden>
+    <div class="figures" id="tx-figures"></div>
+    <p class="context" id="tx-context"></p>
+    <section>
+      <div class="eyebrow">By household income</div>
+      <h2>Tax as a share of income</h2>
+      <p id="tx-dec-intro"></p>
+      <div class="charts">
+        <div class="chart">
+          <h3>Owner property tax as a share of income</h3>
+          <p>All tax in the group ÷ all income in the group, owners. Tenths of all Texas households (1 = lowest income).</p>
+          <div class="bars" id="tx-c-share"></div>
+        </div>
+        <div class="chart">
+          <h3>Average tax per owner</h3>
+          <p>Dollars a year, 2026.</p>
+          <div class="bars" id="tx-c-avg"></div>
+        </div>
+      </div>
+      <div class="tabletools"><button class="copy" data-table="tx-t-dec">Copy table</button></div>
+      <div class="tablebox"><table id="tx-t-dec"></table></div>
+    </section>
+    <section>
+      <div class="eyebrow">Other ways to slice it</div>
+      <h2>Age, homestead and region</h2>
+      <div class="tabs" role="tablist" id="tx-tabs"></div>
+      <div class="tablebox"><table id="tx-t-break"></table></div>
+    </section>
+    <section>
+      <div class="eyebrow">Baseline outlook</div>
+      <h2>Current law to 2036</h2>
+      <p id="tx-proj-intro"></p>
+      <div class="charts">
+        <div class="chart">
+          <h3>Homestead property tax, billions of dollars</h3>
+          <p>Five economic scenarios; the central path in bold.</p>
+          <div id="tx-c-proj"></div>
+        </div>
+        <div class="tablebox"><table id="tx-t-proj"></table></div>
+      </div>
+    </section>
+    <section>
+      <div class="eyebrow">What to keep in mind</div>
+      <h2>How far the Texas results go</h2>
+      <ul class="about-list" id="tx-notes"></ul>
+    </section>
+  </div>
+
   <div id="view-today" class="wrap-inner">
   <div class="figures" id="figures"></div>
   <p class="context" id="today-context"></p>
@@ -4744,26 +4822,1448 @@ const VIEWS = {
   policy: { eyebrow: "Florida · Policy comparisons · From 2027", h1: "What a property tax policy would change, and for whom" },
   a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom" },
   about: { eyebrow: "Florida Property Tax Model", h1: "About the model" },
+  home: { eyebrow: "Property Tax Model", h1: "Who pays property tax on owner-occupied homes" },
+  tx: { eyebrow: "Texas · Tax year 2026 · Current law", h1: "Who pays Texas's property tax on owner-occupied homes" },
 };
+const FL_VIEWS = ["today", "policy", "a3", "about"];
+// ---------------- Texas ----------------
+const TX = {
+ "state": "TX",
+ "year": 2026,
+ "coverage": "owners only",
+ "decile_population": "all_households",
+ "generated": "2026-10-20",
+ "headline": {
+  "owner_tax_total": 35637787013.20039,
+  "owners": 7135053.0,
+  "homestead_owners": 6235180.0,
+  "households": 11449777.0,
+  "median_tax": 3541.0531687268517,
+  "suits_index": -0.18203951254544748,
+  "share_in_roll_counties": 0.4668572519157426,
+  "by_class": {
+   "school": 13548448101.994469,
+   "county": 5519153995.8472,
+   "city": 6049057276.842251,
+   "college": 1210988408.0988486,
+   "hospital": 1126140299.8815606,
+   "special": 3096238341.7446823
+  }
+ },
+ "decile_cutoffs": [
+  18759.04329125,
+  35240.97728125,
+  51204.30634250001,
+  67228.94127499999,
+  84903.64680375,
+  106372.84819224999,
+  132975.4855675,
+  172243.61441375,
+  241807.32103750002
+ ],
+ "by_decile": [
+  {
+   "group": "1",
+   "owners": 465543.0,
+   "avg_tax": 2703.2609388888573,
+   "median_tax": 1258.5218056979227,
+   "tax_share_of_income": 0.30514977551529476,
+   "share_of_owner_tax": 0.0353131973881259,
+   "avg_value": 272671.4182591527,
+   "avg_income": 8821.93954479162,
+   "households": 1144493.0,
+   "owner_share_of_households": 0.40676788761486526,
+   "avg_tax_per_household": 1099.599741783598
+  },
+  {
+   "group": "2",
+   "owners": 515986.0,
+   "avg_tax": 2532.6285911994037,
+   "median_tax": 1349.421921458095,
+   "tax_share_of_income": 0.09261897785140531,
+   "share_of_owner_tax": 0.03666896869254454,
+   "avg_value": 259044.6076615869,
+   "avg_income": 27344.59664694924,
+   "households": 1144434.0,
+   "owner_share_of_households": 0.45086566809444667,
+   "avg_tax_per_household": 1141.8752818062164
+  },
+  {
+   "group": "3",
+   "owners": 540335.0,
+   "avg_tax": 2763.170636398419,
+   "median_tax": 1715.5801096254495,
+   "tax_share_of_income": 0.06375873645754936,
+   "share_of_owner_tax": 0.04189479569158747,
+   "avg_value": 269564.8265601462,
+   "avg_income": 43337.913985138985,
+   "households": 1145936.0,
+   "owner_share_of_households": 0.4715228424624063,
+   "avg_tax_per_household": 1302.8980726832385
+  },
+  {
+   "group": "4",
+   "owners": 588765.0,
+   "avg_tax": 3016.282537346536,
+   "median_tax": 2109.4977726160732,
+   "tax_share_of_income": 0.0508882065499238,
+   "share_of_owner_tax": 0.04983142155945427,
+   "avg_value": 280620.32216300693,
+   "avg_income": 59272.72234260047,
+   "households": 1144318.0,
+   "owner_share_of_households": 0.5145117004189395,
+   "avg_tax_per_household": 1551.9126572341195
+  },
+  {
+   "group": "5",
+   "owners": 650337.0,
+   "avg_tax": 3451.276365255433,
+   "median_tax": 2565.8236113956614,
+   "tax_share_of_income": 0.045376159608258165,
+   "share_of_owner_tax": 0.06298069845694271,
+   "avg_value": 299082.12429079297,
+   "avg_income": 76059.24333506891,
+   "households": 1145501.0,
+   "owner_share_of_households": 0.5677314991431697,
+   "avg_tax_per_household": 1959.3983048038567
+  },
+  {
+   "group": "6",
+   "owners": 726660.0,
+   "avg_tax": 3828.8649817748183,
+   "median_tax": 3084.703690100484,
+   "tax_share_of_income": 0.04020776518843919,
+   "share_of_owner_tax": 0.07807115033899045,
+   "avg_value": 319640.02237002226,
+   "avg_income": 95227.00313808338,
+   "households": 1144826.0,
+   "owner_share_of_households": 0.63473401198086,
+   "avg_tax_per_household": 2430.310831214953
+  },
+  {
+   "group": "7",
+   "owners": 797262.0,
+   "avg_tax": 4374.092391867306,
+   "median_tax": 3551.3494486880963,
+   "tax_share_of_income": 0.03676004952447651,
+   "share_of_owner_tax": 0.09785393372582876,
+   "avg_value": 350430.802029485,
+   "avg_income": 118990.3835400123,
+   "households": 1145335.0,
+   "owner_share_of_households": 0.6960950289653246,
+   "avg_tax_per_household": 3044.7839702138785
+  },
+  {
+   "group": "8",
+   "owners": 875602.0,
+   "avg_tax": 5023.4639960941595,
+   "median_tax": 4219.011930661926,
+   "tax_share_of_income": 0.03311376866189004,
+   "share_of_owner_tax": 0.12342391294607585,
+   "avg_value": 385279.75577437045,
+   "avg_income": 151703.17964670574,
+   "households": 1144963.0,
+   "owner_share_of_households": 0.7647426161369407,
+   "avg_tax_per_household": 3841.656998442778
+  },
+  {
+   "group": "9",
+   "owners": 950377.0,
+   "avg_tax": 6443.036220819754,
+   "median_tax": 5439.340281413563,
+   "tax_share_of_income": 0.03169894964132417,
+   "share_of_owner_tax": 0.17182081009030983,
+   "avg_value": 460174.0227077876,
+   "avg_income": 203257.08875919104,
+   "households": 1144963.0,
+   "owner_share_of_households": 0.8300504033754803,
+   "avg_tax_per_household": 5348.044814054267
+  },
+  {
+   "group": "10",
+   "owners": 1024186.0,
+   "avg_tax": 10513.364335848075,
+   "median_tax": 8094.050384104636,
+   "tax_share_of_income": 0.02556950636824009,
+   "share_of_owner_tax": 0.3021411111101403,
+   "avg_value": 710694.4099308695,
+   "avg_income": 411168.06028397696,
+   "households": 1145008.0,
+   "owner_share_of_households": 0.8944793398823414,
+   "avg_tax_per_household": 9403.987191071938
+  }
+ ],
+ "by_age": [
+  {
+   "group": "45\u201364",
+   "owners": 2890767.0,
+   "avg_tax": 5567.349935963417,
+   "median_tax": 3998.248437649455,
+   "tax_share_of_income": 0.033700273815724775,
+   "share_of_owner_tax": 0.4515968252005632,
+   "avg_value": 408277.13951510435,
+   "avg_income": 165198.28126371253
+  },
+  {
+   "group": "65\u201374",
+   "owners": 1243925.0,
+   "avg_tax": 3412.966708469658,
+   "median_tax": 1870.6744781986822,
+   "tax_share_of_income": 0.030210867867308124,
+   "share_of_owner_tax": 0.11912845798367269,
+   "avg_value": 371505.2404614644,
+   "avg_income": 112970.13857884063
+  },
+  {
+   "group": "75 and over",
+   "owners": 829560.0,
+   "avg_tax": 2995.241574442649,
+   "median_tax": 1506.1310069922133,
+   "tax_share_of_income": 0.033508376061751305,
+   "share_of_owner_tax": 0.06972185449041175,
+   "avg_value": 347522.59617147176,
+   "avg_income": 89385.90860877691
+  },
+  {
+   "group": "Under 45",
+   "owners": 2170801.0,
+   "avg_tax": 5902.737435415534,
+   "median_tax": 4614.125549673174,
+   "tax_share_of_income": 0.03714637311168997,
+   "share_of_owner_tax": 0.3595528623253525,
+   "avg_value": 391358.56381279486,
+   "avg_income": 158903.26639468313
+  }
+ ],
+ "by_region": [
+  {
+   "group": "Austin",
+   "owners": 602973.0,
+   "avg_tax": 8207.03957560731,
+   "median_tax": 6473.4798104275715,
+   "tax_share_of_income": 0.04275626926630069,
+   "share_of_owner_tax": 0.13885888234838137,
+   "avg_value": 552487.222930016,
+   "avg_income": 191948.678452819
+  },
+  {
+   "group": "Dallas-Fort Worth",
+   "owners": 1835376.0,
+   "avg_tax": 6472.746470303186,
+   "median_tax": 4876.128479986774,
+   "tax_share_of_income": 0.03859612282529017,
+   "share_of_owner_tax": 0.3333518863356696,
+   "avg_value": 468600.2096124389,
+   "avg_income": 167700.83290812367
+  },
+  {
+   "group": "El Paso",
+   "owners": 194680.0,
+   "avg_tax": 3883.3428295943067,
+   "median_tax": 3253.035571041147,
+   "tax_share_of_income": 0.037203336508215785,
+   "share_of_owner_tax": 0.02121369606326539,
+   "avg_value": 245037.85501261562,
+   "avg_income": 104381.57418318462
+  },
+  {
+   "group": "Houston",
+   "owners": 1675201.0,
+   "avg_tax": 5146.48023578024,
+   "median_tax": 3813.7492418628385,
+   "tax_share_of_income": 0.03232981761522048,
+   "share_of_owner_tax": 0.24191706500366852,
+   "avg_value": 402557.88698508026,
+   "avg_income": 159182.29993426314
+  },
+  {
+   "group": "Rest of Texas",
+   "owners": 1887027.0,
+   "avg_tax": 3024.083919878868,
+   "median_tax": 1813.38359500732,
+   "tax_share_of_income": 0.02684803909191734,
+   "share_of_owner_tax": 0.16012576776901263,
+   "avg_value": 299484.8458326896,
+   "avg_income": 112636.15333898414
+  },
+  {
+   "group": "Rio Grande Valley",
+   "owners": 302306.0,
+   "avg_tax": 2873.84444575012,
+   "median_tax": 1732.909174572512,
+   "tax_share_of_income": 0.030932002141184217,
+   "share_of_owner_tax": 0.024378068668942203,
+   "avg_value": 218017.68181905805,
+   "avg_income": 92907.89708497853
+  },
+  {
+   "group": "San Antonio",
+   "owners": 637490.0,
+   "avg_tax": 4480.907571694679,
+   "median_tax": 3111.5781829063867,
+   "tax_share_of_income": 0.033206419176988036,
+   "share_of_owner_tax": 0.08015463381106039,
+   "avg_value": 366916.03010774613,
+   "avg_income": 134940.27977605566
+  }
+ ],
+ "by_homestead": [
+  {
+   "group": "Homestead",
+   "owners": 6235180.0,
+   "avg_tax": 4899.622212094761,
+   "median_tax": 3364.168998707927,
+   "tax_share_of_income": 0.0336144957660341,
+   "share_of_owner_tax": 0.8572369101676585,
+   "avg_value": 404991.48814410024,
+   "avg_income": 145756.6464347421
+  },
+  {
+   "group": "No homestead exemption",
+   "owners": 899873.0,
+   "avg_tax": 5653.86514407187,
+   "median_tax": 4876.518051592286,
+   "tax_share_of_income": 0.03963765886066311,
+   "share_of_owner_tax": 0.14276308983234165,
+   "avg_value": 283391.4535970528,
+   "avg_income": 142637.39081726983
+  }
+ ],
+ "by_senior": [
+  {
+   "group": "65+ or disabled (homestead)",
+   "owners": 2436718.0,
+   "avg_tax": 3253.6136793875057,
+   "median_tax": 1690.2724278716587,
+   "tax_share_of_income": 0.029036596033785184,
+   "share_of_owner_tax": 0.2224644031536848,
+   "avg_value": 385736.408291532,
+   "avg_income": 112050.85084035451
+  },
+  {
+   "group": "Other owners",
+   "owners": 4698335.0,
+   "avg_tax": 5897.759098827698,
+   "median_tax": 4504.785656058786,
+   "tax_share_of_income": 0.03626195468771116,
+   "share_of_owner_tax": 0.7775355968463153,
+   "avg_value": 391687.7564562226,
+   "avg_income": 162640.19878230852
+  }
+ ],
+ "projections": {
+  "central": {
+   "scenario": "central",
+   "years": [
+    {
+     "year": 2026,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 30550026424.40901,
+     "tax_school": 13548448101.994469,
+     "tax_county": 5519153995.8472,
+     "tax_city": 6049057276.842251,
+     "tax_college": 1210988408.0988483,
+     "tax_hospital": 1126140299.8815608,
+     "tax_special": 3096238341.7446823,
+     "avg_tax": 4899.622212094761,
+     "state_aid": 24637612329.72433,
+     "recapture": 2189507546.1288033,
+     "net_state_cost": 22448104783.595528,
+     "levy_mo": 28224654396.54746
+    },
+    {
+     "year": 2027,
+     "growth": 0.015,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 31542812275.5035,
+     "tax_school": 13952872402.258902,
+     "tax_county": 5533892548.421561,
+     "tax_city": 6303449490.110313,
+     "tax_college": 1318514631.896212,
+     "tax_hospital": 1232066707.0157745,
+     "tax_special": 3202016495.800741,
+     "avg_tax": 5058.845498526667,
+     "state_aid": 24026466604.279327,
+     "recapture": 2355191767.6061,
+     "net_state_cost": 21671274836.673225,
+     "levy_mo": 29045782299.595417
+    },
+    {
+     "year": 2028,
+     "growth": 0.025,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 32960588043.809715,
+     "tax_school": 14549446158.34933,
+     "tax_county": 5769156748.938098,
+     "tax_city": 6556063499.523523,
+     "tax_college": 1429530974.186473,
+     "tax_hospital": 1340368195.2166672,
+     "tax_special": 3316022467.5956216,
+     "avg_tax": 5286.228792722859,
+     "state_aid": 23201917828.66806,
+     "recapture": 2663599127.946598,
+     "net_state_cost": 20538318700.721462,
+     "levy_mo": 30207613591.57923
+    },
+    {
+     "year": 2029,
+     "growth": 0.03,
+     "state_mcr": 0.6223,
+     "homesteads": 6235180.0,
+     "tax_total": 34464133802.75053,
+     "tax_school": 15196177774.264446,
+     "tax_county": 6009595549.909823,
+     "tax_city": 6817478770.280995,
+     "tax_college": 1548353315.3952866,
+     "tax_hospital": 1454526760.4156458,
+     "tax_special": 3438001632.484329,
+     "avg_tax": 5527.367903212181,
+     "state_aid": 22357602069.8584,
+     "recapture": 3039637093.395839,
+     "net_state_cost": 19317964976.46256,
+     "levy_mo": 31436288454.787174
+    },
+    {
+     "year": 2030,
+     "growth": 0.035,
+     "state_mcr": 0.6162,
+     "homesteads": 6235180.0,
+     "tax_total": 36086367794.35861,
+     "tax_school": 15908948799.654137,
+     "tax_county": 6261340427.054354,
+     "tax_city": 7092458509.16456,
+     "tax_college": 1675679624.2229354,
+     "tax_hospital": 1576929704.0497508,
+     "tax_special": 3571010730.2128687,
+     "avg_tax": 5787.542267321651,
+     "state_aid": 21499424108.633125,
+     "recapture": 3453067945.6842732,
+     "net_state_cost": 18046356162.948853,
+     "levy_mo": 32736792341.63464
+    },
+    {
+     "year": 2031,
+     "growth": 0.035,
+     "state_mcr": 0.6102,
+     "homesteads": 6235180.0,
+     "tax_total": 37764720231.606606,
+     "tax_school": 16639793018.779243,
+     "tax_county": 6520079920.725965,
+     "tax_city": 7373761867.551113,
+     "tax_college": 1812763009.779807,
+     "tax_hospital": 1708180303.0072274,
+     "tax_special": 3710142111.763253,
+     "avg_tax": 6056.716924227786,
+     "state_aid": 20657088049.07882,
+     "recapture": 3917566518.7781568,
+     "net_state_cost": 16739521530.300663,
+     "levy_mo": 34091981997.40878
+    },
+    {
+     "year": 2032,
+     "growth": 0.035,
+     "state_mcr": 0.6043,
+     "homesteads": 6235180.0,
+     "tax_total": 39505863822.01244,
+     "tax_school": 17391156085.72158,
+     "tax_county": 6787892617.742834,
+     "tax_city": 7665319887.182163,
+     "tax_college": 1960421533.557324,
+     "tax_hospital": 1849242918.8862147,
+     "tax_special": 3851830778.922331,
+     "avg_tax": 6335.962044722437,
+     "state_aid": 19812526029.23192,
+     "recapture": 4425169276.393177,
+     "net_state_cost": 15387356752.838743,
+     "levy_mo": 35504215012.61869
+    },
+    {
+     "year": 2033,
+     "growth": 0.035,
+     "state_mcr": 0.5984,
+     "homesteads": 6235180.0,
+     "tax_total": 41310094738.66661,
+     "tax_school": 18161966626.373497,
+     "tax_county": 7063239116.526182,
+     "tax_city": 7965141082.343069,
+     "tax_college": 2119583437.4235425,
+     "tax_hospital": 2001763817.3110628,
+     "tax_special": 3998400658.6892557,
+     "avg_tax": 6625.325129132858,
+     "state_aid": 18954243417.147987,
+     "recapture": 4991122304.79705,
+     "net_state_cost": 13963121112.350937,
+     "levy_mo": 36974682320.08174
+    },
+    {
+     "year": 2034,
+     "growth": 0.035,
+     "state_mcr": 0.5926,
+     "homesteads": 6235180.0,
+     "tax_total": 43179457923.4473,
+     "tax_school": 18952216984.4602,
+     "tax_county": 7347363933.965549,
+     "tax_city": 8273554999.819148,
+     "tax_college": 2291028119.718508,
+     "tax_hospital": 2165863160.3626523,
+     "tax_special": 4149430725.1212425,
+     "avg_tax": 6925.13414583818,
+     "state_aid": 18079331153.970627,
+     "recapture": 5602368285.691501,
+     "net_state_cost": 12476962868.279127,
+     "levy_mo": 38507101652.95647
+    },
+    {
+     "year": 2035,
+     "growth": 0.035,
+     "state_mcr": 0.5868,
+     "homesteads": 6235180.0,
+     "tax_total": 45127339148.05278,
+     "tax_school": 19767111799.71775,
+     "tax_county": 7641615452.342018,
+     "tax_city": 8592821645.553226,
+     "tax_college": 2476214138.904157,
+     "tax_hospital": 2343123062.877584,
+     "tax_special": 4306453048.658039,
+     "avg_tax": 7237.535908835475,
+     "state_aid": 17202750610.084064,
+     "recapture": 6256736103.957838,
+     "net_state_cost": 10946014506.126228,
+     "levy_mo": 40102749344.73094
+    },
+    {
+     "year": 2036,
+     "growth": 0.035,
+     "state_mcr": 0.5811,
+     "homesteads": 6235180.0,
+     "tax_total": 47162811591.68407,
+     "tax_school": 20611361382.415134,
+     "tax_county": 7947050717.580656,
+     "tax_city": 8924747639.22504,
+     "tax_college": 2676320498.0412006,
+     "tax_hospital": 2534847740.106189,
+     "tax_special": 4468483614.315849,
+     "avg_tax": 7563.985577270274,
+     "state_aid": 16326345647.820667,
+     "recapture": 6960636519.589418,
+     "net_state_cost": 9365709128.231247,
+     "levy_mo": 41765686226.733215
+    }
+   ]
+  },
+  "low": {
+   "scenario": "low",
+   "years": [
+    {
+     "year": 2026,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 30550026424.40901,
+     "tax_school": 13548448101.994469,
+     "tax_county": 5519153995.8472,
+     "tax_city": 6049057276.842251,
+     "tax_college": 1210988408.0988483,
+     "tax_hospital": 1126140299.8815608,
+     "tax_special": 3096238341.7446823,
+     "avg_tax": 4899.622212094761,
+     "state_aid": 24637612329.72433,
+     "recapture": 2189507546.1288033,
+     "net_state_cost": 22448104783.595528,
+     "levy_mo": 28224654396.54746
+    },
+    {
+     "year": 2027,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 31179721202.558544,
+     "tax_school": 13659813266.309391,
+     "tax_county": 5517318050.793514,
+     "tax_city": 6274099082.826715,
+     "tax_college": 1316843449.443153,
+     "tax_hospital": 1231587206.307773,
+     "tax_special": 3180060146.877999,
+     "avg_tax": 5000.612845588827,
+     "state_aid": 24329454298.057636,
+     "recapture": 2270125618.4954185,
+     "net_state_cost": 22059328679.562218,
+     "levy_mo": 28622785469.989655
+    },
+    {
+     "year": 2028,
+     "growth": 0.01,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 32183982925.14959,
+     "tax_school": 13935095578.555862,
+     "tax_county": 5728995340.99638,
+     "tax_city": 6488571286.961123,
+     "tax_college": 1424513784.504725,
+     "tax_hospital": 1337455270.9236143,
+     "tax_special": 3269351663.2078834,
+     "avg_tax": 5161.676635662417,
+     "state_aid": 23817927472.19725,
+     "recapture": 2424626053.3669744,
+     "net_state_cost": 21393301418.830276,
+     "levy_mo": 29338355106.7394
+    },
+    {
+     "year": 2029,
+     "growth": 0.015,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 33295026173.036167,
+     "tax_school": 14287726790.287743,
+     "tax_county": 5944285170.831084,
+     "tax_city": 6709426936.720499,
+     "tax_college": 1539494473.4609275,
+     "tax_hospital": 1448588548.320641,
+     "tax_special": 3365504253.4152737,
+     "avg_tax": 5339.866078130249,
+     "state_aid": 23194257024.851204,
+     "recapture": 2666771445.645527,
+     "net_state_cost": 20527485579.205677,
+     "levy_mo": 30218505759.941574
+    },
+    {
+     "year": 2030,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 34548114146.56711,
+     "tax_school": 14735888494.949404,
+     "tax_county": 6169324076.343903,
+     "tax_city": 6941426842.783621,
+     "tax_college": 1662616730.321214,
+     "tax_hospital": 1567547062.8980467,
+     "tax_special": 3471310939.2709208,
+     "avg_tax": 5540.836695422924,
+     "state_aid": 22463910391.354477,
+     "recapture": 2990856495.8123484,
+     "net_state_cost": 19473053895.54213,
+     "levy_mo": 31276153461.539528
+    },
+    {
+     "year": 2031,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 35839534147.4561,
+     "tax_school": 15189599873.296127,
+     "tax_county": 6400149856.254283,
+     "tax_city": 7178132983.493876,
+     "tax_college": 1795101638.1568682,
+     "tax_hospital": 1694979541.6346467,
+     "tax_special": 3581570254.6203017,
+     "avg_tax": 5747.955014523414,
+     "state_aid": 21737030593.53711,
+     "recapture": 3339959915.3845043,
+     "net_state_cost": 18397070678.152603,
+     "levy_mo": 32370818832.693405
+    },
+    {
+     "year": 2032,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 37175598855.735214,
+     "tax_school": 15651217336.619253,
+     "tax_county": 6638278044.002219,
+     "tax_city": 7423155739.833614,
+     "tax_college": 1937910119.4790182,
+     "tax_hospital": 1832046097.2801561,
+     "tax_special": 3692991518.520956,
+     "avg_tax": 5962.233464909628,
+     "state_aid": 21009110007.49764,
+     "recapture": 3721218247.542478,
+     "net_state_cost": 17287891759.955162,
+     "levy_mo": 33503797491.837677
+    },
+    {
+     "year": 2033,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 38557109688.04504,
+     "tax_school": 16119620012.516087,
+     "tax_county": 6882985149.297182,
+     "tax_city": 7674389859.957634,
+     "tax_college": 2091836118.8370543,
+     "tax_hospital": 1980297032.080958,
+     "tax_special": 3807981515.3561187,
+     "avg_tax": 6183.800578017802,
+     "state_aid": 20292279426.580696,
+     "recapture": 4137969708.3825884,
+     "net_state_cost": 16154309718.19811,
+     "levy_mo": 34676430404.05199
+    },
+    {
+     "year": 2034,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 39986296530.60209,
+     "tax_school": 16595011696.265402,
+     "tax_county": 7135483403.708109,
+     "tax_city": 7932390743.158573,
+     "tax_college": 2257659369.7563047,
+     "tax_hospital": 2139836612.4990916,
+     "tax_special": 3925914705.2146077,
+     "avg_tax": 6413.013983654376,
+     "state_aid": 19568470119.74459,
+     "recapture": 4595445108.159852,
+     "net_state_cost": 14973025011.584742,
+     "levy_mo": 35890105468.19381
+    },
+    {
+     "year": 2035,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 41475252595.00836,
+     "tax_school": 17081739994.480843,
+     "tax_county": 7397154910.938957,
+     "tax_city": 8199106273.126212,
+     "tax_college": 2436908680.450426,
+     "tax_hospital": 2312297410.224774,
+     "tax_special": 4048045325.7871532,
+     "avg_tax": 6651.813194648488,
+     "state_aid": 18834482576.096188,
+     "recapture": 5090216287.827433,
+     "net_state_cost": 13744266288.268757,
+     "levy_mo": 37146259159.58058
+    },
+    {
+     "year": 2036,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 43029284224.50398,
+     "tax_school": 17582104657.646957,
+     "tax_county": 7668536601.2702465,
+     "tax_city": 8475822193.28831,
+     "tax_college": 2630476785.5492687,
+     "tax_hospital": 2498625921.0667057,
+     "tax_special": 4173718065.6824956,
+     "avg_tax": 6901.049243887744,
+     "state_aid": 18085686909.645714,
+     "recapture": 5620593185.59271,
+     "net_state_cost": 12465093724.053005,
+     "levy_mo": 38446378230.16591
+    }
+   ]
+  },
+  "high": {
+   "scenario": "high",
+   "years": [
+    {
+     "year": 2026,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 30550026424.40901,
+     "tax_school": 13548448101.994469,
+     "tax_county": 5519153995.8472,
+     "tax_city": 6049057276.842251,
+     "tax_college": 1210988408.0988483,
+     "tax_hospital": 1126140299.8815608,
+     "tax_special": 3096238341.7446823,
+     "avg_tax": 4899.622212094761,
+     "state_aid": 24637612329.72433,
+     "recapture": 2189507546.1288033,
+     "net_state_cost": 22448104783.595528,
+     "levy_mo": 28224654396.54746
+    },
+    {
+     "year": 2027,
+     "growth": 0.03,
+     "state_mcr": 0.6223,
+     "homesteads": 6235180.0,
+     "tax_total": 31857539735.030865,
+     "tax_school": 14200310194.242079,
+     "tax_county": 5549534047.800188,
+     "tax_city": 6331827114.177079,
+     "tax_college": 1319953558.3101227,
+     "tax_hospital": 1232337994.6001222,
+     "tax_special": 3223576825.9012733,
+     "avg_tax": 5109.321580937658,
+     "state_aid": 23813033323.281834,
+     "recapture": 2426378888.2177277,
+     "net_state_cost": 21386654435.064102,
+     "levy_mo": 29346583714.905434
+    },
+    {
+     "year": 2028,
+     "growth": 0.04,
+     "state_mcr": 0.6133,
+     "homesteads": 6235180.0,
+     "tax_total": 33558345044.171104,
+     "tax_school": 14989637389.456226,
+     "tax_county": 5807574207.75593,
+     "tax_city": 6621824738.222446,
+     "tax_college": 1433988119.5003395,
+     "tax_hospital": 1342566026.7372153,
+     "tax_special": 3362754562.498942,
+     "avg_tax": 5382.097236033459,
+     "state_aid": 22944256959.92386,
+     "recapture": 2768885184.053567,
+     "net_state_cost": 20175371775.870293,
+     "levy_mo": 30581851752.68643
+    },
+    {
+     "year": 2029,
+     "growth": 0.045,
+     "state_mcr": 0.6015,
+     "homesteads": 6235180.0,
+     "tax_total": 35370714910.23225,
+     "tax_school": 15844559087.036469,
+     "tax_county": 6073327528.131641,
+     "tax_city": 6924973648.791869,
+     "tax_college": 1556531330.1540375,
+     "tax_hospital": 1459567969.5758696,
+     "tax_special": 3511755346.542359,
+     "avg_tax": 5672.7656475406075,
+     "state_aid": 22060893808.665886,
+     "recapture": 3173051784.54817,
+     "net_state_cost": 18887842024.117718,
+     "levy_mo": 31891322713.085754
+    },
+    {
+     "year": 2030,
+     "growth": 0.05,
+     "state_mcr": 0.5871,
+     "homesteads": 6235180.0,
+     "tax_total": 37321026361.17391,
+     "tax_school": 16777835413.939121,
+     "tax_county": 6351769465.266802,
+     "tax_city": 7244765552.750729,
+     "tax_college": 1687872144.475719,
+     "tax_hospital": 1585121125.687827,
+     "tax_special": 3673662659.0537167,
+     "avg_tax": 5985.557170951586,
+     "state_aid": 21180020953.816902,
+     "recapture": 3616806322.909464,
+     "net_state_cost": 17563214630.90744,
+     "levy_mo": 33281407160.925766
+    },
+    {
+     "year": 2031,
+     "growth": 0.05,
+     "state_mcr": 0.5731,
+     "homesteads": 6235180.0,
+     "tax_total": 39348490276.08265,
+     "tax_school": 17741952628.75992,
+     "tax_county": 6639149673.214061,
+     "tax_city": 7573914595.273447,
+     "tax_college": 1829378784.9930203,
+     "tax_hospital": 1719880642.9860506,
+     "tax_special": 3844213950.856157,
+     "avg_tax": 6310.722429197336,
+     "state_aid": 20303049564.797455,
+     "recapture": 4118897161.1809545,
+     "net_state_cost": 16184152403.616503,
+     "levy_mo": 34735484890.762856
+    },
+    {
+     "year": 2032,
+     "growth": 0.05,
+     "state_mcr": 0.5594,
+     "homesteads": 6235180.0,
+     "tax_total": 41457838444.630264,
+     "tax_school": 18739509308.97805,
+     "tax_county": 6936580398.163807,
+     "tax_city": 7915758196.875787,
+     "tax_college": 1981811084.6609464,
+     "tax_hospital": 1864739256.7825642,
+     "tax_special": 4019440199.1691027,
+     "avg_tax": 6649.020308095398,
+     "state_aid": 19414367163.028,
+     "recapture": 4666048701.201414,
+     "net_state_cost": 14748318461.826586,
+     "levy_mo": 36255522531.81952
+    },
+    {
+     "year": 2033,
+     "growth": 0.05,
+     "state_mcr": 0.546,
+     "homesteads": 6235180.0,
+     "tax_total": 43653186811.30465,
+     "tax_school": 19770877227.339584,
+     "tax_county": 7243145823.335215,
+     "tax_city": 8269569769.247086,
+     "tax_college": 2146134399.4444714,
+     "tax_hospital": 2021426669.2465405,
+     "tax_special": 4202032922.691749,
+     "avg_tax": 7001.110924031808,
+     "state_aid": 18518150529.938866,
+     "recapture": 5272312513.886707,
+     "net_state_cost": 13245838016.052158,
+     "levy_mo": 37844747266.03508
+    },
+    {
+     "year": 2034,
+     "growth": 0.05,
+     "state_mcr": 0.5329,
+     "homesteads": 6235180.0,
+     "tax_total": 45934209581.42475,
+     "tax_school": 20835743652.41021,
+     "tax_county": 7559687654.729464,
+     "tax_city": 8634654607.203499,
+     "tax_college": 2322938953.6621027,
+     "tax_hospital": 2189775160.0147476,
+     "tax_special": 4391409553.40473,
+     "avg_tax": 7366.9420259599165,
+     "state_aid": 17610885796.17054,
+     "recapture": 5931683851.478404,
+     "net_state_cost": 11679201944.692139,
+     "levy_mo": 39506565204.196014
+    },
+    {
+     "year": 2035,
+     "growth": 0.05,
+     "state_mcr": 0.5202,
+     "homesteads": 6235180.0,
+     "tax_total": 48318020344.28094,
+     "tax_school": 21941504354.343052,
+     "tax_county": 7887571765.742205,
+     "tax_city": 9014128989.519222,
+     "tax_college": 2513813425.6881266,
+     "tax_hospital": 2371504112.335806,
+     "tax_special": 4589497696.652532,
+     "avg_tax": 7749.258296357272,
+     "state_aid": 16705742959.554749,
+     "recapture": 6639918329.515646,
+     "net_state_cost": 10065824630.0391,
+     "levy_mo": 41246167012.80757
+    },
+    {
+     "year": 2036,
+     "growth": 0.05,
+     "state_mcr": 0.5078,
+     "homesteads": 6235180.0,
+     "tax_total": 50817640921.13518,
+     "tax_school": 23095109616.11458,
+     "tax_county": 8228199194.465346,
+     "tax_city": 9410451150.998327,
+     "tax_college": 2720211408.8985453,
+     "tax_hospital": 2568083827.250655,
+     "tax_special": 4795585723.407726,
+     "avg_tax": 8150.148178743064,
+     "state_aid": 15795975861.094696,
+     "recapture": 7403196391.011787,
+     "net_state_cost": 8392779470.08291,
+     "levy_mo": 43065965351.12982
+    }
+   ]
+  },
+  "stall": {
+   "scenario": "stall",
+   "years": [
+    {
+     "year": 2026,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 30550026424.40901,
+     "tax_school": 13548448101.994469,
+     "tax_county": 5519153995.8472,
+     "tax_city": 6049057276.842251,
+     "tax_college": 1210988408.0988483,
+     "tax_hospital": 1126140299.8815608,
+     "tax_special": 3096238341.7446823,
+     "avg_tax": 4899.622212094761,
+     "state_aid": 24637612329.72433,
+     "recapture": 2189507546.1288033,
+     "net_state_cost": 22448104783.595528,
+     "levy_mo": 28224654396.54746
+    },
+    {
+     "year": 2027,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 31179721202.558544,
+     "tax_school": 13659813266.309391,
+     "tax_county": 5517318050.793514,
+     "tax_city": 6274099082.826715,
+     "tax_college": 1316843449.443153,
+     "tax_hospital": 1231587206.307773,
+     "tax_special": 3180060146.877999,
+     "avg_tax": 5000.612845588827,
+     "state_aid": 24329454298.057636,
+     "recapture": 2270125618.4954185,
+     "net_state_cost": 22059328679.562218,
+     "levy_mo": 28622785469.989655
+    },
+    {
+     "year": 2028,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 31926011060.18016,
+     "tax_school": 13731873803.32827,
+     "tax_county": 5715317323.375085,
+     "tax_city": 6465837906.603678,
+     "tax_college": 1422752275.7701569,
+     "tax_hospital": 1336366995.961608,
+     "tax_special": 3253862755.141361,
+     "avg_tax": 5120.303032178728,
+     "state_aid": 24021937312.05613,
+     "recapture": 2356684835.7404985,
+     "net_state_cost": 21665252476.31563,
+     "levy_mo": 29052127252.0395
+    },
+    {
+     "year": 2029,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 33159702088.82592,
+     "tax_school": 14181936243.742432,
+     "tax_county": 5936824649.811636,
+     "tax_city": 6697207128.357605,
+     "tax_college": 1538454996.0091362,
+     "tax_hospital": 1447862927.7839153,
+     "tax_special": 3357416143.1211977,
+     "avg_tax": 5318.162761752816,
+     "state_aid": 23299501057.343426,
+     "recapture": 2623265730.2876253,
+     "net_state_cost": 20676235327.0558,
+     "levy_mo": 30068951705.860878
+    },
+    {
+     "year": 2030,
+     "growth": 0.035,
+     "state_mcr": 0.6193,
+     "homesteads": 6235180.0,
+     "tax_total": 34725452261.86806,
+     "tax_school": 14854451540.250904,
+     "tax_county": 6184239351.294828,
+     "tax_city": 6965643466.509712,
+     "tax_college": 1664780559.4371164,
+     "tax_hospital": 1569134818.2152553,
+     "tax_special": 3487202526.1602464,
+     "avg_tax": 5569.278234448413,
+     "state_aid": 22440681253.53216,
+     "recapture": 2999077156.9946976,
+     "net_state_cost": 19441604096.537464,
+     "levy_mo": 31313014479.843254
+    },
+    {
+     "year": 2031,
+     "growth": 0.035,
+     "state_mcr": 0.6133,
+     "homesteads": 6235180.0,
+     "tax_total": 36350870731.423775,
+     "tax_school": 15546247561.465328,
+     "tax_county": 6439541577.386059,
+     "tax_city": 7241603158.472322,
+     "tax_college": 1800982952.0209541,
+     "tax_hospital": 1699441636.4080982,
+     "tax_special": 3623053845.6710076,
+     "avg_tax": 5829.963326066573,
+     "state_aid": 21583473925.384773,
+     "recapture": 3410449218.6470613,
+     "net_state_cost": 18173024706.737717,
+     "levy_mo": 32609393790.56315
+    },
+    {
+     "year": 2032,
+     "growth": 0.035,
+     "state_mcr": 0.6073,
+     "homesteads": 6235180.0,
+     "tax_total": 38039911594.02579,
+     "tax_school": 16258931274.588467,
+     "tax_county": 6703707677.515373,
+     "tax_city": 7528149408.598601,
+     "tax_college": 1947889181.5043209,
+     "tax_hospital": 1839750631.739283,
+     "tax_special": 3761483420.07975,
+     "avg_tax": 6100.852195770737,
+     "state_aid": 20741103894.86594,
+     "recapture": 3868543321.9351997,
+     "net_state_cost": 16872560572.93074,
+     "levy_mo": 33959191399.723156
+    },
+    {
+     "year": 2033,
+     "growth": 0.035,
+     "state_mcr": 0.6014,
+     "homesteads": 6235180.0,
+     "tax_total": 39794043305.50149,
+     "tax_school": 16991804760.429169,
+     "tax_county": 6976096757.979942,
+     "tax_city": 7823224379.721851,
+     "tax_college": 2106367498.9739578,
+     "tax_hospital": 1991632209.8064618,
+     "tax_special": 3904917698.5901027,
+     "avg_tax": 6382.1803549378665,
+     "state_aid": 19897432270.66908,
+     "recapture": 4371240529.833331,
+     "net_state_cost": 15526191740.835749,
+     "levy_mo": 35365801834.19348
+    },
+    {
+     "year": 2034,
+     "growth": 0.035,
+     "state_mcr": 0.5955,
+     "homesteads": 6235180.0,
+     "tax_total": 41613536291.74377,
+     "tax_school": 17743562166.52674,
+     "tax_county": 7257721239.873392,
+     "tax_city": 8127116551.262365,
+     "tax_college": 2277122431.1102943,
+     "tax_hospital": 2155130725.9711304,
+     "tax_special": 4052883176.9998446,
+     "avg_tax": 6673.9911745521,
+     "state_aid": 19040007786.83549,
+     "recapture": 4930875569.07617,
+     "net_state_cost": 14109132217.759323,
+     "levy_mo": 36830405802.20525
+    },
+    {
+     "year": 2035,
+     "growth": 0.035,
+     "state_mcr": 0.5897,
+     "homesteads": 6235180.0,
+     "tax_total": 43511216342.97094,
+     "tax_school": 18519604429.57266,
+     "tax_county": 7549675438.034148,
+     "tax_city": 8441862189.704477,
+     "tax_college": 2461646664.59842,
+     "tax_hospital": 2331835406.3102856,
+     "tax_special": 4206592214.75095,
+     "avg_tax": 6978.341658616261,
+     "state_aid": 18167767457.17611,
+     "recapture": 5536195783.774513,
+     "net_state_cost": 12631571673.401594,
+     "levy_mo": 38356710838.114456
+    },
+    {
+     "year": 2036,
+     "growth": 0.035,
+     "state_mcr": 0.584,
+     "homesteads": 6235180.0,
+     "tax_total": 45494982482.91059,
+     "tax_school": 19323953618.91411,
+     "tax_county": 7852630249.903208,
+     "tax_city": 8769033883.30888,
+     "tax_college": 2661070651.27515,
+     "tax_hospital": 2522947675.867996,
+     "tax_special": 4365346403.641245,
+     "avg_tax": 7296.498654876137,
+     "state_aid": 17290157739.932568,
+     "recapture": 6188043881.930485,
+     "net_state_cost": 11102113858.00208,
+     "levy_mo": 39947384798.26991
+    }
+   ]
+  },
+  "downturn": {
+   "scenario": "downturn",
+   "years": [
+    {
+     "year": 2026,
+     "growth": 0.0,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 30550026424.40901,
+     "tax_school": 13548448101.994469,
+     "tax_county": 5519153995.8472,
+     "tax_city": 6049057276.842251,
+     "tax_college": 1210988408.0988483,
+     "tax_hospital": 1126140299.8815608,
+     "tax_special": 3096238341.7446823,
+     "avg_tax": 4899.622212094761,
+     "state_aid": 24637612329.72433,
+     "recapture": 2189507546.1288033,
+     "net_state_cost": 22448104783.595528,
+     "levy_mo": 28224654396.54746
+    },
+    {
+     "year": 2027,
+     "growth": -0.05,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 29929939975.63835,
+     "tax_school": 12662297829.029263,
+     "tax_county": 5455649623.509321,
+     "tax_city": 6168914467.848099,
+     "tax_college": 1309865612.9958797,
+     "tax_hospital": 1228418256.086015,
+     "tax_special": 3104794186.169775,
+     "avg_tax": 4800.172565288949,
+     "state_aid": 25358212934.04261,
+     "recapture": 2004332605.15827,
+     "net_state_cost": 23353880328.88434,
+     "levy_mo": 27212796037.970467
+    },
+    {
+     "year": 2028,
+     "growth": -0.03,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 29867338332.154274,
+     "tax_school": 12122302463.858337,
+     "tax_county": 5601423135.48222,
+     "tax_city": 6280163329.053183,
+     "tax_college": 1407095786.573345,
+     "tax_hospital": 1325766094.1030433,
+     "tax_special": 3130587523.0841436,
+     "avg_tax": 4790.132495317581,
+     "state_aid": 25662982581.067574,
+     "recapture": 1928480821.5400822,
+     "net_state_cost": 23734501759.52749,
+     "levy_mo": 26804604097.40091
+    },
+    {
+     "year": 2029,
+     "growth": 0.02,
+     "state_mcr": 0.6254,
+     "homesteads": 6235180.0,
+     "tax_total": 31032237589.34527,
+     "tax_school": 12527951963.804493,
+     "tax_county": 5815677366.247157,
+     "tax_city": 6502177584.748851,
+     "tax_college": 1520916463.7247152,
+     "tax_hospital": 1435087159.1830783,
+     "tax_special": 3230427051.636971,
+     "avg_tax": 4976.959380377995,
+     "state_aid": 24970810213.94406,
+     "recapture": 2103685900.5048845,
+     "net_state_cost": 22867124313.43918,
+     "levy_mo": 27742765240.80994
+    },
+    {
+     "year": 2030,
+     "growth": 0.04,
+     "state_mcr": 0.6163,
+     "homesteads": 6235180.0,
+     "tax_total": 32609611178.300774,
+     "tax_school": 13205445959.054749,
+     "tax_county": 6064658873.091048,
+     "tax_city": 6773982978.710062,
+     "tax_college": 1646998787.4370184,
+     "tax_hospital": 1555746586.7812529,
+     "tax_special": 3362777993.2266426,
+     "avg_tax": 5229.939019932187,
+     "state_aid": 24126131888.091198,
+     "recapture": 2327883193.4220567,
+     "net_state_cost": 21798248694.669144,
+     "levy_mo": 28909722758.504814
+    },
+    {
+     "year": 2031,
+     "growth": 0.035,
+     "state_mcr": 0.6103,
+     "homesteads": 6235180.0,
+     "tax_total": 34160552062.355972,
+     "tax_school": 13842748127.817263,
+     "tax_county": 6314724534.567289,
+     "tax_city": 7042464812.139626,
+     "tax_college": 1782049478.5012345,
+     "tax_hospital": 1684864907.6371696,
+     "tax_special": 3493700201.693393,
+     "avg_tax": 5478.679374509793,
+     "state_aid": 23279280386.660202,
+     "recapture": 2628200442.0424457,
+     "net_state_cost": 20651079944.617756,
+     "levy_mo": 30106492018.091286
+    },
+    {
+     "year": 2032,
+     "growth": 0.035,
+     "state_mcr": 0.6044,
+     "homesteads": 6235180.0,
+     "tax_total": 35771193035.32097,
+     "tax_school": 14494961267.07299,
+     "tax_county": 6574343228.816105,
+     "tax_city": 7322101834.184252,
+     "tax_college": 1927949475.5932846,
+     "tax_hospital": 1824258038.3234653,
+     "tax_special": 3627579191.3308687,
+     "avg_tax": 5736.994446883806,
+     "state_aid": 22417797974.66684,
+     "recapture": 3003999840.8955164,
+     "net_state_cost": 19413798133.771324,
+     "levy_mo": 31353636634.411884
+    },
+    {
+     "year": 2033,
+     "growth": 0.035,
+     "state_mcr": 0.5985,
+     "homesteads": 6235180.0,
+     "tax_total": 37445034866.48807,
+     "tax_school": 15165746771.716225,
+     "tax_county": 6842214980.119804,
+     "tax_city": 7610130682.032997,
+     "tax_college": 2085329456.8623133,
+     "tax_hospital": 1975163003.9563332,
+     "tax_special": 3766449971.800396,
+     "avg_tax": 6005.445691461685,
+     "state_aid": 21565649406.68104,
+     "recapture": 3416287822.646982,
+     "net_state_cost": 18149361584.03406,
+     "levy_mo": 32652208516.85038
+    },
+    {
+     "year": 2034,
+     "growth": 0.035,
+     "state_mcr": 0.5927,
+     "homesteads": 6235180.0,
+     "tax_total": 39185498270.03417,
+     "tax_school": 15856217585.252014,
+     "tax_county": 7119516250.779575,
+     "tax_city": 7907263460.932371,
+     "tax_college": 2255064280.955653,
+     "tax_hospital": 2137774347.941919,
+     "tax_special": 3909662344.1726313,
+     "avg_tax": 6284.581723387965,
+     "state_aid": 20725994410.316944,
+     "recapture": 3874204911.0961814,
+     "net_state_cost": 16851789499.220764,
+     "levy_mo": 34005490567.796577
+    },
+    {
+     "year": 2035,
+     "growth": 0.035,
+     "state_mcr": 0.5869,
+     "homesteads": 6235180.0,
+     "tax_total": 41003542615.7486,
+     "tax_school": 16570051069.662594,
+     "tax_county": 7407452045.666632,
+     "tax_city": 8215256828.987878,
+     "tax_college": 2438611279.243775,
+     "tax_hospital": 2313655990.0125895,
+     "tax_special": 4058515402.175124,
+     "avg_tax": 6576.1602096088,
+     "state_aid": 19881587208.251328,
+     "recapture": 4376118180.963882,
+     "net_state_cost": 15505469027.287445,
+     "levy_mo": 35414610113.26987
+    },
+    {
+     "year": 2036,
+     "growth": 0.035,
+     "state_mcr": 0.5812,
+     "homesteads": 6235180.0,
+     "tax_total": 42905096314.018814,
+     "tax_school": 17309842090.56259,
+     "tax_county": 7706678633.702452,
+     "tax_city": 8535478070.78637,
+     "tax_college": 2636908488.5041866,
+     "tax_hospital": 2503795764.819069,
+     "tax_special": 4212393265.64414,
+     "avg_tax": 6881.131950323617,
+     "state_aid": 19022964871.5905,
+     "recapture": 4935163036.915812,
+     "net_state_cost": 14087801834.67469,
+     "levy_mo": 36883153240.169914
+    }
+   ]
+  }
+ }
+};   // scripts/tx_results.py (and tx_projections.json from ptm.tx.project)
+function bars(id, rows, fmt) {
+  const mx = Math.max(...rows.map(r => r.v), 1e-9);
+  $(id).innerHTML = rows.map(r => `<div class="bar-row"><span class="lab">${r.lab}</span><span class="track"><i style="width:${(100 * r.v / mx).toFixed(1)}%"></i></span><span class="num">${fmt(r.v)}</span></div>`).join("");
+}
+function renderTX() {
+  const H = TX.headline, Dx = TX.by_decile;
+  const share = H.owner_tax_total / Dx.reduce((a, d) => a + d.owners * d.avg_income, 0);
+  $("tx-figures").innerHTML = [
+    [H.suits_index.toFixed(2), "Suits index — how regressive the tax is. Ranges from −1 (fully regressive) to +1 (fully progressive); 0 = flat rate.", "fig-suits"],
+    [bn(H.owner_tax_total), "Property tax paid by owner households, 2026"],
+    [usd(H.owner_tax_total / H.owners), `Average per owner (median ${usd(H.median_tax)})`],
+    [pct(share), "Of owner income, all owners together"],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const cls = H.by_class, ct = Object.values(cls).reduce((a, b) => a + b, 0);
+  $("tx-context").textContent = `Of the tax on homesteads, school districts take ${pct(cls.school / ct, 0)}, cities ${pct((cls.city || 0) / ct, 0)}, counties ${pct((cls.county || 0) / ct, 0)} and special, hospital and college districts the rest. Every school district exempts $140,000 of a homestead's value ($200,000 for owners 65 or older or disabled), and owners 65 or older have their school tax frozen.`;
+  const lo = Dx[0], mid = Dx[4], top = Dx[9];
+  $("tx-dec-intro").textContent = `Owners in the lowest income tenth pay ${pct(lo.tax_share_of_income, 0)} of their income in property tax, those in the middle ${pct(mid.tax_share_of_income, 1)}, and those in the top tenth ${pct(top.tax_share_of_income, 1)}. The lowest tenth includes many retirees with little income and a paid-off home.`;
+  bars("tx-c-share", Dx.map(d => ({ lab: "Tenth " + d.group, v: d.tax_share_of_income || 0 })), v => pct(v, 1));
+  bars("tx-c-avg", Dx.map(d => ({ lab: "Tenth " + d.group, v: d.avg_tax })), usd);
+  $("tx-t-dec").innerHTML = "<thead><tr><th>Income tenth</th><th>Owners</th><th>Average tax</th><th>Median tax</th><th>Tax share of income</th><th>Share of owner tax</th><th>Average home value</th></tr></thead><tbody>" +
+    Dx.map(d => `<tr><td>${d.group}</td><td>${Math.round(d.owners).toLocaleString("en-US")}</td><td>${usd(d.avg_tax)}</td><td>${usd(d.median_tax)}</td><td>${pct(d.tax_share_of_income || 0)}</td><td>${pct(d.share_of_owner_tax)}</td><td>${usd(d.avg_value)}</td></tr>`).join("") + "</tbody>";
+  const TABS = [["by_age", "Age of householder"], ["by_senior", "65+ or disabled"], ["by_homestead", "Homestead"], ["by_region", "Region"]];
+  $("tx-tabs").innerHTML = TABS.map(([k, l], i) => `<button role="tab" data-k="${k}" aria-selected="${i === 0}">${l}</button>`).join("");
+  const brk = k => {
+    $("tx-t-break").innerHTML = "<thead><tr><th>Group</th><th>Owners</th><th>Average tax</th><th>Median tax</th><th>Tax share of income</th><th>Average home value</th></tr></thead><tbody>" +
+      TX[k].map(d => `<tr><td>${d.group}</td><td>${Math.round(d.owners).toLocaleString("en-US")}</td><td>${usd(d.avg_tax)}</td><td>${usd(d.median_tax)}</td><td>${pct(d.tax_share_of_income || 0)}</td><td>${usd(d.avg_value)}</td></tr>`).join("") + "</tbody>";
+    document.querySelectorAll("#tx-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.k === k));
+  };
+  $("tx-tabs").onclick = e => { const b = e.target.closest("button"); if (b) brk(b.dataset.k); };
+  brk("by_age");
+  const P = TX.projections || {}, sc = Object.keys(P);
+  if (sc.length) {
+    const c = P.central.years, at = yy => c.find(r => r.year === yy);
+    $("tx-proj-intro").textContent = `Under current law and the central economic path, homestead property tax rises from ${bn(at(2026).tax_total)} in 2026 to ${bn(at(2036).tax_total)} in 2036, and the average homestead's bill from ${usd(at(2026).avg_tax)} to ${usd(at(2036).avg_tax)}. Fixed-dollar exemptions make taxes rise faster than home values. The state's compressed school rate falls from $${at(2026).state_mcr.toFixed(4)} to $${at(2036).state_mcr.toFixed(4)} per $100 under the compression formula; cities, counties and special districts are assumed to adopt their voter-approval rates.`;
+    const LAB = { central: "Central", low: "Slower prices", high: "Faster prices", stall: "Prices stall", downturn: "Housing downturn" };
+    $("tx-t-proj").innerHTML = "<thead><tr><th>Scenario</th><th>2026</th><th>2031</th><th>2036</th><th>Average bill, 2036</th></tr></thead><tbody>" +
+      sc.map(k => { const r = P[k].years, g = yy => r.find(x => x.year === yy); return `<tr><td>${LAB[k] || k}</td><td>${bn(g(2026).tax_total)}</td><td>${bn(g(2031).tax_total)}</td><td>${bn(g(2036).tax_total)}</td><td>${usd(g(2036).avg_tax)}</td></tr>`; }).join("") + "</tbody>";
+    const W = 520, Hh = 240, L = 46, R = 12, T = 12, B = 26, s = svg(W, Hh);
+    const all = sc.flatMap(k => P[k].years.map(r => r.tax_total / 1e9)), lo2 = Math.floor(Math.min(...all) / 5) * 5, hi2 = Math.ceil(Math.max(...all) / 5) * 5;
+    const xs = c.map(r => r.year), X = v => L + (W - L - R) * (v - xs[0]) / (xs[xs.length - 1] - xs[0]), Y = v => T + (Hh - T - B) * (1 - (v - lo2) / (hi2 - lo2));
+    for (let v = lo2; v <= hi2; v += 5) { el(s, "line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: Y(v) + 4, "text-anchor": "end" }, "$" + v + "B"); }
+    xs.forEach((v, i) => { if (i % 2 === 0) el(s, "text", { x: X(v), y: Hh - 8, "text-anchor": "middle" }, String(v)); });
+    sc.forEach(k => el(s, "polyline", { points: P[k].years.map(r => `${X(r.year)},${Y(r.tax_total / 1e9)}`).join(" "), fill: "none",
+      stroke: k === "central" ? "var(--accent)" : "var(--rule-strong)", "stroke-width": k === "central" ? 3 : 1.2, opacity: k === "central" ? 1 : 0.45 }));
+    s.setAttribute("aria-label", "Homestead property tax by scenario, 2026 to 2036");
+    $("tx-c-proj").innerHTML = ""; $("tx-c-proj").appendChild(s);
+  }
+  const roll = pct(H.share_in_roll_counties, 0);
+  $("tx-notes").innerHTML = [
+    `<b>Checked against the parcel rolls where we have them.</b> Nine appraisal districts (Harris, Dallas, Tarrant, Travis, Collin, Fort Bend, El Paso, Williamson, Galveston) hold ${roll} of homesteads; there the model's average homestead tax is within about 4% of the rolls'.`,
+    `<b>Elsewhere, local exemptions are approximate.</b> Counties, cities and special districts set their own homestead and over-65 exemptions, and no statewide list exists. Outside the nine districts the model uses the typical exemptions of each kind of unit, so county-level results there are approximate; statewide results are steadier.`,
+    `<b>Rates are 2025 rates</b> (the Comptroller publishes 2026 rates in early 2027), applied to 2026 values. School districts use TEA's 2026 compressed rates in the outlook.`,
+    `<b>Owners only.</b> Renters count in the income groups at $0; what they pay through rent isn't modelled. Owners without a homestead exemption pay full tax at their county's average combined rate.`,
+    `<b>The outlook is current law.</b> No official Texas value forecast goes past 2026; the central path assumes values rise 1.5% in 2027, rising to 3.5% a year from 2030. School funding is held at 2026-27 levels, as written in law.`,
+  ].map(t => `<li>${t}</li>`).join("");
+}
+function renderHome() {
+  const tx = TX.headline;
+  $("state-cards").innerHTML = [
+    ["fl", "Florida", bn(D.headline.owner_tax_total), `paid by ${mil(D.headline.owners)} owner households in 2026 · current law, policy comparisons and Amendment 3`],
+    ["tx", "Texas", bn(tx.owner_tax_total), `paid by ${mil(tx.owners)} owner households in 2026 · current law and outlook to 2036 (policy comparisons coming)`],
+  ].map(([k, n, v, l]) => `<button class="state-card" data-s="${k}"><h3>${n}</h3><div class="v">${v}</div><div class="l">${l}</div></button>`).join("");
+}
 const LEDE_TODAY = $("lede").textContent;
 function showView(v) {
   VIEW = v;
+  $("view-home").hidden = v !== "home";
+  $("view-tx").hidden = v !== "tx";
+  $("views").hidden = !FL_VIEWS.includes(v);
+  const st = v === "home" ? "home" : v === "tx" ? "tx" : "fl";
+  document.querySelectorAll("#states button").forEach(b => b.setAttribute("aria-selected", b.dataset.s === st));
   $("view-today").hidden = v !== "today";
   $("view-policy").hidden = v !== "policy";
   $("view-a3").hidden = v !== "a3";
   $("view-about").hidden = v !== "about";
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1;
-  $("lede").textContent = v === "today" ? LEDE_TODAY : v === "about" ?
+  $("badge").hidden = v === "home";
+  $("lede").textContent = v === "home" ? "Pick a state to see who pays today, how taxes are set to change under current law, and how policies would change them." :
+    v === "tx" ? `Texas's ${mil(TX.headline.owners)} owner households will pay an estimated ${bn(TX.headline.owner_tax_total)} in property tax on their homes in 2026. School districts levy the largest share; homestead exemptions and the over-65 freeze shape who pays.` :
+    v === "today" ? LEDE_TODAY : v === "about" ?
     "How the results are built, how well they match official figures, the assumptions behind them and what they leave out." : v === "a3" ?
     "Who gains and who pays under the proposed constitutional amendment, compared with current law on the same households and economy." :
     "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
   if (v === "policy") { setLever(POL.lever, true); renderPolicy(); }
   if (v === "a3") renderA3();
+  if (v === "tx") renderTX();
+  if (v === "home") renderHome();
   document.querySelectorAll(".slider-scale").forEach(placeTicks);   // sizes need the view visible
 }
 $("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
 document.addEventListener("click", e => { const a = e.target.closest("[data-goto]"); if (!a) return;
   e.preventDefault(); showView(a.dataset.goto); window.scrollTo(0, 0); });
-showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : location.hash === "#about" ? "about" : "today");
+$("states").addEventListener("click", e => { const b = e.target.closest("button[data-s]"); if (b) showView(b.dataset.s === "fl" ? "today" : b.dataset.s); });
+document.addEventListener("click", e => { const c = e.target.closest(".state-card"); if (c) { showView(c.dataset.s === "fl" ? "today" : c.dataset.s); window.scrollTo(0, 0); } });
+showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : location.hash === "#about" ? "about" :
+  location.hash === "#florida" ? "today" : location.hash === "#texas" ? "tx" : "home");
 </script>

@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Florida Property Tax Model</title>
+<title>Property Tax Model</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap">
 <style>
@@ -208,22 +208,100 @@ td.over { color: var(--lose2); font-weight: 700; }
 .notes > div { background: var(--surface); border-radius: 16px; padding: 24px; display: grid; gap: 14px; align-content: start; min-width: 0; }
 .notes b { color: var(--ink); }
 a { color: var(--accent); }
+.states { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.states button { font: 700 13px var(--body); padding: 5px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; }
+.states button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.states button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.state-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) { .state-cards { grid-template-columns: 1fr; } }
+.state-card { background: var(--surface); border-radius: 18px; padding: 26px; display: grid; gap: 10px; align-content: start; cursor: pointer; border: 1.5px solid transparent; text-align: left; font: inherit; color: inherit; }
+.state-card:hover, .state-card:focus-visible { border-color: var(--accent); outline: none; }
+.state-card h3 { font-size: 24px; color: var(--accent); }
+.state-card .v { font: 700 28px/1.1 var(--body); color: var(--ink); }
+.state-card .l { color: var(--muted); font-size: 14.5px; }
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 13.5px; }
+.bar-row .lab { color: var(--muted); text-align: right; }
+.bar-row .track { height: 22px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar-row .track i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.bar-row .num { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+@media (max-width: 560px) { .bar-row { grid-template-columns: 70px minmax(0, 1fr) 54px; font-size: 12.5px; } }
 footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; }
 </style>
 
 <div class="hero">
   <div class="hero-in">
+    <nav class="states" aria-label="States" id="states">
+      <button data-s="home" id="state-btn-home">All states</button><button data-s="fl" id="state-btn-fl">Florida</button><button data-s="tx" id="state-btn-tx">Texas</button>
+    </nav>
     <nav class="views" aria-label="Views" id="views">
       <button data-v="today" id="view-btn-today">2026 today</button><button data-v="policy" id="view-btn-policy">Policy comparisons</button><button data-v="a3" id="view-btn-a3">Amendment 3</button><button data-v="about" id="view-btn-about">About the model</button>
     </nav>
     <div class="eyebrow" id="eyebrow">Florida · Tax year 2026 · Current law</div>
     <h1 id="h1">Who pays Florida's property tax on owner-occupied homes</h1>
     <p class="lede" id="lede"></p>
-    <span class="badge">Owners only. Renters are counted in the income groups, but the tax they pay through rent is not modelled yet.</span>
+    <span class="badge" id="badge">Owners only. Renters are counted in the income groups, but the tax they pay through rent is not modelled yet.</span>
   </div>
 </div>
 
 <div class="wrap">
+  <div id="view-home" class="wrap-inner" hidden>
+    <section>
+      <div class="eyebrow">Select a state</div>
+      <h2>Property tax on owner-occupied homes, state by state</h2>
+      <p>Each state's model applies its own property tax law to a representative sample of households, checked against the state's parcel rolls, and compares policies with current law on the same households and economy.</p>
+      <div class="state-cards" id="state-cards"></div>
+    </section>
+  </div>
+
+  <div id="view-tx" class="wrap-inner" hidden>
+    <div class="figures" id="tx-figures"></div>
+    <p class="context" id="tx-context"></p>
+    <section>
+      <div class="eyebrow">By household income</div>
+      <h2>Tax as a share of income</h2>
+      <p id="tx-dec-intro"></p>
+      <div class="charts">
+        <div class="chart">
+          <h3>Owner property tax as a share of income</h3>
+          <p>All tax in the group ÷ all income in the group, owners. Tenths of all Texas households (1 = lowest income).</p>
+          <div class="bars" id="tx-c-share"></div>
+        </div>
+        <div class="chart">
+          <h3>Average tax per owner</h3>
+          <p>Dollars a year, 2026.</p>
+          <div class="bars" id="tx-c-avg"></div>
+        </div>
+      </div>
+      <div class="tabletools"><button class="copy" data-table="tx-t-dec">Copy table</button></div>
+      <div class="tablebox"><table id="tx-t-dec"></table></div>
+    </section>
+    <section>
+      <div class="eyebrow">Other ways to slice it</div>
+      <h2>Age, homestead and region</h2>
+      <div class="tabs" role="tablist" id="tx-tabs"></div>
+      <div class="tablebox"><table id="tx-t-break"></table></div>
+    </section>
+    <section>
+      <div class="eyebrow">Baseline outlook</div>
+      <h2>Current law to 2036</h2>
+      <p id="tx-proj-intro"></p>
+      <div class="charts">
+        <div class="chart">
+          <h3>Homestead property tax, billions of dollars</h3>
+          <p>Five economic scenarios; the central path in bold.</p>
+          <div id="tx-c-proj"></div>
+        </div>
+        <div class="tablebox"><table id="tx-t-proj"></table></div>
+      </div>
+    </section>
+    <section>
+      <div class="eyebrow">What to keep in mind</div>
+      <h2>How far the Texas results go</h2>
+      <ul class="about-list" id="tx-notes"></ul>
+    </section>
+  </div>
+
   <div id="view-today" class="wrap-inner">
   <div class="figures" id="figures"></div>
   <p class="context" id="today-context"></p>
@@ -1556,26 +1634,107 @@ const VIEWS = {
   policy: { eyebrow: "Florida · Policy comparisons · From 2027", h1: "What a property tax policy would change, and for whom" },
   a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom" },
   about: { eyebrow: "Florida Property Tax Model", h1: "About the model" },
+  home: { eyebrow: "Property Tax Model", h1: "Who pays property tax on owner-occupied homes" },
+  tx: { eyebrow: "Texas · Tax year 2026 · Current law", h1: "Who pays Texas's property tax on owner-occupied homes" },
 };
+const FL_VIEWS = ["today", "policy", "a3", "about"];
+// ---------------- Texas ----------------
+const TX = __TX__;   // scripts/tx_results.py (and tx_projections.json from ptm.tx.project)
+function bars(id, rows, fmt) {
+  const mx = Math.max(...rows.map(r => r.v), 1e-9);
+  $(id).innerHTML = rows.map(r => `<div class="bar-row"><span class="lab">${r.lab}</span><span class="track"><i style="width:${(100 * r.v / mx).toFixed(1)}%"></i></span><span class="num">${fmt(r.v)}</span></div>`).join("");
+}
+function renderTX() {
+  const H = TX.headline, Dx = TX.by_decile;
+  const share = H.owner_tax_total / Dx.reduce((a, d) => a + d.owners * d.avg_income, 0);
+  $("tx-figures").innerHTML = [
+    [H.suits_index.toFixed(2), "Suits index — how regressive the tax is. Ranges from −1 (fully regressive) to +1 (fully progressive); 0 = flat rate.", "fig-suits"],
+    [bn(H.owner_tax_total), "Property tax paid by owner households, 2026"],
+    [usd(H.owner_tax_total / H.owners), `Average per owner (median ${usd(H.median_tax)})`],
+    [pct(share), "Of owner income, all owners together"],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const cls = H.by_class, ct = Object.values(cls).reduce((a, b) => a + b, 0);
+  $("tx-context").textContent = `Of the tax on homesteads, school districts take ${pct(cls.school / ct, 0)}, cities ${pct((cls.city || 0) / ct, 0)}, counties ${pct((cls.county || 0) / ct, 0)} and special, hospital and college districts the rest. Every school district exempts $140,000 of a homestead's value ($200,000 for owners 65 or older or disabled), and owners 65 or older have their school tax frozen.`;
+  const lo = Dx[0], mid = Dx[4], top = Dx[9];
+  $("tx-dec-intro").textContent = `Owners in the lowest income tenth pay ${pct(lo.tax_share_of_income, 0)} of their income in property tax, those in the middle ${pct(mid.tax_share_of_income, 1)}, and those in the top tenth ${pct(top.tax_share_of_income, 1)}. The lowest tenth includes many retirees with little income and a paid-off home.`;
+  bars("tx-c-share", Dx.map(d => ({ lab: "Tenth " + d.group, v: d.tax_share_of_income || 0 })), v => pct(v, 1));
+  bars("tx-c-avg", Dx.map(d => ({ lab: "Tenth " + d.group, v: d.avg_tax })), usd);
+  $("tx-t-dec").innerHTML = "<thead><tr><th>Income tenth</th><th>Owners</th><th>Average tax</th><th>Median tax</th><th>Tax share of income</th><th>Share of owner tax</th><th>Average home value</th></tr></thead><tbody>" +
+    Dx.map(d => `<tr><td>${d.group}</td><td>${Math.round(d.owners).toLocaleString("en-US")}</td><td>${usd(d.avg_tax)}</td><td>${usd(d.median_tax)}</td><td>${pct(d.tax_share_of_income || 0)}</td><td>${pct(d.share_of_owner_tax)}</td><td>${usd(d.avg_value)}</td></tr>`).join("") + "</tbody>";
+  const TABS = [["by_age", "Age of householder"], ["by_senior", "65+ or disabled"], ["by_homestead", "Homestead"], ["by_region", "Region"]];
+  $("tx-tabs").innerHTML = TABS.map(([k, l], i) => `<button role="tab" data-k="${k}" aria-selected="${i === 0}">${l}</button>`).join("");
+  const brk = k => {
+    $("tx-t-break").innerHTML = "<thead><tr><th>Group</th><th>Owners</th><th>Average tax</th><th>Median tax</th><th>Tax share of income</th><th>Average home value</th></tr></thead><tbody>" +
+      TX[k].map(d => `<tr><td>${d.group}</td><td>${Math.round(d.owners).toLocaleString("en-US")}</td><td>${usd(d.avg_tax)}</td><td>${usd(d.median_tax)}</td><td>${pct(d.tax_share_of_income || 0)}</td><td>${usd(d.avg_value)}</td></tr>`).join("") + "</tbody>";
+    document.querySelectorAll("#tx-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.k === k));
+  };
+  $("tx-tabs").onclick = e => { const b = e.target.closest("button"); if (b) brk(b.dataset.k); };
+  brk("by_age");
+  const P = TX.projections || {}, sc = Object.keys(P);
+  if (sc.length) {
+    const c = P.central.years, at = yy => c.find(r => r.year === yy);
+    $("tx-proj-intro").textContent = `Under current law and the central economic path, homestead property tax rises from ${bn(at(2026).tax_total)} in 2026 to ${bn(at(2036).tax_total)} in 2036, and the average homestead's bill from ${usd(at(2026).avg_tax)} to ${usd(at(2036).avg_tax)}. Fixed-dollar exemptions make taxes rise faster than home values. The state's compressed school rate falls from $${at(2026).state_mcr.toFixed(4)} to $${at(2036).state_mcr.toFixed(4)} per $100 under the compression formula; cities, counties and special districts are assumed to adopt their voter-approval rates.`;
+    const LAB = { central: "Central", low: "Slower prices", high: "Faster prices", stall: "Prices stall", downturn: "Housing downturn" };
+    $("tx-t-proj").innerHTML = "<thead><tr><th>Scenario</th><th>2026</th><th>2031</th><th>2036</th><th>Average bill, 2036</th></tr></thead><tbody>" +
+      sc.map(k => { const r = P[k].years, g = yy => r.find(x => x.year === yy); return `<tr><td>${LAB[k] || k}</td><td>${bn(g(2026).tax_total)}</td><td>${bn(g(2031).tax_total)}</td><td>${bn(g(2036).tax_total)}</td><td>${usd(g(2036).avg_tax)}</td></tr>`; }).join("") + "</tbody>";
+    const W = 520, Hh = 240, L = 46, R = 12, T = 12, B = 26, s = svg(W, Hh);
+    const all = sc.flatMap(k => P[k].years.map(r => r.tax_total / 1e9)), lo2 = Math.floor(Math.min(...all) / 5) * 5, hi2 = Math.ceil(Math.max(...all) / 5) * 5;
+    const xs = c.map(r => r.year), X = v => L + (W - L - R) * (v - xs[0]) / (xs[xs.length - 1] - xs[0]), Y = v => T + (Hh - T - B) * (1 - (v - lo2) / (hi2 - lo2));
+    for (let v = lo2; v <= hi2; v += 5) { el(s, "line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: Y(v) + 4, "text-anchor": "end" }, "$" + v + "B"); }
+    xs.forEach((v, i) => { if (i % 2 === 0) el(s, "text", { x: X(v), y: Hh - 8, "text-anchor": "middle" }, String(v)); });
+    sc.forEach(k => el(s, "polyline", { points: P[k].years.map(r => `${X(r.year)},${Y(r.tax_total / 1e9)}`).join(" "), fill: "none",
+      stroke: k === "central" ? "var(--accent)" : "var(--rule-strong)", "stroke-width": k === "central" ? 3 : 1.2, opacity: k === "central" ? 1 : 0.45 }));
+    s.setAttribute("aria-label", "Homestead property tax by scenario, 2026 to 2036");
+    $("tx-c-proj").innerHTML = ""; $("tx-c-proj").appendChild(s);
+  }
+  const roll = pct(H.share_in_roll_counties, 0);
+  $("tx-notes").innerHTML = [
+    `<b>Checked against the parcel rolls where we have them.</b> Nine appraisal districts (Harris, Dallas, Tarrant, Travis, Collin, Fort Bend, El Paso, Williamson, Galveston) hold ${roll} of homesteads; there the model's average homestead tax is within about 4% of the rolls'.`,
+    `<b>Elsewhere, local exemptions are approximate.</b> Counties, cities and special districts set their own homestead and over-65 exemptions, and no statewide list exists. Outside the nine districts the model uses the typical exemptions of each kind of unit, so county-level results there are approximate; statewide results are steadier.`,
+    `<b>Rates are 2025 rates</b> (the Comptroller publishes 2026 rates in early 2027), applied to 2026 values. School districts use TEA's 2026 compressed rates in the outlook.`,
+    `<b>Owners only.</b> Renters count in the income groups at $0; what they pay through rent isn't modelled. Owners without a homestead exemption pay full tax at their county's average combined rate.`,
+    `<b>The outlook is current law.</b> No official Texas value forecast goes past 2026; the central path assumes values rise 1.5% in 2027, rising to 3.5% a year from 2030. School funding is held at 2026-27 levels, as written in law.`,
+  ].map(t => `<li>${t}</li>`).join("");
+}
+function renderHome() {
+  const tx = TX.headline;
+  $("state-cards").innerHTML = [
+    ["fl", "Florida", bn(D.headline.owner_tax_total), `paid by ${mil(D.headline.owners)} owner households in 2026 · current law, policy comparisons and Amendment 3`],
+    ["tx", "Texas", bn(tx.owner_tax_total), `paid by ${mil(tx.owners)} owner households in 2026 · current law and outlook to 2036 (policy comparisons coming)`],
+  ].map(([k, n, v, l]) => `<button class="state-card" data-s="${k}"><h3>${n}</h3><div class="v">${v}</div><div class="l">${l}</div></button>`).join("");
+}
 const LEDE_TODAY = $("lede").textContent;
 function showView(v) {
   VIEW = v;
+  $("view-home").hidden = v !== "home";
+  $("view-tx").hidden = v !== "tx";
+  $("views").hidden = !FL_VIEWS.includes(v);
+  const st = v === "home" ? "home" : v === "tx" ? "tx" : "fl";
+  document.querySelectorAll("#states button").forEach(b => b.setAttribute("aria-selected", b.dataset.s === st));
   $("view-today").hidden = v !== "today";
   $("view-policy").hidden = v !== "policy";
   $("view-a3").hidden = v !== "a3";
   $("view-about").hidden = v !== "about";
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1;
-  $("lede").textContent = v === "today" ? LEDE_TODAY : v === "about" ?
+  $("badge").hidden = v === "home";
+  $("lede").textContent = v === "home" ? "Pick a state to see who pays today, how taxes are set to change under current law, and how policies would change them." :
+    v === "tx" ? `Texas's ${mil(TX.headline.owners)} owner households will pay an estimated ${bn(TX.headline.owner_tax_total)} in property tax on their homes in 2026. School districts levy the largest share; homestead exemptions and the over-65 freeze shape who pays.` :
+    v === "today" ? LEDE_TODAY : v === "about" ?
     "How the results are built, how well they match official figures, the assumptions behind them and what they leave out." : v === "a3" ?
     "Who gains and who pays under the proposed constitutional amendment, compared with current law on the same households and economy." :
     "Choose a policy or change one number in current law. Every result is compared with current law on the same households and economy, with and without local governments adjusting their tax rates.";
   if (v === "policy") { setLever(POL.lever, true); renderPolicy(); }
   if (v === "a3") renderA3();
+  if (v === "tx") renderTX();
+  if (v === "home") renderHome();
   document.querySelectorAll(".slider-scale").forEach(placeTicks);   // sizes need the view visible
 }
 $("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); });
 document.addEventListener("click", e => { const a = e.target.closest("[data-goto]"); if (!a) return;
   e.preventDefault(); showView(a.dataset.goto); window.scrollTo(0, 0); });
-showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : location.hash === "#about" ? "about" : "today");
+$("states").addEventListener("click", e => { const b = e.target.closest("button[data-s]"); if (b) showView(b.dataset.s === "fl" ? "today" : b.dataset.s); });
+document.addEventListener("click", e => { const c = e.target.closest(".state-card"); if (c) { showView(c.dataset.s === "fl" ? "today" : c.dataset.s); window.scrollTo(0, 0); } });
+showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : location.hash === "#about" ? "about" :
+  location.hash === "#florida" ? "today" : location.hash === "#texas" ? "tx" : "home");
 </script>
