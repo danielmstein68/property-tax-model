@@ -1,0 +1,343 @@
+# Texas residential property tax law — rules spec.
+#
+# Source of truth for the Texas model, in the same format as inputs/fl_law.yaml (ptm.law loads and
+# validates both). Built 2026-10-20 from docs/research/tx_law_2026.md, which has the longer notes,
+# 2025 changes and open questions. Quotes are verbatim from the Texas Tax Code, Education Code,
+# Water Code and Constitution as in force for tax year 2026 (89th Legislature amendments included).
+#
+# Values that change by year are written {year: value}; a value applies from its year until the
+# next listed year.
+#
+# confidence: high = explicit statute text in force for 2026; medium = interpretation, agency letter
+#             or secondary figure; low = unverified.
+
+meta:
+  state: TX
+  as_of: "Texas statutes as in force for tax year 2026 (read 2026-10-20)"
+  scope: >
+    Residence homesteads and other residential real property. Current law only. Not covered:
+    business personal property (except as tax base), minerals, agricultural/open-space valuation
+    (noted only), non-ad valorem fees.
+  levy_classes: [school, county, city, college, hospital, special]
+  levy_class_notes: >
+    Texas taxes by taxing unit; each home is taxed by a school district, a county, usually a city,
+    and often a junior college, hospital district, MUD, ESD or other special district. Each unit
+    grants its own local-option exemptions and may have a freeze. school = independent school
+    districts (M&O and I&S); county = county general fund, road and bridge and farm-to-market/flood
+    control; city = municipalities; college = junior college districts; hospital = hospital
+    districts; special = MUDs, ESDs, WCIDs, flood control and other special districts.
+
+assessment:
+
+  homestead_cap:
+    description: >
+      A homestead's appraised value may rise by at most 10% of last year's appraised value, plus
+      the market value of new improvements, and never above market value. The cap starts on Jan 1
+      of the year after the owner first qualifies and ends when the owner (or spouse / surviving
+      spouse) no longer qualifies; a sale resets it. Applies to every taxing unit.
+    citation: "Tax Code s. 23.23(a), (c), (c-1), (e)"
+    source_text: >
+      "the sum of: (A) 10 percent of the appraised value of the property for the preceding tax
+      year; (B) the appraised value ... for the preceding tax year; and (C) the market value of all
+      new improvements" (s. 23.23(a)(2))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.23.htm#23.23
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    cap: {1998: 0.10}
+    notes: >
+      A buyer who claims in the year of purchase (s. 11.42(f)) counts as qualifying the next Jan 1
+      (s. 23.23(c-1)). Rebuilding after a casualty is not a new improvement unless larger or better.
+
+  circuit_breaker:
+    description: >
+      Non-homestead real property appraised at or below the threshold in the year it first
+      qualifies may rise by at most 20% a year plus new improvements; starts the year after the
+      owner first owns it on Jan 1 (owners before 2023 count from Jan 1, 2023); ends on a change
+      of ownership. Excludes ag/timber and other special-use land. Expires Dec 31, 2026.
+    citation: "Tax Code s. 23.231(b)-(d), (f)-(g), (j)-(k); SB 2, 88th Leg., 2nd C.S."
+    source_text: >
+      "20 percent of the appraised value of the property for the preceding tax year"
+      (s. 23.231(d)(2)(A)); "This section expires December 31, 2026." (s. 23.231(k))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.23.htm#23.231
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    cap: {2024: 0.20}
+    threshold: {2024: 5000000, 2025: 5160000, 2026: 5320000}
+    expires_after: 2026
+    notes: >
+      The 2026 threshold ($5,320,000) is from the Comptroller's table (medium-high). No 2025 bill
+      extended the section, so the baseline has no circuit breaker from 2027
+      (docs/TX_DECISIONS.md); extending it is a policy option.
+
+exemptions:
+
+  dv_total:
+    description: >
+      A veteran with 100% VA disability compensation and a 100% rating (or individual
+      unemployability) owes no tax on the homestead; the unremarried surviving spouse keeps it.
+      Prorated from the qualification date in the first year.
+    citation: "Tax Code s. 11.131(b)-(d); s. 11.42(e)"
+    source_text: >
+      "is entitled to an exemption from taxation of the total appraised value of the veteran's
+      residence homestead" (s. 11.131(b))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.131
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    kind: total
+    order: 1
+    household_flag: ex_dv_total
+    homestead_only: true
+
+  surviving_spouse_total:
+    description: >
+      Total homestead exemption for the unremarried surviving spouse of a service member killed in
+      the line of duty (s. 11.133), a first responder killed in the line of duty (s. 11.134), or,
+      from 2026, a veteran who died of a PACT Act presumptive condition (s. 11.136).
+    citation: "Tax Code ss. 11.133, 11.134, 11.136 (HB 2508, 89th Leg.; Prop 7, Nov 2025)"
+    source_text: >
+      "exemption from taxation of the total appraised value of the surviving spouse's residence
+      homestead" (s. 11.133); "regardless of the veteran's disability rating at the time of the
+      veteran's death" (s. 11.136)
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.136
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    kind: total
+    order: 2
+    household_flag: ex_surviving_spouse_total
+    homestead_only: true
+    notes: Counts come from the roll; s. 11.136 starts in tax year 2026.
+
+  school_homestead:
+    description: >
+      Every school district exempts $140,000 of a residence homestead's appraised value (M&O and
+      I&S). The state holds districts harmless through school funding.
+    citation: "Tax Code s. 11.13(b); Tex. Const. art. VIII, s. 1-b(c); SB 4 / SJR 2, 89th Leg. (Prop 13, Nov 2025)"
+    source_text: >
+      "An adult is entitled to exemption from taxation by a school district of $140,000 of the
+      appraised value of the adult's residence homestead" (s. 11.13(b))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.13
+    confidence: high
+    applies_to: [school]
+    kind: fixed
+    order: 10
+    household_flag: homestead
+    amount: {2014: 15000, 2015: 25000, 2022: 40000, 2023: 100000, 2025: 140000}
+    notes: >
+      2025 retroactive (SJR 2 temporary provision). The statute applies it to appraised value
+      (after the 10% cap).
+
+  school_over65_disabled:
+    description: >
+      A homeowner 65 or older, or disabled, gets another $60,000 of school exemption ($200,000 with
+      the general exemption). One person can't get both the over-65 and disabled versions from the
+      same unit. Over-65 applies for the whole year the owner turns 65.
+    citation: "Tax Code s. 11.13(c), (h), (m)(1); s. 11.42(c); SB 23 / SJR 85, 89th Leg. (Prop 11, Nov 2025)"
+    source_text: >
+      "an adult who is disabled or is 65 or older is entitled to an exemption from taxation by a
+      school district of $60,000" (s. 11.13(c))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.13
+    confidence: high
+    applies_to: [school]
+    kind: fixed
+    order: 11
+    household_flag: over65_or_disabled
+    amount: {2015: 10000, 2025: 60000}
+    notes: >
+      "Disabled" = eligible for Social Security disability benefits (s. 11.13(m)(1)); the model
+      proxies it from ACS disability and SSDI/SSI receipt (docs/TX_DECISIONS.md).
+
+  local_percent:
+    description: >
+      Any taxing unit (county, city, special district, junior college, school district) may adopt
+      an exemption of up to 20% of a homestead's appraised value, at least $5,000. Units that had
+      one for 2022 can't cut it before the end of 2027.
+    citation: "Tax Code s. 11.13(n), (n-1); Tex. Const. art. VIII, s. 1-b(e)"
+    source_text: >
+      "The percentage adopted by the taxing unit may not exceed 20 percent." "If the percentage set
+      by the taxing unit produces an exemption ... of less than $5,000 ... the individual is
+      entitled to an exemption of $5,000" (s. 11.13(n))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.13
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    kind: local_option
+    order: 12
+    household_flag: homestead
+    value_column: local_percent_<unit>
+    max_share: 0.20
+    minimum: 5000
+    notes: >
+      Each unit's percentage is data (roll exemption tables). Applied to appraised value, not net
+      of other exemptions (medium; checked against the rolls).
+
+  local_over65_disabled:
+    description: >
+      Any taxing unit may adopt a dollar exemption for over-65 or disabled homeowners, at least
+      $3,000, no statutory maximum; once adopted it can't go below $3,000. Not both versions from
+      one unit. A surviving spouse 55+ keeps the over-65 exemption.
+    citation: "Tax Code s. 11.13(d)-(f), (h), (q), (r)"
+    source_text: >
+      "The amount ... is $3,000 of the appraised value of the residence homestead unless a larger
+      amount is specified" (s. 11.13(e))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.13
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    kind: local_option
+    order: 13
+    household_flag: over65_or_disabled
+    value_column: local_over65_<unit>
+    minimum: 3000
+
+  county_fmfc:
+    description: >
+      A county levying the farm-to-market road / flood control tax exempts $3,000 of homestead value
+      from that tax only; if the county also gives an over-65/disabled exemption, the owner takes
+      only that one for the FMFC tax (not both).
+    citation: "Tax Code s. 11.13(a), (g); Tex. Const. art. VIII, s. 1-a"
+    source_text: >
+      "entitled to an exemption from taxation for the county purposes authorized in Article VIII,
+      Section 1-a ... of $3,000 of the assessed value" (s. 11.13(a))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.13
+    confidence: high
+    applies_to: [county]
+    kind: fixed
+    order: 14
+    household_flag: homestead
+    amount: {1979: 3000}
+    levy_part: fmfc
+    notes: 79 counties levy an FMFC rate (Comptroller 2025 county rates file).
+
+  dv_partial:
+    description: >
+      A disabled veteran gets a dollar exemption on one property by VA rating: $5,000 (10-29%),
+      $7,500 (30-49%), $10,000 (50-69%), $12,000 (70%+); $12,000 also at 65+ with 10%+, or blind or
+      losing the use of a limb. Every taxing unit; the single highest amount; surviving spouse keeps it.
+    citation: "Tax Code s. 11.22(a)-(e)"
+    source_text: >
+      "A disabled veteran is entitled to an exemption from taxation of a portion of the assessed
+      value of a property the veteran owns and designates" (s. 11.22(a))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.22
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    kind: fixed
+    order: 15
+    household_flag: ex_dv_partial_tier
+    amount_by_tier: {1: 5000, 2: 7500, 3: 10000, 4: 12000}
+    notes: Amounts unchanged since 2009.
+
+taxable:
+
+  school_ceiling:
+    description: >
+      The school tax on an over-65 or disabled owner's homestead can't rise above its ceiling. Each
+      year the ceiling is last year's ceiling-limited tax, minus last year's taxable value times the
+      fall in the district's maximum compressed rate, plus tax on new improvements, minus the
+      increase in the s. 11.13(b)+(c) exemptions times this year's rate. In the year after a
+      mid-year qualification, the lesser of that and the actual tax (from 2026). A surviving spouse
+      55+ keeps it; it carries proportionally to a new homestead.
+    citation: "Tex. Const. art. VIII, s. 1-b(d); Tax Code s. 11.26(a), (a-10), (a-11), (b), (g), (i); SB 2520, 89th Leg."
+    source_text: >
+      "multiplying the taxable value of the homestead in the preceding tax year by a tax rate equal
+      to the difference between the school district's maximum compressed rate" (s. 11.26(a-10)(1));
+      "multiplying the amount of any increase ... in the aggregate amount of the exemptions ...
+      under Sections 11.13(b) and (c) by the school district's tax rate" (s. 11.26(a-10)(4))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.26
+    confidence: high
+    applies_to: [school]
+    household_flag: over65_or_disabled
+    notes: >
+      Needs each frozen home's prior-year tax; the model estimates it from the roll's ceiling field
+      where present, else from the year the owner qualified and the compression history.
+
+  local_ceiling:
+    description: >
+      A county, city or junior college district may adopt a freeze for over-65/disabled homesteads
+      (official action or a 5% petition); it can't be repealed. Base year: the first year the owner
+      qualified for the school over-65/disabled exemption, not before the unit adopted the freeze.
+      No compression or exemption pass-through; rises only for improvements.
+    citation: "Tex. Const. art. VIII, s. 1-b(h); Tax Code s. 11.261"
+    source_text: >
+      "may not increase the total annual amount of ad valorem taxes ... above the amount of the
+      taxes ... imposed on the residence homestead in the first tax year" (s. 11.261(b))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.261
+    confidence: high
+    applies_to: [county, city, college]
+    household_flag: over65_or_disabled
+    notes: Which units adopted it, and when, is data (appraisal district tables).
+
+rates:
+
+  no_new_revenue_rate:
+    description: >
+      The rate that raises last year's levy, less levy lost on property no longer on the roll, from
+      this year's value of property taxed both years. A non-school unit needs a 60% record vote to
+      adopt a rate above it.
+    citation: "Tax Code s. 26.04(c)(1); s. 26.012; s. 26.05(b)"
+    source_text: >
+      "NO-NEW-REVENUE TAX RATE = (LAST YEAR'S LEVY - LOST PROPERTY LEVY) / (CURRENT TOTAL VALUE -
+      NEW PROPERTY VALUE)" (s. 26.04(c)(1))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.26.htm#26.04
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+
+  voter_approval_rate:
+    description: >
+      Cities, counties and most units: no-new-revenue M&O rate x 1.035 plus the debt rate and any
+      unused increment; above it, an automatic November election (if it fails, the rate is the
+      voter-approval rate). Special taxing units (M&O 2.5 cents or less, junior colleges, hospital
+      districts): x 1.08. Units other than special taxing units, and cities under 30,000, face an
+      election only above the greater of this and the de minimis rate (the rate raising $500,000).
+    citation: "Tax Code s. 26.04(c)(2); s. 26.012(8-a), (19); s. 26.07; s. 26.013"
+    source_text: >
+      "VOTER-APPROVAL TAX RATE = (NO-NEW-REVENUE MAINTENANCE AND OPERATIONS RATE x 1.035) +
+      (CURRENT DEBT RATE + UNUSED INCREMENT RATE)" (s. 26.04(c)(2)(B))
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.26.htm#26.04
+    confidence: high
+    applies_to: [county, city, college, hospital, special]
+    multiplier: {2020: 1.035}
+    special_unit_multiplier: {2020: 1.08}
+    special_unit_max_mo_rate: 0.025
+    de_minimis_amount: 500000
+    de_minimis_city_population: 30000
+    notes: >
+      SB 10 (89th 2nd C.S.; 2.5% or 1%) failed. MUDs follow Water Code s. 49.23601-49.23603
+      (1.035 or 1.08 times last year's tax on the average homestead). Unused increment rules and
+      the disaster rate (s. 26.042, HB 30) to be read before rates are simulated.
+
+  school_mcr:
+    description: >
+      Each school district's maximum compressed M&O rate is the lesser of last year's MCR scaled
+      down when the district's value growth exceeds 2.5%, and the state compression percentage
+      times $1.00; no district may fall below 90% of the highest. Statewide maximum $0.6254 for
+      2026 (floor $0.5628, statewide value growth 3.60%).
+    citation: "Education Code ss. 48.255, 48.2551, 48.2552; TEA final MCR letter, Aug 27, 2026"
+    source_text: >
+      "0.6322 x (1.025 / 1.036) - 0.0000 = $0.6254" (TEA, tax year 2026 maximum compressed rates)
+    source_url: https://tea.texas.gov/taa-letters/final-maximum-compressed-tax-rates-mcr-and-adoption-tax-rate-tax-year-2026
+    confidence: high
+    applies_to: [school]
+    state_max: {2025: 0.6322, 2026: 0.6254}
+    floor: {2025: 0.5689, 2026: 0.5628}
+    value_growth_cap: 0.025
+    notes: >
+      District MCRs are data (TEA list). Future years: current-law formula with the GAA's value
+      growth and no new compression unless a policy says so. The school finance module
+      (docs/research/tx_school_finance_2026.md) has the formulas.
+
+  school_enrichment:
+    description: >
+      School M&O above the MCR (enrichment) is capped at MCR + $0.17: golden pennies are the first
+      8 cents (1-5 without an election, 6-8 with voter approval), copper pennies cents 9-17. The
+      school voter-approval rate is MCR + the greater of last year's enrichment rate and 5 cents +
+      the debt rate; above it, an automatic election.
+    citation: "Education Code s. 45.003(d), s. 45.0032, s. 48.202(a-1); Tax Code s. 26.08(a), (n)"
+    source_text: >
+      "the maintenance tax rate ... may not exceed the rate equal to the sum of $0.17 and the
+      district's maximum compressed rate" (s. 45.003(d))
+    source_url: https://statutes.capitol.texas.gov/Docs/ED/htm/ED.45.htm#45.003
+    confidence: high
+    applies_to: [school]
+    max_enrichment: 0.17
+    golden_pennies: 0.08
+    no_election_pennies: 0.05
+    golden_yield_factor: 0.02084
+    copper_yield_factor: 0.008
