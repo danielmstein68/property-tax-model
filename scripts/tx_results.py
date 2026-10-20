@@ -3,8 +3,8 @@
 Usage:
     python scripts/tx_results.py        # needs data/processed/tx_baseline_2026.parquet (python -m ptm.tx.project)
 
-Owner households (homesteads from ptm.tx.baseline; owners who don't claim a homestead pay full tax with
-no exemptions at their county's average combined rate on homesteads, provisional), income deciles over
+Owner households (ptm.tx.baseline: homesteads, and owners who don't claim a homestead, taxed with no
+homestead exemptions from non-homestead roll donors or the county's units), income deciles over
 all Texas households (renters at $0 tax, as for Florida), by age, homestead, region and over-65 status;
 Suits index; projections summary from tx_projections.json.
 """
@@ -40,7 +40,7 @@ def main() -> None:
     hs = o[o["homestead"]]
     rate = rows.assign(r=rows["mo_rate"].fillna(0) + rows["is_rate"].fillna(0)).groupby("hid")["r"].sum()
     cty_rate = pd.Series(rate.reindex(hs.index).to_numpy(), index=hs.index).groupby(hs["county_fips_tax"]).median()
-    nh = ~o["homestead"]
+    nh = ~o["homestead"] & o["tax_total"].isna()       # fallback only: the baseline taxes non-homestead owners itself
     o.loc[nh, "tax_total"] = o.loc[nh, "market"] * o.loc[nh, "county_fips_tax"].map(cty_rate).fillna(cty_rate.median()) / 100
     o["tax_total"] = o["tax_total"].fillna(0)
     o["income"] = o["hincp_aged"].fillna(0)

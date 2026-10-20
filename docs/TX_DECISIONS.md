@@ -42,3 +42,11 @@ Model vs Comptroller PVS 2025 final (same $140k/$60k exemptions) and TEA:
 - homesteads 0.984; state homestead exemption (sum of min(appraised, $140k)) 1.044; frozen school M&O levy 1.107
 - over-65/disabled school exemption 1.19 (roll counties 1.23): too many over-65/disabled, or their values too high; likely the over-65 inference from exemption amounts in roll counties (it also catches local school exemptions). Tax effect about 0.6%. Open.
 - 100% disabled veterans 1.22 (roll counties 1.77): the rolls' total-exemption flags count more homes than the PVS dollar total implies. Tax effect about 0.5%. Open.
+
+## Accuracy round 2 (2026-10-20, Daniel: "do whatever you need to make things accurate")
+- **Value anchor outside the roll counties.** Each county's homestead market total = R x its PVS 2025 A+E+M market value, R = median over roll counties of homestead market / that total (0.65-0.82, median ~0.77).
+- **Over-65/disabled trimmed to official counts.** Roll counties: the roll's flagged count (model had Dallas 198k vs 157k); elsewhere the PVS over-65 school exemption. Statewide check 1.19 -> 0.95.
+- **100% veterans.** The PVS records the veterans' exemption net of the $140k homestead (rolls match it at 0.996 that way); non-roll targets now use that. Statewide 1.22 -> 0.89.
+- **Non-homestead owners** taxed from non-homestead roll parcels of Texas-resident owners (no homestead exemptions).
+- **Bell County roll** added (ten rolls).
+- **2026 school rates** from TEA's 2026-27 Summary of Finances in the production build (checks keep 2025 rates on both sides).

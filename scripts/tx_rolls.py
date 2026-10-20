@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from ptm.tx.bell import read_bell  # noqa: E402
 from ptm.tx.collin import read_collin  # noqa: E402
 from ptm.tx.dallas import read_dallas  # noqa: E402
 from ptm.tx.fort_bend import read_fort_bend  # noqa: E402
@@ -30,7 +31,7 @@ def main(names: list[str]) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for n in names or [k for k, f in PACS.items() if (RAW / k / f).exists()] + ["harris"]:
         t = time.time()
-        readers = {"harris": read_harris, "collin": read_collin, "williamson": read_williamson, "dallas": read_dallas, "fort_bend": read_fort_bend}
+        readers = {"harris": read_harris, "collin": read_collin, "williamson": read_williamson, "dallas": read_dallas, "fort_bend": read_fort_bend, "bell": read_bell}
         p, e = readers[n]() if n in readers else read_pacs(RAW / n / PACS[n])
         p.to_parquet(OUT / f"{n}_props.parquet", index=False)
         e.to_parquet(OUT / f"{n}_units.parquet", index=False)

@@ -31,7 +31,7 @@ import pandas as pd
 
 from ptm.gaps import quantile_pick
 from ptm.law import load_law
-from ptm.tx.nonroll import exemption_stats, nonroll_rows
+from ptm.tx.nonroll import CLASSES as CLASSES_NR, exemption_stats, nonroll_rows
 from ptm.tx.pvs import GROWTH_2024_2026, county_controls, homestead_targets_2026
 from ptm.tx.rolls import DISTRICTS, PROC, standard_props, unit_map
 from ptm.tx.survey import tx_households
@@ -140,12 +140,13 @@ def compute_tax(hh: pd.DataFrame, rows: pd.DataFrame, law, year: int = 2026, rat
     x["appraised"] = x["hid"].map(ap_h)
     o65 = x["hid"].map(hh["over65_or_disabled"]).fillna(False).to_numpy()
     dvt = x["hid"].map(hh["dv_total"]).fillna(False).to_numpy()
+    hs = x["hid"].map(hh["homestead"]).fillna(True).to_numpy().astype(bool) if "homestead" in hh else np.ones(len(x), bool)
     ap = x["appraised"].to_numpy()
     local = np.where(x["local_pct"] > 0, np.maximum(x["local_pct"] * ap, 5000), 0.0)
-    state = np.where(x["levy_class"] == "school", school_hs + np.where(o65, school_65, 0), 0.0)
+    state = np.where((x["levy_class"] == "school") & hs, school_hs + np.where(o65, school_65, 0), 0.0)
     state = np.minimum(state, ap * x["hs_share"].fillna(1))
     taxable = np.maximum(0, ap - state - local - x["other_fixed"].fillna(0).to_numpy())
-    taxable = np.where(dvt, 0.0, taxable)
+    taxable = np.where(dvt & hs, 0.0, taxable)
     if rates is not None:
         r = rates.reindex(x["unit_id"])
         mo = np.where(r["mo_rate"].notna(), r["mo_rate"], x["mo_rate"])
@@ -185,6 +186,30 @@ def calibrate_freezes(hh: pd.DataFrame, rows: pd.DataFrame, law, min_weight: flo
     x.loc[o65, "ceiling_ratio"] = xr.loc[o65.to_numpy(), "cdn"].map(ratio).fillna(statewide).to_numpy()
     x.loc[~o65 & (x["levy_class"] == "school"), "ceiling_ratio"] = np.nan
     return x
+
+
+def nh_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Non-homestead residential parcels owned by Texas residents (owner-occupiers who don't claim a
+    homestead are among them): appraised/market (the 20% circuit breaker), units and rates, all exemptions
+    the unit records as fixed dollars (no homestead exemptions)."""
+    p = standard_props(district)
+    p = p[~p["homestead"] & (p["market"] > 0) & p["owner_state"].isin(["TX", "TEXAS"]) & p["state_cd"].str.startswith(("A", "E", "M"))].copy()
+    p["ratio"] = (p["appraised"] / p["market"]).clip(0, 1)
+    import pyarrow.parquet as pq
+    f = PROC / f"{district}_units.parquet"
+    have = set(pq.read_schema(f).names)
+    e = pd.read_parquet(f, columns=[c for c in ["prop_id", "entity_cd", "entity_name", "appraised_value", "taxable_val"] if c in have])
+    e = e[e["prop_id"].isin(set(p["prop_id"]))]
+    m = unit_map(district, e.drop_duplicates("entity_cd")[["entity_cd", "entity_name"]])
+    e = e.merge(m[["entity_cd", "levy_class", "unit_id", "total_rate", "mo_rate", "is_rate"]].dropna(subset=["unit_id"]), on="entity_cd")
+    is_share = (e["is_rate"] / (e["mo_rate"] + e["is_rate"])).where((e["mo_rate"] + e["is_rate"]) > 0).fillna(0).clip(0, 1)
+    e["is_rate"] = e["total_rate"] * is_share
+    e["mo_rate"] = e["total_rate"] - e["is_rate"]
+    e["local_pct"], e["ceiling_ratio"], e["hs_share"] = 0.0, np.nan, 1.0
+    e["other_fixed"] = np.maximum(0, e["appraised_value"] - e["taxable_val"])
+    p["prop_id"] = "nh:" + district + ":" + p["prop_id"].astype(str)
+    e = e.assign(prop_id="nh:" + district + ":" + e["prop_id"].astype(str))
+    return p, e[["prop_id", "levy_class", "unit_id", "mo_rate", "is_rate", "local_pct", "other_fixed", "ceiling_ratio", "hs_share"]]
 
 
 def unit_tax(hh: pd.DataFrame, units: pd.DataFrame, law, year: int = 2026) -> pd.DataFrame:
@@ -232,11 +257,19 @@ def build_full(districts: list[str] | None = None, seed: int = 2026) -> tuple[pd
         o.loc[got[got].index, "dv_total"] = True
         # over-65 / disabled to at least the roll's count: the survey's disabled proxy undercounts, so
         # homesteads short of it are filled oldest householder first (El Paso: 68.5k vs 72k flagged)
+        # and trimmed to it when the survey has more (not every 65+ owner claims, and a spouse turning 65
+        # counts in the survey): the roll's flagged count where it has flags (Dallas: model 198k vs 157k),
+        # else the inferred count; youngest householders unflagged first
         o.loc[hs.index, "over65_or_disabled"] = hs["over65_or_disabled"]
-        short = p["o65"].sum() - hs.loc[hs["over65_or_disabled"], "WGTP"].sum()
-        if short > 0:
-            add = _fill(o.loc[hs.index], ~hs["over65_or_disabled"] & ~o.loc[hs.index, "dv_total"], short, -hs["householder_age"] + rng.random(len(hs)) * 1e-3)
+        flagged = int((p["over65"] | p["disabled"]).sum())
+        target = flagged if flagged > 0.5 * p["o65"].sum() else p["o65"].sum()
+        have = hs.loc[hs["over65_or_disabled"], "WGTP"].sum()
+        if target > have:
+            add = _fill(o.loc[hs.index], ~hs["over65_or_disabled"] & ~o.loc[hs.index, "dv_total"], target - have, -hs["householder_age"] + rng.random(len(hs)) * 1e-3)
             o.loc[add[add].index, "over65_or_disabled"] = True
+        elif target < have:
+            keep = _fill(o.loc[hs.index], hs["over65_or_disabled"], target, -hs["householder_age"] + rng.random(len(hs)) * 1e-3)
+            o.loc[hs.index[hs["over65_or_disabled"] & ~keep], "over65_or_disabled"] = False
         hs = o.loc[hs.index]
         # 6. donors by cell: total exemption, over-65/disabled, years band; by market rank
         hs_yih = pd.cut(hs["years_in_home"].fillna(10), YIH_BANDS, labels=YIH_LABELS).astype(str)
@@ -280,14 +313,40 @@ def build_full(districts: list[str] | None = None, seed: int = 2026) -> tuple[pd
             for c, g in o[nr].groupby("county_fips_tax"):
                 q = _wpct(g["valp_mv_aged"], g["WGTP"])
                 o.loc[g.index, "market"] = g["valp_mv_aged"] * np.interp(q, grid, curve)
+        # value level: survey values run high or low by county (Tarrant +18%), so each county's homestead
+        # market total is set to R x its PVS 2025 single-family + rural-home + mobile-home market value
+        # (categories A, E, M); R = median over the roll counties of homestead market / that total
+        # (0.65-0.82; median about 0.77). Scale factors clipped to 0.6-1.6.
+        pv = county_controls(2025).groupby("county_fips")[["value_a", "value_e", "value_m"]].sum().sum(axis=1)
+        ratios = [donors[d][0]["market"].sum() / pv.get(DISTRICTS[d][0], np.nan) for d in donors]
+        R = float(np.nanmedian(ratios)) if ratios else np.nan
+        if np.isfinite(R):
+            for c, g in o[nr].groupby("county_fips_tax"):
+                target = R * pv.get(c, np.nan)
+                have = float((g["market"] * g["WGTP"]).sum())
+                if np.isfinite(target) and have > 0:
+                    o.loc[g.index, "market"] = g["market"] * float(np.clip(target / have, 0.6, 1.6))
         cc = county_controls(2024).set_index("county_fips")
+        c25 = county_controls(2025).groupby("county_fips")[["ex_over65"]].sum()
         for c, g in o[nr].groupby("county_fips_tax"):
-            mean_mv = np.average(g["market"], weights=g["WGTP"])
-            target = cc["ex_dv_total"].get(c, 0) * GROWTH_2024_2026 / max(mean_mv, 1)
+            # the PVS records the veterans' exemption net of the $140k homestead exemption (checked on the
+            # rolls: 0.996), so the count is its dollars / the average value above $140k
+            above = np.average(np.maximum(g["market"] - 140_000, 0), weights=g["WGTP"])
+            target = cc["ex_dv_total"].get(c, 0) * GROWTH_2024_2026 / max(above, 20_000)
             vet = g["dv_tier"].eq(4) | (g["widowed"] & g["over65"])
             order = pd.Series(np.select([g["TAXAMT"].eq(0) & g["dv_tier"].eq(4), g["TAXAMT"].eq(0) & vet, g["dv_tier"].eq(4)], [0, 1, 2], 3), index=g.index)
             got = _fill(g, vet | g["TAXAMT"].eq(0), target, order + rng.random(len(g)) * 1e-3)
             o.loc[got[got].index, "dv_total"] = True
+        # over-65/disabled: trimmed (youngest first) to the PVS over-65 school exemption, the sum of
+        # min(max(value - $140k, 0), $60k) over them (the rolls' own flags match it within 0-8%)
+        for c, g in o[nr].groupby("county_fips_tax"):
+            tgt = c25["ex_over65"].get(c, np.nan) * 1.02
+            m65 = g["over65_or_disabled"] & ~g["dv_total"]
+            contrib = np.clip(g["market"] - 140_000, 0, 60_000) * g["WGTP"]
+            if np.isfinite(tgt) and contrib[m65].sum() > tgt:
+                order = g.loc[m65, "householder_age"].sort_values(ascending=False, kind="stable").index
+                keep = contrib.loc[order].cumsum() <= tgt
+                o.loc[order[~keep.to_numpy()], "over65_or_disabled"] = False
         pool = pd.concat([p for p, _ in donors.values()], ignore_index=True)
         sch = pd.concat([u[u["levy_class"] == "school"] for _, u in donors.values()]).groupby("prop_id")["ceiling_ratio"].first()
         pool["ceiling_ratio"] = pool["prop_id"].map(sch)
@@ -307,10 +366,37 @@ def build_full(districts: list[str] | None = None, seed: int = 2026) -> tuple[pd
         nr_rows, units_drawn = nonroll_rows(o[nr], rng, stats)
         rows.append(nr_rows)
         o = o.join(units_drawn)
+    # owners who don't claim a homestead: donors among Texas-resident owners' non-homestead parcels (roll
+    # counties: their own county, values quantile-mapped; elsewhere pooled donors' ratio and the county's
+    # Comptroller units with no local exemptions)
+    nh = ~o["homestead"]
+    o.loc[nh, "dv_total"] = False
+    nhd = {d: nh_donors(d) for d in donors}
+    for d, (p, units) in nhd.items():
+        g = o[nh & (o["county_fips_tax"] == DISTRICTS[d][0])]
+        if g.empty or len(p) < 30:
+            continue
+        pos = quantile_pick(g["valp_mv_aged"].to_numpy(), g["WGTP"].to_numpy(), len(p))
+        cand = p.sort_values("market", kind="stable")
+        pick = cand.iloc[pos]
+        o.loc[g.index, "market"] = pick["market"].to_numpy()
+        o.loc[g.index, "appraised"] = pick["appraised"].to_numpy()
+        o.loc[g.index, "donor"] = pick["prop_id"].to_numpy()
+        rows.append(donor_rows(o.loc[g.index], units))
+    nr_nh = nh & ~o["county_fips_tax"].isin(roll_fips)
+    if nr_nh.any() and donors:
+        g = o[nr_nh]
+        pool = pd.concat([p for p, _ in nhd.values()], ignore_index=True)
+        ratio = float(np.average(pool["ratio"])) if len(pool) else 1.0
+        o.loc[g.index, "appraised"] = o.loc[g.index, "market"] * ratio
+        zero = pd.DataFrame({"levy_class": ["school"] + CLASSES_NR, "local_pct_eff": 0.0, "o65_fixed": 0.0, "base_fixed": 0.0})
+        nh_rows, _ = nonroll_rows(o.loc[g.index].assign(ceiling_ratio=np.nan), rng, zero)
+        nh_rows["local_pct"], nh_rows["other_fixed"] = 0.0, 0.0
+        rows.append(nh_rows)
     rows = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=ROW_COLS)
     if len(rows):
         rows = calibrate_freezes(o[o["homestead"]], rows, law)
-        o = o.join(compute_tax(o[o["homestead"]], rows, law)[0])
+        o = o.join(compute_tax(o, rows, law)[0])
     return o, rows
 
 

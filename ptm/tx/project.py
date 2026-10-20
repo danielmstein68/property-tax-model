@@ -30,6 +30,20 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = ROOT / "inputs" / "tx_projection_assumptions.yaml"
 
 
+def apply_2026_school_rates(rows: pd.DataFrame) -> pd.DataFrame:
+    """School districts' 2026 M&O and I&S rates from TEA's 2026-27 Summary of Finances (its estimate of each
+    district's adopted rates) in place of the Comptroller's 2025 rates; other units stay at 2025 until the
+    Comptroller's 2026 file (early 2027). The roll checks keep 2025 rates on both sides."""
+    sof = load_sof().set_index("cdn")
+    x = rows.copy()
+    sch = x["levy_class"] == "school"
+    cdn = x.loc[sch, "unit_id"].astype(str).str.split("-").str[:2].str.join("")
+    mo, is_ = cdn.map(sof["mo_rate"]), cdn.map(sof["is_rate"])
+    x.loc[sch, "mo_rate"] = mo.fillna(x.loc[sch, "mo_rate"]).to_numpy()
+    x.loc[sch, "is_rate"] = is_.fillna(x.loc[sch, "is_rate"]).to_numpy()
+    return x
+
+
 def growth_path(scenario: str, spec: dict) -> dict[int, float]:
     pts = spec["scenarios"][scenario]
     y0, y1 = spec["meta"]["base_year"], spec["meta"]["end_year"]
@@ -126,8 +140,11 @@ if __name__ == "__main__":
     import json
     import sys
     from ptm.tx.baseline import build_full
-    ds = ["harris", "dallas", "tarrant", "travis", "collin", "fort_bend", "el_paso", "williamson", "galveston"]
+    ds = ["harris", "dallas", "tarrant", "travis", "collin", "fort_bend", "el_paso", "williamson", "galveston", "bell"]
     o, rows = build_full(ds)
+    rows = apply_2026_school_rates(rows)
+    from ptm.tx.baseline import compute_tax
+    o = o.drop(columns=[c for c in o if c.startswith("tax_") or c == "taxable_school"]).join(compute_tax(o, rows, load_law("tx"))[0])
     o.to_parquet(ROOT / "data" / "processed" / "tx_baseline_2026.parquet")
     rows.to_parquet(ROOT / "data" / "processed" / "tx_baseline_2026_units.parquet")
     res = {}

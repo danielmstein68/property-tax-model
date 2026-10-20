@@ -31,7 +31,7 @@ from ptm.tx.rolls import DISTRICTS  # noqa: E402
 from ptm.tx.school import load_sof  # noqa: E402
 
 PROC = ROOT / "data" / "processed"
-ROLLS = {"harris", "dallas", "tarrant", "travis", "collin", "fort_bend", "el_paso", "williamson", "galveston"}
+ROLLS = {"harris", "dallas", "tarrant", "travis", "collin", "fort_bend", "el_paso", "williamson", "galveston", "bell"}
 
 
 def main() -> None:
@@ -41,8 +41,10 @@ def main() -> None:
     w = h["WGTP"]
     ap = h["appraised"]
     h["m_state_hs"] = np.minimum(ap, 140_000) * w
-    h["m_o65"] = np.where(h["over65_or_disabled"], np.clip(ap - 140_000, 0, 60_000), 0) * w
-    h["m_dv"] = np.where(h["dv_total"], ap, 0) * w
+    # the PVS records exemptions in order (homestead, over-65, then the veterans' total exemption covers
+    # what is left), so 100% veterans count only above $140k (+$60k if 65+) and not in the over-65 total
+    h["m_o65"] = np.where(h["over65_or_disabled"] & ~h["dv_total"], np.clip(ap - 140_000, 0, 60_000), 0) * w
+    h["m_dv"] = np.where(h["dv_total"], np.maximum(ap - 140_000 - np.where(h["over65_or_disabled"], 60_000, 0), 0), 0) * w
     h["m_n"] = w
     m = h.groupby("county_fips_tax")[["m_n", "m_state_hs", "m_o65", "m_dv"]].sum()
     c = county_controls(2025).groupby("county_fips")[["ex_state_homestead", "ex_over65", "ex_dv_total"]].sum()
