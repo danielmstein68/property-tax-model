@@ -15,13 +15,14 @@ ROOT = Path(__file__).resolve().parents[1]
 INCOME_COMPONENTS = ["WAGP", "SEMP", "INTP", "SSP", "SSIP", "PAP", "RETP", "OIP"]
 
 
-def _factor_table(to_year: int) -> pd.DataFrame:
-    return pd.read_csv(ROOT / "inputs" / f"aging_factors_{to_year}.csv", dtype={"area": str})
+def _factor_table(to_year: int, state: str = "fl") -> pd.DataFrame:
+    name = f"aging_factors_{to_year}.csv" if state == "fl" else f"{state}_aging_factors_{to_year}.csv"
+    return pd.read_csv(ROOT / "inputs" / name, dtype={"area": str})
 
 
-def load_factors(to_year: int) -> dict[str, float]:
+def load_factors(to_year: int, state: str = "fl") -> dict[str, float]:
     """Statewide factors (rows without an area), keyed by variable."""
-    f = _factor_table(to_year)
+    f = _factor_table(to_year, state)
     f = f[f["area"].isna()]
     return dict(zip(f["variable"], f["factor"]))
 
@@ -235,7 +236,7 @@ def household_income(persons_aged: pd.DataFrame) -> pd.DataFrame:
     return hh.reset_index()
 
 
-def add_aged_income(households: pd.DataFrame, persons_path: str | Path, to_year: int) -> pd.DataFrame:
+def add_aged_income(households: pd.DataFrame, persons_path: str | Path, to_year: int, state: str = "fl") -> pd.DataFrame:
     """Attach aged household income (hincp_aged) and its components to households."""
-    persons = age_person_income(load_persons(persons_path), load_factors(to_year))
+    persons = age_person_income(load_persons(persons_path), load_factors(to_year, state))
     return households.merge(household_income(persons), on="SERIALNO", how="left")
