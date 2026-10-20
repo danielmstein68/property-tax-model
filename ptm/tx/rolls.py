@@ -29,6 +29,12 @@ VALUE_MATCHED = {"williamson": {"S": "school", "C": "city", "J": "college", "G":
 # exports whose school taxable values still use the pre-2025 school exemptions ($100k + $10k over-65):
 # the roll check and the donors add the 2025 increases ($40k, and $50k more for over-65/disabled)
 SCHOOL_EXEMPTION_LAG = {"williamson": (40_000, 50_000)}
+# special-district kinds by code prefix (they differ by appraisal district: R is a road district in Williamson,
+# an emergency services district in Fort Bend)
+VALUE_KINDS = {"williamson": {"F": r"ESD|EMERGENCY", "W": r"WCID|WATER|WSD|FWSD", "M": r"MUD|MMD|UTILITY|MANAGEMENT", "R": r"ROAD"},
+               "fort_bend": {"R": r"ESD|EMERGENCY", "W": r"WCID|LID|LEVEE|DRAINAGE|WATER|FWSD|IMPROVEMENT", "D": r"DRAINAGE",
+                             "M": r"MUD|MMD|UTILITY|MANAGEMENT", "L": r"LID|LEVEE"}}
+SLOT_CLASS = {"CITY": "city", "COUNTY": "county", "ISD": "school", "HOSPITAL": "hospital", "COLLEGE": "college", "SPECIAL_DIST": "special"}
 NOT_TAXING = re.compile(r"\b(central appraisal|appraisal district|^cad$)\b", re.I)
 
 
@@ -64,6 +70,9 @@ def code_market(district: str) -> pd.Series:
         a = pd.read_csv(ROOT / "data" / "raw" / "tx_rolls" / "williamson" / "wcad_asmt_certified.csv",
                         usecols=["taxingunitcode", "mktvalue"], dtype={"taxingunitcode": str})
         return a.groupby("taxingunitcode")["mktvalue"].sum()
+    if district == "fort_bend":
+        from ptm.tx.fort_bend import entity_market
+        return entity_market()
     raise KeyError(district)
 
 
@@ -89,7 +98,7 @@ def unit_map_by_value(district: str, codes: list[str], year: int = 2025) -> pd.D
             words = cand["name"].str.upper().str.replace(r"[^A-Z ]", " ", regex=True).str.split()
             hint = words.map(lambda w: letters[:2] in ("".join(x[0] for x in w[:2]), w[0][:2] if w else "", w[0][:3] if w else ""))
             # special districts: the prefix names the kind (F emergency services, W water, M utility, R road)
-            kind = {"F": r"ESD|EMERGENCY", "W": r"WCID|WATER|WSD|FWSD", "M": r"MUD|MMD|UTILITY|MANAGEMENT", "R": r"ROAD"}.get(cd[0])
+            kind = VALUE_KINDS[district].get(cd[0])
             if cls == "special" and kind:
                 r = r - 0.2 * cand["name"].str.upper().str.contains(kind).astype(float) + 0.2
             r = r - 0.05 * hint.astype(float)
@@ -118,7 +127,9 @@ def unit_map(district: str, entities: pd.DataFrame, year: int = 2025) -> pd.Data
     for cd, name in zip(entities["entity_cd"], entities["entity_name"]):
         if not isinstance(name, str) or NOT_TAXING.search(name):
             continue
-        cls = classify(name)
+        # Dallas's units come in typed slots ("CITY:GARLAND"): the slot gives the class
+        slot = str(cd).split(":")[0] if ":" in str(cd) else None
+        cls = SLOT_CLASS.get(slot) or classify(name)
         cand = u[u["levy_class"] == cls]
         best, score = None, 0.0
         nn = _norm(name)
