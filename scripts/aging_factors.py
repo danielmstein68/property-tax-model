@@ -2,6 +2,7 @@
 
 Usage:
     python scripts/aging_factors.py --from-year 2024 --to-year 2026
+    python scripts/aging_factors.py --state tx      # -> inputs/tx_aging_factors_2026.csv
 
 Writes inputs/aging_factors_<to-year>.csv with one row per income type:
 factor, measure, source.
@@ -36,6 +37,10 @@ BLS = "https://api.bls.gov/publicAPI/v1/timeseries/data/{sid}?startyear={a}&endy
 FL_QCEW_PRIVATE_WEEKLY_WAGE = "ENU1200040510"
 CPI_U = "CUUR0000SA0"
 CPI_RENT = {"miami": "CUURS35BSEHA", "tampa": "CUURS35DSEHA", "other_fl": "CUUR0300SEHA"}
+# Texas: QCEW private average weekly wage, CPI rent for Dallas-Fort Worth and Houston, South region elsewhere
+STATE = {"fl": {"name": "Florida", "qcew": FL_QCEW_PRIVATE_WEEKLY_WAGE, "rent": CPI_RENT, "out": "aging_factors_{y}.csv"},
+         "tx": {"name": "Texas", "qcew": "ENU4800040510", "out": "tx_aging_factors_{y}.csv",
+                "rent": {"dallas": "CUURS37ASEHA", "houston": "CUURS37BSEHA", "other_tx": "CUUR0300SEHA"}}}
 
 # COLA paid in each year (announced the previous October). Source: SSA,
 # https://www.ssa.gov/cola/ and https://blog.ssa.gov/social-security-announces-benefit-increase-for-2026
@@ -69,16 +74,18 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--from-year", type=int, default=2024)
     p.add_argument("--to-year", type=int, default=2026)
+    p.add_argument("--state", default="fl", choices=sorted(STATE))
     args = p.parse_args()
     y0, y1 = args.from_year, args.to_year
+    st = STATE[args.state]
 
-    wage, wage_note = same_period_ratio(bls_monthly(FL_QCEW_PRIVATE_WEEKLY_WAGE, y0, y1), y0, y1, "quarters")
+    wage, wage_note = same_period_ratio(bls_monthly(st["qcew"], y0, y1), y0, y1, "quarters")
     cpi, cpi_note = same_period_ratio(bls_monthly(CPI_U, y0, y1), y0, y1)
     cola = 1.0
     for y in range(y0 + 1, y1 + 1):
         cola *= 1 + SS_COLA[y]
 
-    wage_src = f"BLS QCEW {FL_QCEW_PRIVATE_WEEKLY_WAGE} Florida avg weekly wage, private; {wage_note}"
+    wage_src = f"BLS QCEW {st['qcew']} {st['name']} avg weekly wage, private; {wage_note}"
     cpi_src = f"BLS {CPI_U} CPI-U US city avg; {cpi_note}"
     cola_src = "SSA COLAs " + ", ".join(f"{y}: {SS_COLA[y]:.1%}" for y in range(y0 + 1, y1 + 1))
     rows = [
@@ -92,17 +99,18 @@ def main() -> None:
         ("OIP", "", "other income", cpi, cpi_src),
         ("UTIL", "", "utilities part of gross rent", cpi, cpi_src),
     ]
-    soh = 1.0
-    for y in range(y0 + 1, y1 + 1):
-        soh *= 1 + FL_SOH_CAP[y]
-    rows.append(("TAXAMT", "", "property tax, PROVISIONAL (Save Our Homes caps, rates held fixed)", soh,
-                 "FL Save Our Homes caps " + ", ".join(f"{y}: {FL_SOH_CAP[y]:.1%}" for y in range(y0 + 1, y1 + 1))
-                 + "; FL DOR cpi_homestead_exemption.pdf"))
-    for area, sid in CPI_RENT.items():
+    if args.state == "fl":
+        soh = 1.0
+        for y in range(y0 + 1, y1 + 1):
+            soh *= 1 + FL_SOH_CAP[y]
+        rows.append(("TAXAMT", "", "property tax, PROVISIONAL (Save Our Homes caps, rates held fixed)", soh,
+                     "FL Save Our Homes caps " + ", ".join(f"{y}: {FL_SOH_CAP[y]:.1%}" for y in range(y0 + 1, y1 + 1))
+                     + "; FL DOR cpi_homestead_exemption.pdf"))
+    for area, sid in st["rent"].items():
         f, note = same_period_ratio(bls_monthly(sid, y0, y1), y0, y1)
         rows.append(("RNTP", area, "contract rent", f, f"BLS {sid} CPI rent of primary residence; {note}"))
 
-    out = ROOT / "inputs" / f"aging_factors_{y1}.csv"
+    out = ROOT / "inputs" / st["out"].format(y=y1)
     out.parent.mkdir(exist_ok=True)
     with open(out, "w", newline="") as fh:
         w = csv.writer(fh)
