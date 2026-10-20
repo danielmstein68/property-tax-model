@@ -39,7 +39,7 @@ def load_units(year: int = 2025) -> pd.DataFrame:
         nnr = next(c for c in d.columns if c.startswith("NO-NEW-REVENUE"))
         u = pd.DataFrame({
             "unit_id": d["TAXING UNIT ID"].str.strip(), "name": d[name].astype(str).str.replace(r"\s*\*+\s*$", "", regex=True).str.strip(),
-            "cad_id": d["CAD ID"].astype(int), "split": d.get("SPLIT", pd.Series("", index=d.index)).fillna("").astype(str).str.strip(),
+            "cad_id": d["CAD ID"].astype(int), "county_no": pd.to_numeric(d["COUNTY ID"], errors="coerce"), "split": d.get("SPLIT", pd.Series("", index=d.index)).fillna("").astype(str).str.strip(),
             "market_value": pd.to_numeric(d["MARKET VALUE"], errors="coerce"),
             "taxable_value": pd.to_numeric(d["TAXABLE VALUE"], errors="coerce"),
             "mo_rate": pd.to_numeric(d["M&O RATE"], errors="coerce"), "is_rate": pd.to_numeric(d["I&S RATE"], errors="coerce"),
@@ -51,7 +51,9 @@ def load_units(year: int = 2025) -> pd.DataFrame:
         u["unit_key"] = parts.str[0] + "-" + parts.str[1] + "-" + parts.str[2]
         u["type_code"] = parts.str[2]
         u["levy_class"] = u["type_code"].map(TYPE_CLASS).fillna("special")
-        u["county_fips"] = (2 * u["cad_id"] - 1).map(lambda v: f"{v:03d}")
+        # the row's county, by name (the "2 x county no. - 1" FIPS rule fails for McLennan and McMullen)
+        from ptm.tx.pvs import county_fips_by_name
+        u["county_fips"] = county_fips_by_name(d["COUNTY NAME"]).to_numpy()
         out.append(u)
     return pd.concat(out, ignore_index=True)
 

@@ -22,6 +22,7 @@ PROC = ROOT / "data" / "processed" / "tx_rolls"
 DISTRICTS = {"el_paso": ("141", 71), "tarrant": ("439", 220), "travis": ("453", 227), "harris": ("201", 101),
              "dallas": ("113", 57), "collin": ("085", 43), "williamson": ("491", 246), "fort_bend": ("157", 79),
              "galveston": ("167", 84), "bell": ("027", 14)}
+# appraisal district numbers are the Comptroller's alphabetical county numbers (ptm.tx.units.cad_id)
 NOT_TAXING = re.compile(r"\b(central appraisal|appraisal district|^cad$)\b", re.I)
 
 

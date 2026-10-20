@@ -31,11 +31,24 @@ TEN_K_STEP = {2024: "LOSS SCND INCR HMSTD", 2025: "LOSS THRD INCR HMSTD"}
 GROWTH_2024_2026 = 1.03
 
 
+def county_fips_by_name(names: pd.Series) -> pd.Series:
+    """Texas county name ("McLennan", "McLennan County") -> 3-digit county FIPS (Census county list)."""
+    cou = pd.read_csv(ROOT / "data" / "raw" / "tx_census" / "st48_tx_cou2020.txt", sep="|", dtype=str)
+    key = lambda s: s.astype(str).str.replace("*", "", regex=False).str.replace(r"\s+county\s*$", "", regex=True, case=False).str.strip().str.lower()
+    m = dict(zip(key(cou["COUNTYNAME"]), cou["COUNTYFP"]))
+    out = key(names).map(m)
+    if out.isna().any():
+        raise ValueError(f"unknown county names: {sorted(set(names[out.isna()]))[:5]}")
+    return out
+
+
 def load_pvs(year: int = 2025, kind: str = "final") -> pd.DataFrame:
     d = pd.read_excel(RAW / f"{year}-{kind}-isd-worksheet-export-detail.xlsx", header=2)
     d = d[d["SPLIT ID"].notna()].copy()
     d["cad_id"] = d["CAD ID"].astype(int)
-    d["county_fips"] = (2 * d["cad_id"] - 1).map(lambda v: f"{v:03d}")   # Comptroller county no. -> FIPS
+    # the split's county by name; the "2 x county no. - 1" FIPS rule fails where the Comptroller's
+    # alphabetical order differs from the Census's (McLennan, McMullen); Potter-Randall share a district
+    d["county_fips"] = county_fips_by_name(d["COUNTY NAME"])
     sid = d["SPLIT ID"].astype(str).str.split("-")
     d["cdn"] = sid.str[0] + sid.str[1]                                     # TEA district number, e.g. 101912
     num = [c for c in d.columns if c not in {"CAD NAME", "COUNTY NAME", "SPLIT ID", "TU NAME", "VERSION TYPE",

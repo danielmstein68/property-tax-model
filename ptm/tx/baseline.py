@@ -31,7 +31,8 @@ import pandas as pd
 
 from ptm.gaps import quantile_pick
 from ptm.law import load_law
-from ptm.tx.pvs import homestead_targets_2026
+from ptm.tx.nonroll import exemption_stats, nonroll_tax
+from ptm.tx.pvs import GROWTH_2024_2026, county_controls, homestead_targets_2026
 from ptm.tx.rolls import DISTRICTS, PROC, standard_props, unit_map
 from ptm.tx.survey import tx_households
 
@@ -67,15 +68,24 @@ def _fill(h: pd.DataFrame, mask: pd.Series, target: float, order: pd.Series) -> 
     return got
 
 
+def _wpct(v: pd.Series, w: pd.Series) -> pd.Series:
+    """Weighted mid-point percentile of each value within the group."""
+    order = v.sort_values(kind="stable").index
+    cw = w.loc[order].cumsum()
+    return ((cw - w.loc[order] / 2) / w.sum()).reindex(v.index)
+
+
 def roll_donors(district: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Roll homesteads (donors) and their units with per-unit exemption parameters."""
     p = standard_props(district)
     p = p[p["homestead"] & (p["market"] > 0)].copy()
     p["yih"] = pd.cut(2026 - p["hs_qualify_yr"].fillna(2026 - 10), YIH_BANDS, labels=YIH_LABELS).astype(str)
     p["ratio"] = (p["appraised"] / p["market"]).clip(0, 1)
-    e = pd.read_parquet(PROC / f"{district}_units.parquet", columns=[
-        "prop_id", "entity_cd", "entity_name", "appraised_value", "taxable_val", "hs_local_amt", "ov65_amt", "dp_amt",
-        "dv_amt", "freeze_ceiling"])
+    import pyarrow.parquet as pq
+    f = PROC / f"{district}_units.parquet"
+    have = set(pq.read_schema(f).names)
+    want = ["prop_id", "entity_cd", "entity_name", "appraised_value", "taxable_val", "hs_local_amt", "freeze_ceiling"]
+    e = pd.read_parquet(f, columns=[c for c in want if c in have])
     e = e[e["prop_id"].isin(set(p["prop_id"]))]
     m = unit_map(district, e.drop_duplicates("entity_cd")[["entity_cd", "entity_name"]])
     e = e.merge(m[["entity_cd", "levy_class", "unit_id", "total_rate"]].dropna(subset=["unit_id"]), on="entity_cd")
@@ -183,6 +193,55 @@ def build(districts: list[str] | None = None, seed: int = 2026) -> pd.DataFrame:
         hh = o[(o["county_fips_tax"] == DISTRICTS[d][0]) & o["homestead"] & o["donor"].notna()]
         if len(hh):
             parts.append(unit_tax(hh, units, law))
+    # counties without a roll: veterans' total exemption from the PVS, structure from pooled roll donors,
+    # units and local exemptions from ptm.tx.nonroll
+    roll_fips = {DISTRICTS[d][0] for d in donors}
+    nr = o["homestead"] & ~o["county_fips_tax"].isin(roll_fips)
+    if nr.any() and donors:
+        # market values: survey values are more spread out than appraisals (lowest tenth 12-36% below the
+        # roll, highest 11-25% above); apply the roll counties' average roll/survey ratio by within-county
+        # value percentile, weighted by homesteads
+        grid = np.linspace(0.025, 0.975, 20)
+        curves, wts = [], []
+        for d in donors:
+            m = o[(o["county_fips_tax"] == DISTRICTS[d][0]) & o["homestead"]]
+            if len(m) < 200:
+                continue
+            q = _wpct(m["valp_mv_aged"], m["WGTP"])
+            srt = np.argsort(q.to_numpy())
+            ratio = (m["market"] / m["valp_mv_aged"]).to_numpy()[srt]
+            curves.append(np.interp(grid, q.to_numpy()[srt], pd.Series(ratio).rolling(51, center=True, min_periods=1).median().to_numpy()))
+            wts.append(m["WGTP"].sum())
+        if curves:
+            curve = np.average(np.array(curves), axis=0, weights=wts)
+            for c, g in o[nr].groupby("county_fips_tax"):
+                q = _wpct(g["valp_mv_aged"], g["WGTP"])
+                o.loc[g.index, "market"] = g["valp_mv_aged"] * np.interp(q, grid, curve)
+        cc = county_controls(2024).set_index("county_fips")
+        for c, g in o[nr].groupby("county_fips_tax"):
+            mean_mv = np.average(g["market"], weights=g["WGTP"])
+            target = cc["ex_dv_total"].get(c, 0) * GROWTH_2024_2026 / max(mean_mv, 1)
+            vet = g["dv_tier"].eq(4) | (g["widowed"] & g["over65"])
+            order = pd.Series(np.select([g["TAXAMT"].eq(0) & g["dv_tier"].eq(4), g["TAXAMT"].eq(0) & vet, g["dv_tier"].eq(4)], [0, 1, 2], 3), index=g.index)
+            got = _fill(g, vet | g["TAXAMT"].eq(0), target, order + rng.random(len(g)) * 1e-3)
+            o.loc[got[got].index, "dv_total"] = True
+        pool = pd.concat([p for p, _ in donors.values()], ignore_index=True)
+        sch = pd.concat([u[u["levy_class"] == "school"] for _, u in donors.values()]).groupby("prop_id")["ceiling_ratio"].first()
+        pool["ceiling_ratio"] = pool["prop_id"].map(sch)
+        hs = o[nr]
+        hs_yih = pd.cut(hs["years_in_home"].fillna(10), YIH_BANDS, labels=YIH_LABELS).astype(str)
+        o["ceiling_ratio"] = np.nan
+        for (dv, o65, yb), g in hs.groupby([hs["dv_total"], hs["over65_or_disabled"], hs_yih]):
+            cand = pool[(pool["dv_total"] == dv) & (pool["o65"] == o65) & (pool["yih"] == yb)]
+            if len(cand) < 30:
+                cand = pool[(pool["dv_total"] == dv) & (pool["o65"] == o65)]
+            cand = cand.sort_values("market", kind="stable")
+            pick = cand.iloc[quantile_pick(g["market"].to_numpy(), g["WGTP"].to_numpy(), len(cand))]
+            o.loc[g.index, "donor"] = pick["prop_id"].to_numpy()
+            o.loc[g.index, "appraised"] = g["market"].to_numpy() * pick["ratio"].to_numpy()
+            o.loc[g.index, "ceiling_ratio"] = pick["ceiling_ratio"].to_numpy()
+        stats = exemption_stats(donors)
+        parts.append(nonroll_tax(o[nr], law, rng, stats))
     if parts:
         o = o.join(pd.concat(parts))
     return o
