@@ -286,10 +286,11 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <div class="eyebrow">Baseline outlook</div>
       <h2>Current law to 2036</h2>
       <p id="tx-proj-intro"></p>
+      <div class="figures" id="tx-proj-figures"></div>
       <div class="charts">
         <div class="chart">
           <h3>Homestead property tax, billions of dollars</h3>
-          <p>Five economic scenarios; the central path in bold.</p>
+          <p>Five economic scenarios; the central path in bold, with its 10th–90th percentile range.</p>
           <div id="tx-c-proj"></div>
         </div>
         <div class="tablebox"><table id="tx-t-proj"></table></div>
@@ -6202,15 +6203,25 @@ function renderTX() {
   const P = TX.projections || {}, sc = Object.keys(P);
   if (sc.length) {
     const c = P.central.years, at = yy => c.find(r => r.year === yy);
-    $("tx-proj-intro").textContent = `Under current law and the central economic path, homestead property tax rises from ${bn(at(2026).tax_total)} in 2026 to ${bn(at(2036).tax_total)} in 2036, and the average homestead's bill from ${usd(at(2026).avg_tax)} to ${usd(at(2036).avg_tax)}. Fixed-dollar exemptions make taxes rise faster than home values. The state's compressed school rate falls from $${at(2026).state_mcr.toFixed(4)} to $${at(2036).state_mcr.toFixed(4)} per $100 under the compression formula; cities, counties and special districts are assumed to adopt their voter-approval rates.`;
+    const band = (P.central.bands || []).filter(r => r.group === "homesteads");
+    const b36 = band.find(r => r.year === 2036);
+    $("tx-proj-intro").textContent = `Under current law and the central economic path, homestead property tax rises from ${bn(at(2026).tax_total)} in 2026 to ${bn(at(2036).tax_total)} in 2036${b36 ? ` (10th–90th percentile ${bn(b36.p10)}–${bn(b36.p90)})` : ""}, and the average homestead's bill from ${usd(at(2026).avg_tax)} to ${usd(at(2036).avg_tax)}. Owners age: the number of homesteads with the over-65 or disabled exemption grows from ${mil(at(2026).homesteads_65_or_disabled)} to ${mil(at(2036).homesteads_65_or_disabled)}, and new owners in new homes bring the total from ${mil(at(2026).homesteads)} to ${mil(at(2036).homesteads)}. Fixed-dollar exemptions make taxes rise faster than home values. The state's compressed school rate falls from $${at(2026).state_mcr.toFixed(4)} to $${at(2036).state_mcr.toFixed(4)} per $100 under the compression formula; cities, counties and other units keep setting rates where they did in 2025, between their no-new-revenue and voter-approval rates.`;
+    $("tx-proj-figures").innerHTML = [
+      [bn(at(2036).tax_total), "Homestead property tax, 2036 (central)"],
+      [usd(at(2036).avg_tax), `Average homestead bill, 2036 (${usd(at(2026).avg_tax)} in 2026)`],
+      [bn(at(2036).total_levy), `All property tax in Texas, 2036 — homes, rentals, business and minerals (${bn(at(2026).total_levy)} in 2026)`],
+      [bn(at(2036).state_aid), `State aid to school districts, 2036 (${bn(at(2026).state_aid)} in 2026-27); funding held at 2026-27 law`],
+    ].map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
     const LAB = { central: "Central", low: "Slower prices", high: "Faster prices", stall: "Prices stall", downturn: "Housing downturn" };
-    $("tx-t-proj").innerHTML = "<thead><tr><th>Scenario</th><th>2026</th><th>2031</th><th>2036</th><th>Average bill, 2036</th></tr></thead><tbody>" +
-      sc.map(k => { const r = P[k].years, g = yy => r.find(x => x.year === yy); return `<tr><td>${LAB[k] || k}</td><td>${bn(g(2026).tax_total)}</td><td>${bn(g(2031).tax_total)}</td><td>${bn(g(2036).tax_total)}</td><td>${usd(g(2036).avg_tax)}</td></tr>`; }).join("") + "</tbody>";
+    $("tx-t-proj").innerHTML = "<thead><tr><th>Scenario</th><th>Homesteads, 2026</th><th>2031</th><th>2036</th><th>Average bill, 2036</th><th>All property tax, 2036</th></tr></thead><tbody>" +
+      sc.map(k => { const r = P[k].years, g = yy => r.find(x => x.year === yy); return `<tr><td>${LAB[k] || k}</td><td>${bn(g(2026).tax_total)}</td><td>${bn(g(2031).tax_total)}</td><td>${bn(g(2036).tax_total)}</td><td>${usd(g(2036).avg_tax)}</td><td>${bn(g(2036).total_levy)}</td></tr>`; }).join("") + "</tbody>";
     const W = 520, Hh = 240, L = 46, R = 12, T = 12, B = 26, s = svg(W, Hh);
-    const all = sc.flatMap(k => P[k].years.map(r => r.tax_total / 1e9)), lo2 = Math.floor(Math.min(...all) / 5) * 5, hi2 = Math.ceil(Math.max(...all) / 5) * 5;
+    const all = sc.flatMap(k => P[k].years.map(r => r.tax_total / 1e9)).concat(band.flatMap(r => [r.p10 / 1e9, r.p90 / 1e9])), lo2 = Math.floor(Math.min(...all) / 5) * 5, hi2 = Math.ceil(Math.max(...all) / 5) * 5;
     const xs = c.map(r => r.year), X = v => L + (W - L - R) * (v - xs[0]) / (xs[xs.length - 1] - xs[0]), Y = v => T + (Hh - T - B) * (1 - (v - lo2) / (hi2 - lo2));
     for (let v = lo2; v <= hi2; v += 5) { el(s, "line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: Y(v) + 4, "text-anchor": "end" }, "$" + v + "B"); }
     xs.forEach((v, i) => { if (i % 2 === 0) el(s, "text", { x: X(v), y: Hh - 8, "text-anchor": "middle" }, String(v)); });
+    if (band.length) el(s, "polygon", { points: band.map(r => `${X(r.year)},${Y(r.p90 / 1e9)}`).concat(band.slice().reverse().map(r => `${X(r.year)},${Y(r.p10 / 1e9)}`)).join(" "),
+      fill: "var(--accent)", opacity: 0.14 });
     sc.forEach(k => el(s, "polyline", { points: P[k].years.map(r => `${X(r.year)},${Y(r.tax_total / 1e9)}`).join(" "), fill: "none",
       stroke: k === "central" ? "var(--accent)" : "var(--rule-strong)", "stroke-width": k === "central" ? 3 : 1.2, opacity: k === "central" ? 1 : 0.45 }));
     s.setAttribute("aria-label", "Homestead property tax by scenario, 2026 to 2036");
@@ -6218,19 +6229,25 @@ function renderTX() {
   }
   const roll = pct(H.share_in_roll_counties, 0);
   $("tx-notes").innerHTML = [
-    `<b>Checked against the parcel rolls where we have them.</b> Nine appraisal districts (Harris, Dallas, Tarrant, Travis, Collin, Fort Bend, El Paso, Williamson, Galveston) hold ${roll} of homesteads; there the model's average homestead tax is within about 4% of the rolls'.`,
-    `<b>Elsewhere, local exemptions are approximate.</b> Counties, cities and special districts set their own homestead and over-65 exemptions, and no statewide list exists. Outside the nine districts the model uses the typical exemptions of each kind of unit, so county-level results there are approximate; statewide results are steadier.`,
+    `<b>Checked against the parcel rolls where we have them.</b> Ten appraisal districts (Harris, Dallas, Tarrant, Travis, Collin, Fort Bend, El Paso, Williamson, Galveston, Bell) hold ${roll} of homesteads; there the model's average homestead tax is within about 4% of the rolls'.`,
+    `<b>Elsewhere, local exemptions are approximate.</b> Counties, cities and special districts set their own homestead and over-65 exemptions, and no statewide list exists. Outside the ten districts the model uses the typical exemptions of each kind of unit, so county-level results there are approximate; statewide results are steadier.`,
     `<b>Rates are 2025 rates</b> (the Comptroller publishes 2026 rates in early 2027), applied to 2026 values. School districts use TEA's 2026 compressed rates in the outlook.`,
     `<b>Owners only.</b> Renters count in the income groups at $0; what they pay through rent isn't modelled. Owners without a homestead exemption pay full tax at their county's average combined rate.`,
     `<b>The outlook is current law.</b> No official Texas value forecast goes past 2026; the central path assumes values rise 1.5% in 2027, rising to 3.5% a year from 2030. School funding is held at 2026-27 levels, as written in law.`,
+    `<b>Owners age, move and multiply.</b> Each year owners get a year older; those turning 65 claim the over-65 exemption and freeze at today's claim rate. About 5.6% of homes change hands each year (sales and deaths); the new owner is like the county's recent buyers and the home is reappraised at market. Owners under and over 65 grow with the Texas Demographic Center's population projections; the growth is new homes. Incomes follow the Comptroller's forecast, then long-run growth. The range shows 30 runs with random economic shocks and rate decisions.`,
   ].map(t => `<li>${t}</li>`).join("");
 }
+// Property tax (all property, state and local) as a share of state and local general revenue, 2024:
+// Lincoln Institute, Significant Features of the Property Tax, from the Census Annual Survey of State
+// and Local Government Finances. General revenue includes federal aid and charges, not just taxes.
+const PT_SHARE_2024 = { fl: 0.178, tx: 0.206, us: 0.150 };
 function renderHome() {
   const tx = TX.headline;
+  const share = k => `<div class="l">Property tax is <b>${pct(PT_SHARE_2024[k], 1)}</b> of state and local general revenue (2024; U.S. ${pct(PT_SHARE_2024.us, 1)})</div>`;
   $("state-cards").innerHTML = [
     ["fl", "Florida", bn(D.headline.owner_tax_total), `paid by ${mil(D.headline.owners)} owner households in 2026 · current law, policy comparisons and Amendment 3`],
     ["tx", "Texas", bn(tx.owner_tax_total), `paid by ${mil(tx.owners)} owner households in 2026 · current law and outlook to 2036 (policy comparisons coming)`],
-  ].map(([k, n, v, l]) => `<button class="state-card" data-s="${k}"><h3>${n}</h3><div class="v">${v}</div><div class="l">${l}</div></button>`).join("");
+  ].map(([k, n, v, l]) => `<button class="state-card" data-s="${k}"><h3>${n}</h3><div class="v">${v}</div><div class="l">${l}</div>${share(k)}</button>`).join("");
 }
 const LEDE_TODAY = $("lede").textContent;
 function showView(v) {

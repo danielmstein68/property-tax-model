@@ -1,36 +1,152 @@
-# Texas projection assumptions, 2026 -> 2036 (provisional; docs/TX_DECISIONS.md). Read by ptm.tx.project.
+# Texas projection assumptions, 2026 -> 2036 (provisional; docs/TX_DECISIONS.md). Read by ptm.tx.project
+# through ptm.economy.Economy (same format as inputs/fl_projection_assumptions.yaml).
 #
-# No official Texas forecast of property values goes past tax year 2026 (the GAA's 3.60%); the LBB/TEA
-# numbers for 2027+ come with the January 2027 budget cycle. Until then: Texas home prices are flat to
-# falling (FHFA: Travis -1.7% in 2025), so growth picks up gradually to a long-run rate near Texas's
-# 1991-2025 average (FHFA all-transactions index, about 4% nominal) less a margin.
+# Each variable is a yearly growth rate: the change from the previous year to `year`. Paths come from
+# inputs/tx_economy_paths.csv (scripts/tx_economy_inputs.py) unless given as values here.
+# Scenario overrides, per variable: source / set {year: rate} / shift (see the Florida file).
 
 meta:
+  state: TX
   base_year: 2026
   end_year: 2036
 
-# statewide market value growth by year (nominal); the same for every county
-scenarios:
-  central:  {2027: 0.015, 2028: 0.025, 2029: 0.030, 2030: 0.035}
-  low:      {2027: 0.000, 2028: 0.010, 2029: 0.015, 2030: 0.020}
-  high:     {2027: 0.030, 2028: 0.040, 2029: 0.045, 2030: 0.050}
-  stall:    {2027: 0.000, 2028: 0.000, 2029: 0.020, 2030: 0.035}
-  downturn: {2027: -0.050, 2028: -0.030, 2029: 0.020, 2030: 0.040, 2031: 0.035}
+variables:
+  home_value:
+    description: Market value growth of existing homes (all residential; new construction excluded).
+    # No official Texas forecast of property values goes past tax year 2026 (the GAA's 3.60%); the
+    # LBB/TEA numbers for 2027+ come with the January 2027 budget cycle. Texas home prices are flat to
+    # falling (FHFA: Travis -1.7% in 2025), so growth picks up gradually to a long-run rate near
+    # Texas's 1991-2025 average (FHFA all-transactions, about 4% nominal) less a margin.
+    values: {2026: 0.036, 2027: 0.015, 2028: 0.025, 2029: 0.030, 2030: 0.035, 2031: 0.035, 2032: 0.035,
+             2033: 0.035, 2034: 0.035, 2035: 0.035, 2036: 0.035}
 
-new_construction: 0.015       # yearly growth of taxing units' bases from new property (not in the no-new-revenue rate)
-turnover: 0.05                # share of homesteads sold each year: appraised value resets to market
+  nonresidential_value:
+    description: Market value growth of existing commercial, industrial and business personal property
+      (non-homestead tax bases). Provisional - the same path as homes; no Texas forecast by category.
+    values: {2026: 0.036, 2027: 0.015, 2028: 0.025, 2029: 0.030, 2030: 0.035, 2031: 0.035, 2032: 0.035,
+             2033: 0.035, 2034: 0.035, 2035: 0.035, 2036: 0.035}
 
+  mineral_value:
+    description: Oil and gas reserves (PVS category G). Held flat - the Comptroller's 2026-27 forecast
+      has oil at $64-66 (CRE Table 4), about where 2025 values were set.
+    values: {2026: 0.0, 2027: 0.0, 2028: 0.0, 2029: 0.0, 2030: 0.0, 2031: 0.0, 2032: 0.0, 2033: 0.0,
+             2034: 0.0, 2035: 0.0, 2036: 0.0}
+
+  wage:
+    description: Wage and self-employment income growth - Texas personal income per resident.
+    paths_variable: personal_income_per_resident
+    source: tx_cre_2026_27
+    source_note: Texas Comptroller, Certification Revenue Estimate 2026-27 (Table 4), 2026-2027
+    after_forecast: {method: ease_to, target_variable: long_run_income, target_source: cbo_2026, years: 4}
+
+  other_income:
+    description: Interest, dividends and other income - the same path as wages.
+    paths_variable: personal_income_per_resident
+    source: tx_cre_2026_27
+    after_forecast: {method: ease_to, target_variable: long_run_income, target_source: cbo_2026, years: 4}
+
+  cpi:
+    description: National CPI-U inflation (Social Security, SSI, public assistance and pension growth).
+    values: {2026: 0.029, 2027: 0.023, 2028: 0.023, 2029: 0.023, 2030: 0.023, 2031: 0.023, 2032: 0.023,
+             2033: 0.023, 2034: 0.023, 2035: 0.023, 2036: 0.023}
+    source_note: CBO, Budget and Economic Outlook 2026 to 2036 (Feb 2026), as for Florida.
+
+income_growth:
+  wagp_aged: wage
+  semp_aged: wage
+  intp_aged: other_income
+  oip_aged: other_income
+  ssp_aged: cpi
+  ssip_aged: cpi
+  pap_aged: cpi
+  retp_aged: cpi
+
+new_construction: 0.015       # yearly growth of non-homestead bases from new property (not in the no-new-revenue rate)
+
+# Home sales (changes of ownership) and deaths, per year.
+turnover:
+  homestead_sale_rate: 0.056
+  nonhomestead_sale_rate: 0.056
+  sale_rate_note: Yearly share of owner homes that change hands (sales and death transfers together).
+    ACS PUMS 2024, Texas homestead owners who moved in within 12 months (MV 1) 5.8% and 13-23 months
+    (MV 2) 5.5%; the mean is used. Replaces the earlier flat 5%.
+  lock_in:
+    per_100k_savings: -0.0625
+    floor: 0.5
+    note: Each $100,000 of cap savings (market - appraised) lowers the chance of selling by 6.25%
+      (relative), not below half the base rate - Florida's estimate (UF Shimberg Center for EDR, 2007);
+      no Texas estimate. The base rate is set so the 2026 average matches the rate above.
+
+# Households: ages, deaths, the age mix and new owners (ptm/tx/project.py)
+demography:
+  deaths: true
+  reweight_by_age: true
+  household_growth: true
+  replace_owner_on_sale: true
+  note: Each year owners age a year. Death of the owner (both spouses for couples) passes the home on
+    (Texas life table 2021, CDC NCHS NVSR 73-7; 2021 includes COVID-era deaths, so slightly high);
+    deaths count inside the reset rate above. A sold or inherited home gets a new owner drawn from the
+    county's recent buyers (moved in within two years; age, income, over-65 and disabled status).
+    Owner weights follow Texas's projected population 18-64 and 65+ (Texas Demographic Center,
+    Vintage 2024, mid migration; 2020, 2040, 2060, interpolated), so owners by age band grow with the
+    population at 2026 ownership rates; the extra owners each year are new homes at full value, with
+    recent buyers' characteristics, placed by county in proportion to TDC's projected county growth.
+  over65_takeup_note: Owners who turn 65 claim the over-65 exemption (and freeze) at the rate 2026
+    owners aged 65+ do in the model (counts were trimmed to the PVS over-65 exemption, so below 100%).
+
+# How taxing units set rates each year (Tax Code ss. 26.04, 26.07; Education Code ss. 48.255-48.2552)
 rate_setting:
-  # non-school units adopt their voter-approval rate (Tax Code s. 26.04): M&O revenue on existing
-  # property x the multiplier, debt (I&S) rates held. Provisional: many units adopt between the
-  # no-new-revenue and voter-approval rates; "hold" (keep last year's rate) is the alternative.
-  rule: voter_approval
+  # non-school units: each unit's M&O rate sits where it sat in 2025 between its no-new-revenue rate
+  # and its voter-approval rate (Comptroller 2025 rates and levies: levy-weighted position 0.54
+  # counties, 0.57 cities, 0.57 colleges, 0.65 hospitals, 0.94 special districts; position = (adopted -
+  # NNR) / (VAR - NNR), clipped to 0-1.2). Units without both rates: their class's levy-weighted mean.
+  # The voter-approval rate is the no-new-revenue M&O rate x the multiplier; I&S rates held.
+  # Options: position (default), voter_approval (every unit at its VAR), hold (last year's rate).
+  rule: position
+  # 3.5% for counties, cities and developed districts (MUDs, ESDs); 8% for hospital districts and junior
+  # colleges (special taxing units); developing MUDs may also use 8% but they carry new construction
   multiplier: {default: 1.035, hospital: 1.08, college: 1.08}
+  draws: false     # Monte Carlo: each unit's position redrawn each year from its class's 2025 spread
 
 school:
-  # current-law compression (Education Code ss. 48.255, 48.2551, 48.2552): when statewide value growth
-  # exceeds 2.5%, the state maximum compressed rate falls by 1.025 / (1 + growth); each district's MCR
-  # is the lesser of its own compressed rate and the state's, not below 90% of the state maximum.
-  # No compression beyond the formula (no new GAA buy-downs). Enrichment cents and I&S rates held.
+  # current-law compression: when statewide value growth exceeds 2.5%, the state maximum compressed
+  # rate falls by 1.025 / (1 + growth); each district's MCR is the lesser of its own compressed rate and
+  # the state's, not below 90% of the state maximum. No compression beyond the formula. Enrichment
+  # cents and I&S rates held.
   growth_limit: 0.025
   floor_share: 0.90
+
+# Monte Carlo noise around a scenario's path (ptm/tx/montecarlo.py): as for Florida
+uncertainty:
+  home_value_sd: 0.037
+  nonresidential_sd: 0.03
+  cpi_sd: 0.0057
+  persistence: 0.5
+  home_nonres_correlation: 0.7
+  note: Florida's settings (UF Shimberg Center for EDR, 2007); Texas home price growth has been less
+    volatile than Florida's (FHFA), so these are on the wide side.
+
+scenarios:
+  central:
+    description: Home values pick up from 1.5% in 2027 to 3.5% a year from 2030; Comptroller income
+      forecast, then long-run growth.
+  low:
+    description: Slower home values - 0% in 2027, rising to 2% a year from 2030.
+    home_value: {set: {2027: 0.000, 2028: 0.010, 2029: 0.015, 2030: 0.020, 2031: 0.020, 2032: 0.020, 2033: 0.020, 2034: 0.020, 2035: 0.020, 2036: 0.020}}
+    nonresidential_value: {set: {2027: 0.000, 2028: 0.010, 2029: 0.015, 2030: 0.020, 2031: 0.020, 2032: 0.020, 2033: 0.020, 2034: 0.020, 2035: 0.020, 2036: 0.020}}
+  high:
+    description: Faster home values - 3% in 2027, rising to 5% a year from 2030.
+    home_value: {set: {2027: 0.030, 2028: 0.040, 2029: 0.045, 2030: 0.050, 2031: 0.050, 2032: 0.050, 2033: 0.050, 2034: 0.050, 2035: 0.050, 2036: 0.050}}
+    nonresidential_value: {set: {2027: 0.030, 2028: 0.040, 2029: 0.045, 2030: 0.050, 2031: 0.050, 2032: 0.050, 2033: 0.050, 2034: 0.050, 2035: 0.050, 2036: 0.050}}
+  stall:
+    description: Flat values for two years, then the central path; slow wages.
+    home_value: {set: {2027: 0.000, 2028: 0.000, 2029: 0.020}}
+    nonresidential_value: {set: {2027: 0.000, 2028: 0.000, 2029: 0.020}}
+    wage: {set: {2027: 0.02, 2028: 0.02, 2029: 0.02}}
+    other_income: {set: {2027: 0.01, 2028: 0.01, 2029: 0.01}}
+  downturn:
+    description: Home values fall 5% then 3%, then recover (2% in 2029, 4% in 2030, 3.5% after).
+    home_value: {set: {2027: -0.050, 2028: -0.030, 2029: 0.020, 2030: 0.040}}
+    nonresidential_value: {set: {2027: -0.050, 2028: -0.030, 2029: 0.020, 2030: 0.040}}
+    wage: {set: {2027: 0.01, 2028: 0.01}}
+    other_income: {set: {2027: -0.02, 2028: 0.0}}

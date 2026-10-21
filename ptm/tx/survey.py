@@ -48,6 +48,18 @@ def person_flags(persons_path: Path, survey_year: int, base_year: int) -> pd.Dat
     return hh.reset_index()
 
 
+def couple_ages(survey_year: int = 2024, base_year: int = 2026) -> pd.DataFrame:
+    """Per household (SERIALNO): the older of householder and spouse's age reached in the base year
+    (couple_age; the over-65 exemption needs either to be 65, s. 11.13(c)), the householder's, and
+    whether a spouse is present (spouse; deaths pass the home on only when both have died)."""
+    p = pd.read_csv(RAW / f"pums_{survey_year}_1yr" / "psam_p48.csv", usecols=["SERIALNO", "SPORDER", "RELSHIPP", "AGEP"],
+                    dtype={"SERIALNO": str})
+    p = p[(p["SPORDER"] == 1) | p["RELSHIPP"].isin([21, 23])]
+    p["age"] = p["AGEP"] + (base_year - survey_year)
+    return pd.DataFrame({"couple_age": p.groupby("SERIALNO")["age"].max(),
+                         "spouse": p.groupby("SERIALNO")["RELSHIPP"].agg(lambda s: s.isin([21, 23]).any())})
+
+
 def value_factors(base_year: int = 2026) -> pd.DataFrame:
     """Survey-year value -> Jan 1 of the base year, by county (FHFA all-transactions indexes)."""
     c = pd.read_excel(RAW / "fhfa" / "hpi_at_county.xlsx", header=6)
