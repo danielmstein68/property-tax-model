@@ -104,8 +104,10 @@ def load_policy(path) -> dict:
     return p
 
 
-def apply_policy(law: Law, policy: dict) -> Law:
-    """A copy of `law` with the policy's changes. Raises LawError for unknown or not-yet-live numbers."""
+def apply_policy(law: Law, policy: dict, live: dict | None = None) -> Law:
+    """A copy of `law` with the policy's changes. Raises LawError for unknown or not-yet-live numbers.
+    `live`: the (rule, key) pairs the state's projection reads (default Florida's LIVE; Texas: ptm.tx.policy)."""
+    live = LIVE if live is None else live
     law = copy.deepcopy(law)
     problems = []
     for ch in policy.get("changes", []):
@@ -117,7 +119,7 @@ def apply_policy(law: Law, policy: dict) -> Law:
         if key not in spec:
             problems.append(f"{rid}: no number called '{key}' (has: {', '.join(k for k in spec if k not in SKIP_KEYS)})")
             continue
-        if (rid, key) not in LIVE:
+        if (rid, key) not in live:
             problems.append(f"{rid}.{key} isn't live yet: it decided eligibility when the 2026 baseline was built "
                             "or isn't read by the yearly projection; changing it would do nothing")
             continue

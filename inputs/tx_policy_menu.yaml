@@ -1,0 +1,362 @@
+# Texas policy menu for the results page (scripts/tx_policy_grid.py pre-computes every entry).
+#
+# sliders: one current-law number at a time (everything else stays current law), changed from `from`.
+#   settings: the values offered ("none" = no limit / off); current: the current-law value
+#   changes: the law spec numbers the slider sets (several can move together); with: fixed companions
+# plans: named policies. Each has `changes` (its default form) and `knobs`: its own numbers, each with
+#   settings and the changes it makes (value "@" = the setting). The grid runs every knob one at a time
+#   from the plan and every pair of knobs (grids), so the page can move any one or two of a plan's numbers.
+#   A knob's `changes` may use `values_fn` (scripts/tx_policy_grid.py builds year schedules: phase-ins).
+# Provisions and sources: docs/research/tx_policy_proposals.md; modelling calls: docs/TX_DECISIONS.md.
+
+from: 2027
+
+sliders:
+  - id: school_homestead
+    label: School homestead exemption
+    unit: dollars
+    current: 140000
+    settings: [100000, 140000, 160000, 180000, 200000, 250000, 300000]
+    changes: [{rule: school_homestead, key: amount}]
+
+  - id: school_over65
+    label: Extra school exemption for owners 65+ or disabled
+    unit: dollars
+    current: 60000
+    settings: [0, 30000, 60000, 100000, 150000]
+    changes: [{rule: school_over65_disabled, key: amount}]
+
+  - id: school_over65_age
+    label: Age for the school over-65 exemption and tax freeze
+    unit: years
+    current: 65
+    settings: [55, 60, 62, 65, 70]
+    changes: [{rule: school_over65_disabled, key: min_age}]
+
+  - id: homestead_cap
+    label: Homestead appraisal cap (yearly increase)
+    unit: percent
+    current: 0.10
+    settings: [0.0, 0.03, 0.05, 0.10, 0.15, none]
+    changes: [{rule: homestead_cap, key: cap}]
+
+  - id: nonhomestead_cap
+    label: Appraisal cap on other property (rentals, business)
+    unit: percent
+    current: none
+    settings: [0.03, 0.05, 0.10, 0.20, none]
+    changes: [{rule: nonhomestead_cap, key: cap}]
+
+  - id: circuit_breaker
+    label: Last year of the 20% circuit breaker on other property
+    unit: year
+    current: 2026
+    note: Under current law it expires after 2026 and those properties go to market value in 2027.
+    settings: [2026, 2028, 2030, 2036]
+    changes: [{rule: circuit_breaker, key: expires_after}]
+
+  - id: voter_approval
+    label: Voter-approval limit on revenue growth (most units)
+    unit: multiple
+    current: 1.035
+    settings: [1.0, 1.01, 1.025, 1.035, 1.05, 1.08]
+    changes: [{rule: voter_approval_rate, key: multiplier}]
+
+  - id: voter_approval_special
+    label: Voter-approval limit, hospital districts, colleges and low-rate units
+    unit: multiple
+    current: 1.08
+    settings: [1.0, 1.035, 1.05, 1.08, 1.10]
+    changes: [{rule: voter_approval_rate, key: special_unit_multiplier}]
+
+  - id: approval_share
+    label: Share of planned local rate increases that pass (a two-thirds vote rule)
+    unit: share
+    current: 1.0
+    settings: [0.0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: increase_approval, key: share}]
+
+  - id: spending_limit
+    label: Limit on local levy growth (lesser of this and population + inflation)
+    unit: percent
+    current: none
+    settings: [0.01, 0.025, 0.035, 0.05, none]
+    changes: [{rule: spending_limit, key: max_growth}]
+
+  - id: reappraisal
+    label: Years between reappraisals
+    unit: years
+    current: 1
+    settings: [1, 2, 3, 5]
+    changes: [{rule: reappraisal, key: cycle_years}]
+
+  - id: buydown_cents
+    label: Extra school tax rate compression (cents per $100)
+    unit: cents
+    current: 0
+    settings: [0, 0.05, 0.10, 0.20, 0.30]
+    changes: [{rule: school_buydown, key: cents}]
+
+  - id: buydown_dollars
+    label: State money a year for more school compression
+    unit: dollars
+    current: 0
+    note: Each year's amount buys more compression, which adds up year by year (the RPT's surplus plank).
+    settings: [0, 2000000000, 5000000000, 10000000000, 20000000000]
+    changes: [{rule: school_buydown, key: dollars_per_year}]
+
+  - id: homestead_school_share
+    label: Share of homestead school tax exempt (M&O and debt)
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: homestead_exempt_share, key: school_mo}, {rule: homestead_exempt_share, key: school_is}]
+
+  - id: homestead_nonschool_share
+    label: Share of homestead county, city and district tax exempt
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: homestead_exempt_share, key: nonschool}]
+    with: [{rule: state_replaces_local, key: enabled, value: 1}]
+
+  - id: rental_share
+    label: Share of rental and second-home tax exempt
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: nonhomestead_exempt_share, key: residential}]
+    with: [{rule: state_replaces_local, key: enabled, value: 1}]
+
+  - id: business_share
+    label: Share of business property tax exempt
+    unit: share
+    current: 0
+    settings: [0, 0.25, 0.5, 0.75, 1.0]
+    changes: [{rule: nonhomestead_exempt_share, key: business}]
+    with: [{rule: state_replaces_local, key: enabled, value: 1}]
+
+  - id: local_flat
+    label: Flat-dollar homestead exemption at every county, city and district
+    unit: dollars
+    current: 0
+    settings: [0, 10000, 25000, 50000, 100000]
+    changes: [{rule: local_flat_homestead, key: amount}]
+
+  - id: state_exemptions_all
+    label: School homestead exemptions apply at every taxing unit
+    unit: switch
+    current: 0
+    settings: [0, 1]
+    changes: [{rule: state_exemptions_all_units, key: enabled}]
+
+  - id: local_freeze
+    label: Every county, city and college freezes over-65 taxes
+    unit: switch
+    current: 0
+    settings: [0, 1]
+    changes: [{rule: local_freeze_mandatory, key: enabled}]
+
+  - id: credit_share
+    label: State credit for homestead tax above this share of income
+    unit: percent
+    current: none
+    note: Credit up to $1,500 for incomes up to $100,000.
+    settings: [none, 0.03, 0.04, 0.05, 0.06]
+    changes: [{rule: income_credit, key: share_of_income}]
+
+  - id: rollback_2019
+    label: Cost-basis values from 2019, 3% a year after (RPT)
+    unit: switch
+    current: none
+    settings: [none, 2027]
+    changes: [{rule: value_rollback, key: from_year}]
+
+plans:
+  # --- comparison policies -------------------------------------------------------------------------------
+  - id: raise_exemption
+    group: Relief options
+    label: Raise the school homestead exemption
+    description: The school homestead exemption rises from $140,000 to $180,000 in 2027; the state pays districts back.
+    changes: [{rule: school_homestead, key: amount, value: 180000}]
+    knobs:
+      - {id: amount, label: School homestead exemption, unit: dollars, settings: [160000, 180000, 200000, 250000, 300000], default: 180000,
+         changes: [{rule: school_homestead, key: amount, value: "@"}]}
+
+  - id: buy_down
+    group: Relief options
+    label: Buy down school tax rates
+    description: Every district's compressed school rate falls 4 cents per $100 in 2027 (about what raising the exemption to $180,000 costs); the state pays districts back. Rentals and businesses get the cut too.
+    changes: [{rule: school_buydown, key: cents, value: 0.04}]
+    knobs:
+      - {id: cents, label: Cut in the school rate (cents per $100), unit: cents, settings: [0.02, 0.04, 0.06, 0.10, 0.20], default: 0.04,
+         changes: [{rule: school_buydown, key: cents, value: "@"}]}
+
+  - id: circuit_breaker
+    group: Relief options
+    label: Extend the circuit breaker
+    description: The 20% yearly limit on appraisal increases for rentals and other non-homestead property up to $5.32 million continues through 2036 instead of ending after 2026.
+    changes: [{rule: circuit_breaker, key: expires_after, value: 2036}]
+    knobs:
+      - {id: until, label: Last year, unit: year, settings: [2028, 2030, 2036], default: 2036,
+         changes: [{rule: circuit_breaker, key: expires_after, value: "@"}]}
+
+  - id: tighter_limit
+    group: Relief options
+    label: Tighten local revenue limits
+    description: Cities, counties and districts can raise M&O revenue on existing property at most 2.5% a year without an election, down from 3.5% (as in SB 10, which failed in 2025).
+    changes: [{rule: voter_approval_rate, key: multiplier, value: 1.025}]
+    knobs:
+      - {id: limit, label: Revenue growth without an election, unit: multiple, settings: [1.0, 1.01, 1.025, 1.035], default: 1.025,
+         changes: [{rule: voter_approval_rate, key: multiplier, value: "@"}]}
+
+  - id: lower_cap
+    group: Relief options
+    label: Lower the homestead appraisal cap to 5%
+    description: A homestead's appraised value can rise at most 5% a year, down from 10%.
+    changes: [{rule: homestead_cap, key: cap, value: 0.05}]
+    knobs:
+      - {id: cap, label: Homestead cap, unit: percent, settings: [0.0, 0.02, 0.03, 0.05, 0.10], default: 0.05,
+         changes: [{rule: homestead_cap, key: cap, value: "@"}]}
+
+  - id: senior_relief
+    group: Relief options
+    label: More relief for owners 65 and over
+    description: The extra school exemption for owners 65+ or disabled rises from $60,000 to $100,000, and every county, city and college must freeze their taxes.
+    changes: [{rule: school_over65_disabled, key: amount, value: 100000}, {rule: local_freeze_mandatory, key: enabled, value: 1}]
+    knobs:
+      - {id: amount, label: Extra school exemption 65+, unit: dollars, settings: [60000, 100000, 150000, 200000], default: 100000,
+         changes: [{rule: school_over65_disabled, key: amount, value: "@"}]}
+      - {id: freeze, label: Mandatory local freeze, unit: switch, settings: [0, 1], default: 1,
+         changes: [{rule: local_freeze_mandatory, key: enabled, value: "@"}]}
+
+  - id: income_credit
+    group: Relief options
+    label: Credit for owners with high tax for their income
+    description: The state pays homestead owners with incomes up to $100,000 the amount of their property tax above 5% of income, up to $1,500 a year.
+    changes: [{rule: income_credit, key: share_of_income, value: 0.05}]
+    knobs:
+      - {id: share, label: Tax above this share of income, unit: percent, settings: [0.03, 0.04, 0.05, 0.06, 0.08], default: 0.05,
+         changes: [{rule: income_credit, key: share_of_income, value: "@"}]}
+      - {id: max, label: Largest credit, unit: dollars, settings: [500, 1000, 1500, 2500, 5000], default: 1500,
+         changes: [{rule: income_credit, key: max_credit, value: "@"}]}
+      - {id: limit, label: Income limit, unit: dollars, settings: [50000, 75000, 100000, 150000, 1000000000], default: 100000,
+         changes: [{rule: income_credit, key: income_limit, value: "@"}]}
+
+  # --- named plans ---------------------------------------------------------------------------------------
+  - id: abbott
+    group: Proposals
+    label: Governor Abbott's five steps
+    description: >
+      Homesteads stop paying school taxes (M&O and debt; the state pays districts back); appraisal increases
+      are capped at 3% a year for all property and properties are reappraised only every five years; local
+      levies on existing property may grow at most the lesser of population plus inflation and 3.5%; and
+      rate increases need two-thirds voter approval (modelled as none passing). Rollback petitions are not
+      modelled. "Empowering Texas Taxpayers: Five Steps", Nov 2025.
+    changes:
+      - {rule: homestead_exempt_share, key: school_mo, value: 1.0}
+      - {rule: homestead_exempt_share, key: school_is, value: 1.0}
+      - {rule: homestead_cap, key: cap, value: 0.03}
+      - {rule: nonhomestead_cap, key: cap, value: 0.03}
+      - {rule: reappraisal, key: cycle_years, value: 5}
+      - {rule: spending_limit, key: max_growth, value: 0.035}
+      - {rule: increase_approval, key: share, value: 0.0}
+    knobs:
+      - {id: school, label: School taxes eliminated on homesteads, unit: choice, settings: ["M&O and debt", "M&O only", "none"], default: "M&O and debt",
+         choice: {"M&O and debt": [{rule: homestead_exempt_share, key: school_mo, value: 1.0}, {rule: homestead_exempt_share, key: school_is, value: 1.0}],
+                  "M&O only": [{rule: homestead_exempt_share, key: school_mo, value: 1.0}, {rule: homestead_exempt_share, key: school_is, value: 0.0}],
+                  "none": [{rule: homestead_exempt_share, key: school_mo, value: 0.0}, {rule: homestead_exempt_share, key: school_is, value: 0.0}]}}
+      - {id: cap, label: Appraisal cap (all property), unit: percent, settings: [0.02, 0.03, 0.05, 0.10], default: 0.03,
+         changes: [{rule: homestead_cap, key: cap, value: "@"}, {rule: nonhomestead_cap, key: cap, value: "@"}]}
+      - {id: reappraisal, label: Years between reappraisals, unit: years, settings: [1, 3, 5], default: 5,
+         changes: [{rule: reappraisal, key: cycle_years, value: "@"}]}
+      - {id: approval, label: Share of rate increases that pass, unit: share, settings: [0.0, 0.25, 0.5, 1.0], default: 0.0,
+         changes: [{rule: increase_approval, key: share, value: "@"}]}
+      - {id: spending, label: Spending growth limit, unit: percent, settings: [0.025, 0.035, 0.05, none], default: 0.035,
+         changes: [{rule: spending_limit, key: max_growth, value: "@"}]}
+
+  - id: hinojosa
+    group: Proposals
+    label: Gina Hinojosa's goal
+    description: >
+      Illustrative: her stated end goal of eliminating residential property taxes, phased out evenly over five
+      years from 2027 and paid by the state. She has not said how or when; her near-term step is redirecting
+      corporate subsidies (not modelled).
+    changes:
+      - {rule: homestead_exempt_share, key: school_mo, values_fn: "phase:5"}
+      - {rule: homestead_exempt_share, key: school_is, values_fn: "phase:5"}
+      - {rule: homestead_exempt_share, key: nonschool, values_fn: "phase:5"}
+      - {rule: nonhomestead_exempt_share, key: residential, values_fn: "phase:5"}
+      - {rule: state_replaces_local, key: enabled, value: 1}
+    knobs:
+      - {id: years, label: Years to phase out, unit: years, settings: [1, 3, 5, 10], default: 5,
+         changes: [{rule: homestead_exempt_share, key: school_mo, values_fn: "phase:@"}, {rule: homestead_exempt_share, key: school_is, values_fn: "phase:@"},
+                   {rule: homestead_exempt_share, key: nonschool, values_fn: "phase:@"}, {rule: nonhomestead_exempt_share, key: residential, values_fn: "phase:@"}]}
+      - {id: scope, label: Which homes, unit: choice, settings: ["All residential", "Homesteads only"], default: "All residential",
+         choice: {"All residential": [], "Homesteads only": [{rule: nonhomestead_exempt_share, key: residential, value: 0.0}]}}
+
+  - id: double_nickel
+    group: Proposals
+    label: Operation Double Nickel
+    description: >
+      Lt. Gov. Patrick's plan (Dec 2025): the school homestead exemption rises from $140,000 to $180,000, and the
+      senior school exemption and tax freeze start at 55 instead of 65 (so owners 55+ get $240,000). The state
+      pays districts back. No bill yet.
+    changes: [{rule: school_homestead, key: amount, value: 180000}, {rule: school_over65_disabled, key: min_age, value: 55}]
+    knobs:
+      - {id: amount, label: School homestead exemption, unit: dollars, settings: [140000, 160000, 180000, 200000, 250000], default: 180000,
+         changes: [{rule: school_homestead, key: amount, value: "@"}]}
+      - {id: age, label: Senior age, unit: years, settings: [50, 55, 60, 65], default: 55,
+         changes: [{rule: school_over65_disabled, key: min_age, value: "@"}]}
+
+  - id: rpt
+    group: Proposals
+    label: Republican Party of Texas platform
+    description: >
+      2026 platform planks 79-80: values rolled back to 2019 and then capped at 3% a year for all property
+      (cost basis), school homestead exemptions applied at every taxing unit, no local rate increases without
+      a two-thirds vote (modelled as none passing), spending limits for all units, and all property taxes
+      eliminated over five years (paid by the state; the platform rules out an income tax). The surplus
+      buy-down and bond rules are separate settings.
+    changes:
+      - {rule: value_rollback, key: from_year, value: 2027}
+      - {rule: state_exemptions_all_units, key: enabled, value: 1}
+      - {rule: increase_approval, key: share, value: 0.0}
+      - {rule: spending_limit, key: max_growth, value: 0.035}
+      - {rule: homestead_exempt_share, key: school_mo, values_fn: "phase:5"}
+      - {rule: homestead_exempt_share, key: school_is, values_fn: "phase:5"}
+      - {rule: homestead_exempt_share, key: nonschool, values_fn: "phase:5"}
+      - {rule: nonhomestead_exempt_share, key: residential, values_fn: "phase:5"}
+      - {rule: nonhomestead_exempt_share, key: business, values_fn: "phase:5"}
+      - {rule: nonhomestead_exempt_share, key: mineral, values_fn: "phase:5"}
+      - {rule: state_replaces_local, key: enabled, value: 1}
+    knobs:
+      - {id: years, label: Years to eliminate property tax, unit: years, settings: [5, 10, never], default: 5,
+         changes: [{rule: homestead_exempt_share, key: school_mo, values_fn: "phase:@"}, {rule: homestead_exempt_share, key: school_is, values_fn: "phase:@"},
+                   {rule: homestead_exempt_share, key: nonschool, values_fn: "phase:@"}, {rule: nonhomestead_exempt_share, key: residential, values_fn: "phase:@"},
+                   {rule: nonhomestead_exempt_share, key: business, values_fn: "phase:@"}, {rule: nonhomestead_exempt_share, key: mineral, values_fn: "phase:@"}]}
+      - {id: cap, label: Yearly cap after the 2019 rollback, unit: percent, settings: [0.02, 0.03, 0.05], default: 0.03,
+         changes: [{rule: value_rollback, key: cap, value: "@"}]}
+      - {id: rollback, label: Roll values back to 2019, unit: choice, settings: ["yes", "no"], default: "yes",
+         choice: {"yes": [], "no": [{rule: value_rollback, key: from_year, value: none}]}}
+      - {id: surplus, label: Surplus spent on school buy-downs a year, unit: dollars, settings: [0, 5000000000, 10000000000, 20000000000], default: 0,
+         changes: [{rule: school_buydown, key: dollars_per_year, value: "@"}]}
+
+  - id: tdp
+    group: Proposals
+    label: Texas Democratic Party platform
+    description: >
+      2026-28 platform: a temporary freeze on residential appraisals (here 2027-2028) and a flat-dollar homestead
+      exemption at every county, city and district (here $25,000; the platform names no amount), with the cost
+      shifted to other property when units keep their revenue. Renters' exemptions, sale-price disclosure,
+      current-use valuation and data center rules are not modelled.
+    changes:
+      - {rule: homestead_cap, key: cap, values: {2027: 0.0, 2029: 0.10}}
+      - {rule: nonhomestead_cap, key: cap, values: {2027: 0.0, 2029: none}}
+      - {rule: nonhomestead_cap, key: residential_only, value: 1}
+      - {rule: local_flat_homestead, key: amount, value: 25000}
+    knobs:
+      - {id: freeze_years, label: Years of the appraisal freeze, unit: years, settings: [0, 1, 2, 3, 5], default: 2,
+         changes: [{rule: homestead_cap, key: cap, values_fn: "freeze:@:0.10"}, {rule: nonhomestead_cap, key: cap, values_fn: "freeze:@:none"}]}
+      - {id: flat, label: Flat-dollar homestead exemption, unit: dollars, settings: [0, 10000, 25000, 50000, 100000], default: 25000,
+         changes: [{rule: local_flat_homestead, key: amount, value: "@"}]}

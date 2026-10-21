@@ -226,6 +226,17 @@ a { color: var(--accent); }
 .bar-row .track i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
 .bar-row .num { font-family: var(--mono); font-size: 13px; color: var(--ink); }
 @media (max-width: 560px) { .bar-row { grid-template-columns: 70px minmax(0, 1fr) 54px; font-size: 12.5px; } }
+.txp-plans { display: grid; gap: 12px; }
+.txp-plans .grp { font: 700 12px var(--body); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.txp-knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px 24px; margin-top: 8px; }
+.txp-knob { display: grid; gap: 6px; }
+.txp-knob.off { opacity: 0.45; }
+.txp-knob input[type=range] { width: 100%; accent-color: var(--accent); }
+.txp-knob select { font: 500 14px var(--body); padding: 6px 10px; border: 1.5px solid var(--rule); border-radius: 10px; background: var(--bg); color: var(--ink); }
+.bar-row .track i.neg { background: var(--gain2); }
+.bar-row .track i.pos { background: var(--lose2); }
+.bar-row .track.signed { position: relative; }
+.bar-row .track.signed i { position: absolute; top: 0; bottom: 0; }
 footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; }
 </style>
 
@@ -255,6 +266,10 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
   </div>
 
   <div id="view-tx" class="wrap-inner" hidden>
+    <div class="tabs" role="tablist" aria-label="Texas pages" id="tx-sub">
+      <button role="tab" data-t="today" aria-selected="true">2026 and outlook</button><button role="tab" data-t="policy" aria-selected="false">Policy comparisons</button>
+    </div>
+    <div id="tx-today" class="wrap-inner">
     <div class="figures" id="tx-figures"></div>
     <p class="context" id="tx-context"></p>
     <section>
@@ -301,6 +316,93 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <h2>How far the Texas results go</h2>
       <ul class="about-list" id="tx-notes"></ul>
     </section>
+    </div>
+
+    <div id="tx-policy" class="wrap-inner a3" hidden>
+      <p class="muted-p" id="txp-loading">Loading the policy results…</p>
+      <section>
+        <div class="eyebrow">Choose a policy</div>
+        <h2>Compare a plan or change one number in current law</h2>
+        <div class="builder">
+          <div class="builder-col">
+            <h3>Plans and proposals</h3>
+            <div id="txp-plans" class="txp-plans"></div>
+          </div>
+          <div class="builder-col">
+            <h3>Or change one number</h3>
+            <label class="field-label" for="txp-lever">Number to change</label>
+            <select id="txp-lever"></select>
+            <label class="field-label" for="txp-slider" id="txp-slider-label">Setting</label>
+            <input type="range" id="txp-slider" min="0" max="1" step="1" value="0">
+            <div class="slider-scale" id="txp-scale"></div>
+            <p class="muted-p" id="txp-lever-note"></p>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div class="pol-chosen" id="txp-chosen"></div>
+        <div id="txp-knobs" class="txp-knobs"></div>
+        <p class="muted-p" id="txp-knob-note"></p>
+      </section>
+      <div class="a3-bar" role="group" aria-label="Settings">
+        <div class="a3-ctl"><span class="field-label">Year</span><div class="tabs" role="radiogroup" aria-label="Year" id="txp-years"></div></div>
+        <div class="a3-ctl"><span class="field-label">Local tax rates</span><div class="tabs" role="radiogroup" aria-label="Local tax rates" id="txp-mode"></div></div>
+      </div>
+      <section aria-label="Key numbers">
+        <div class="figures" id="txp-tiles"></div>
+        <p class="muted-p" id="txp-none" hidden>This is current law: nothing changes. Pick a plan or move the slider.</p>
+      </section>
+      <section class="txp-sec">
+        <div class="eyebrow">Revenue and cost</div>
+        <h2 id="txp-rev-title">Property tax and the state's cost by year</h2>
+        <p id="txp-rev-intro"></p>
+        <div class="charts">
+          <div class="chart">
+            <h3>Change from current law, billions of dollars a year</h3>
+            <p>Below zero = less property tax than under current law.</p>
+            <div id="txp-c-rev"></div>
+            <div class="legend"><span><i style="background:var(--accent)"></i>Homestead tax</span><span><i style="background:var(--county)"></i>All property tax</span><span><i style="background:var(--neutral)"></i>Cost to the state</span></div>
+          </div>
+          <div class="tablebox"><table id="txp-t-rev"></table></div>
+        </div>
+      </section>
+      <section class="txp-sec">
+        <div class="eyebrow">Homeowners</div>
+        <h2>Who pays less and who pays more</h2>
+        <p id="txp-who-intro"></p>
+        <div class="charts">
+          <div class="chart">
+            <h3>Average change per owner, by income</h3>
+            <p>Dollars a year; tenths of all Texas households (1 = lowest income).</p>
+            <div class="bars" id="txp-c-dec"></div>
+          </div>
+          <div class="chart">
+            <h3>Change as a share of income</h3>
+            <p>Owners' total change ÷ their total income, by income tenth.</p>
+            <div class="bars" id="txp-c-share"></div>
+          </div>
+        </div>
+        <div class="chart">
+          <h3>Share of owners paying less or more</h3>
+          <p>By household income tenth.</p>
+          <div id="txp-c-win"></div>
+          <div class="legend"><span><i style="background:var(--gain2)"></i>Pay more than 5% less</span><span><i style="background:var(--gain1)"></i>Up to 5% less</span><span><i style="background:var(--same)"></i>About the same (within $10)</span><span><i style="background:var(--lose1)"></i>Up to 5% more</span><span><i style="background:var(--lose2)"></i>More than 5% more</span></div>
+        </div>
+        <div class="tabs" role="tablist" id="txp-gtabs"></div>
+        <div class="tablebox"><table id="txp-t-groups"></table></div>
+      </section>
+      <section class="txp-sec">
+        <div class="eyebrow">Paying for it</div>
+        <h2>Paying for it with the state sales tax</h2>
+        <p id="txp-off-intro"></p>
+        <div class="tablebox"><table id="txp-t-off"></table></div>
+      </section>
+      <section>
+        <div class="eyebrow">What to keep in mind</div>
+        <h2>How these comparisons work</h2>
+        <ul class="about-list" id="txp-notes"></ul>
+      </section>
+    </div>
   </div>
 
   <div id="view-today" class="wrap-inner">
@@ -20361,6 +20463,280 @@ function renderTX() {
 // Lincoln Institute, Significant Features of the Property Tax, from the Census Annual Survey of State
 // and Local Government Finances. General revenue includes federal aid and charges, not just taxes.
 const PT_SHARE_2024 = { fl: 0.178, tx: 0.206, us: 0.150 };
+// ---------------- Texas: policy comparisons ----------------
+// Results come from tx_policy_grid.json (scripts/tx_policy_grid.py), published next to this page and loaded
+// when the tab first opens. Each entry is one policy compared with current law three ways (modes).
+const TXO = {
+ "state_rate": 6.25,
+ "point_value": {
+  "2026": 8558360160.0,
+  "2027": 9097560383.843988,
+  "2028": 9643931810.64635,
+  "2029": 10194706091.914131,
+  "2030": 10746901334.683725,
+  "2031": 11243654404.573864,
+  "2032": 11763857744.562979,
+  "2033": 12308638567.848866,
+  "2034": 12879179156.128002,
+  "2035": 13476719589.844128,
+  "2036": 14102560615.640955
+ },
+ "sales_tax_fy": {
+  "2024": 47159947193.08,
+  "2025": 49058906716.82001,
+  "2026": 51090782000.0,
+  "2027": 53489751000.0,
+  "2028": 56859752399.02493,
+  "2029": 60274573816.539696,
+  "2030": 63716913074.46332,
+  "2031": 67168133341.773285,
+  "2032": 70272840028.58665,
+  "2033": 73524110903.51862,
+  "2034": 76928991049.0554,
+  "2035": 80494869725.80002,
+  "2036": 84229497436.5258,
+  "2037": 88141003847.75597
+ },
+ "taxable_spending_2024_by_decile": [
+  9317,
+  11098,
+  13798,
+  16213,
+  19481,
+  20626,
+  25120,
+  31956,
+  39426,
+  60731
+ ],
+ "ce_income_2024_by_decile": [
+  9612,
+  23805,
+  36188,
+  49681,
+  65170,
+  83760,
+  106439,
+  136502,
+  182587,
+  346942
+ ],
+ "cpi_index_from_2024": {
+  "2024": 1.0,
+  "2025": 1.027,
+  "2026": 1.0567829999999998,
+  "2027": 1.0810890089999996,
+  "2028": 1.1059540562069996,
+  "2029": 1.1313909994997604,
+  "2030": 1.1574129924882548,
+  "2031": 1.1840334913154846,
+  "2032": 1.2112662616157406,
+  "2033": 1.2391253856329025,
+  "2034": 1.2676252695024592,
+  "2035": 1.2967806507010158,
+  "2036": 1.326606605667139
+ },
+ "items": [
+  "Food away from home",
+  "Alcoholic beverages",
+  "Other lodging",
+  "Other household expenses",
+  "Housekeeping supplies",
+  "Household furnishings and equipment",
+  "Apparel and services",
+  "Vehicle purchases (net outlay)",
+  "Maintenance and repairs",
+  "Vehicle rental, leases, licenses, and other charges",
+  "Fees and admissions",
+  "Audio and visual equipment and services",
+  "Pets, toys, hobbies, and playground equipment",
+  "Other entertainment supplies, equipment, and services",
+  "Personal care products and services",
+  "Reading",
+  "Tobacco products and smoking supplies"
+ ],
+ "patrick": {
+  "school_taxes_cents": "14 or 15 (from 8.25)",
+  "all_property_taxes_cents": "at least 25"
+ }
+};   // scripts/tx_offset_taxes.py: what a point of state sales tax raises; taxable spending by income tenth
+let TXG = null, TXGP = null;
+const TXP = { kind: "plan", plan: "abbott", knobs: {}, lever: null, idx: 0, year: 2031, mode: "respond", group: "age_group" };
+const TXMODE = { none: "Rates unchanged", respond: "Units respond", neutral: "Units keep their revenue" };
+const TXMODE_D = { none: "every county, city and district keeps its current-law tax rate path",
+  respond: "each unit sets its rate under its own rules (the no-new-revenue rate rises as its base shrinks, within the voter-approval limit); school compressed rates follow current law less any buy-down",
+  neutral: "each county, city and district raises the same revenue as under current law, so the tax moves onto other property" };
+const canon = v => typeof v === "number" ? String(v) : String(v);
+function txFmt(unit, v) {
+  if (v === "none" || v === null) return unit === "percent" ? "No limit" : "Off";
+  if (unit === "dollars") return v >= 1e9 ? "$" + (v / 1e9).toFixed(0) + " billion" : usd(v);
+  if (unit === "percent" || unit === "share") return (100 * v).toFixed(v * 100 % 1 ? 1 : 0) + "%";
+  if (unit === "multiple") return pct(v - 1, 1) + " a year";
+  if (unit === "cents") return Math.round(v * 100) + "¢";
+  if (unit === "switch") return v ? "Yes" : "No";
+  return String(v);
+}
+function txShort(unit, v) {      // tick labels
+  if (unit === "dollars" && typeof v === "number") return v >= 1e9 ? "$" + (v / 1e9).toFixed(0) + "B" : v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1000 ? "$" + (v / 1000).toFixed(0) + "k" : "$" + v;
+  if (unit === "income_limit") return txShort("dollars", v);
+  return txFmt(unit, v).replace(" a year", "");
+}
+async function loadTXG() {
+  if (TXG) return TXG;
+  const r = await fetch("tx_policy_grid.json");
+  TXG = await r.json();
+  const cols = TXG.meta.group_columns;
+  Object.values(TXG.runs).forEach(run => Object.values(run).forEach(m => {
+    if (m && m.groups && !m._unpacked) {
+      const out = {};
+      for (const y in m.groups) out[y] = m.groups[y].map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+      m.groups = out; m._unpacked = true;
+    }
+  }));
+  TXGP = Object.fromEntries(TXG.plans.map(p => [p.id, p]));
+  return TXG;
+}
+function txKnobDefaults(p) { return Object.fromEntries((p.knobs || []).map(k => [k.id, k.default])); }
+function txKey() {
+  if (TXP.kind === "slider") {
+    const sl = TXG.sliders.find(s => s.id === TXP.lever), v = sl.settings[TXP.idx];
+    return canon(v) === canon(sl.current) ? null : `s:${sl.id}:${canon(v)}`;
+  }
+  const p = TXGP[TXP.plan], moved = (p.knobs || []).filter(k => canon(TXP.knobs[k.id]) !== canon(k.default));
+  if (!moved.length) return `p:${p.id}`;
+  if (moved.length === 1) return `k:${p.id}:${moved[0].id}=${canon(TXP.knobs[moved[0].id])}`;
+  return `q:${p.id}:${moved[0].id}=${canon(TXP.knobs[moved[0].id])}|${moved[1].id}=${canon(TXP.knobs[moved[1].id])}`;
+}
+function txRun() { const k = txKey(); return k ? (TXG.runs[k] || {})[TXP.mode] : null; }
+function txYi(y) { return TXG.meta.years.indexOf(y); }
+
+function renderTXPolicyControls() {
+  const groups = [...new Set(TXG.plans.map(p => p.group))];
+  $("txp-plans").innerHTML = groups.map(g => `<div class="grp">${g}</div><div class="tabs" role="radiogroup" aria-label="${g}">` +
+    TXG.plans.filter(p => p.group === g).map(p => `<button role="radio" data-p="${p.id}" aria-checked="${TXP.kind === "plan" && TXP.plan === p.id}">${p.label}</button>`).join("") + "</div>").join("");
+  $("txp-lever").innerHTML = TXG.sliders.map(s => `<option value="${s.id}">${s.label}</option>`).join("");
+  $("txp-years").innerHTML = TXG.meta.report_years.map(y => `<button role="radio" data-y="${y}" aria-checked="${y === TXP.year}">${y}</button>`).join("");
+  $("txp-mode").innerHTML = TXG.meta.modes.map(m => `<button role="radio" data-m="${m}" aria-checked="${m === TXP.mode}">${TXMODE[m]}</button>`).join("");
+}
+function setTXLever(id, idx) {
+  const sl = TXG.sliders.find(s => s.id === id);
+  TXP.lever = id; TXP.idx = idx == null ? sl.settings.findIndex(v => canon(v) === canon(sl.current)) : idx;
+  $("txp-lever").value = id;
+  const r = $("txp-slider"); r.max = sl.settings.length - 1; r.value = TXP.idx;
+  $("txp-scale").innerHTML = sl.settings.map((v, i) => `<span class="${i === TXP.idx ? "cur" : ""}" style="left:${(100 * i / (sl.settings.length - 1)).toFixed(2)}%">${txShort(sl.unit, v)}</span>`).join("");
+  placeTicks($("txp-scale"));
+  $("txp-lever-note").textContent = `Current law: ${txFmt(sl.unit, sl.current)}. ${sl.note || ""}`;
+}
+function renderTXKnobs() {
+  if (TXP.kind !== "plan") { $("txp-knobs").innerHTML = ""; $("txp-knob-note").textContent = ""; return; }
+  const p = TXGP[TXP.plan], ks = p.knobs || [];
+  const moved = ks.filter(k => canon(TXP.knobs[k.id]) !== canon(k.default)).map(k => k.id);
+  $("txp-knobs").innerHTML = ks.map(k => {
+    const off = moved.length >= 2 && !moved.includes(k.id), i = k.settings.findIndex(v => canon(v) === canon(TXP.knobs[k.id]));
+    const ctl = k.unit === "choice" || k.settings.length <= 2 && typeof k.settings[0] === "string"
+      ? `<select data-k="${k.id}" ${off ? "disabled" : ""}>${k.settings.map(v => `<option ${canon(v) === canon(TXP.knobs[k.id]) ? "selected" : ""} value="${v}">${v}${canon(v) === canon(k.default) ? " (plan)" : ""}</option>`).join("")}</select>`
+      : `<input type="range" data-k="${k.id}" min="0" max="${k.settings.length - 1}" step="1" value="${i}" ${off ? "disabled" : ""} aria-label="${k.label}">
+         <div class="slider-scale">${k.settings.map((v, j) => `<span class="${j === i ? "cur" : ""}" style="left:${(100 * j / (k.settings.length - 1)).toFixed(2)}%">${txShort(k.unit, v)}</span>`).join("")}</div>`;
+    return `<div class="txp-knob${off ? " off" : ""}"><span class="field-label">${k.label}</span>${ctl}</div>`;
+  }).join("");
+  $("txp-knobs").querySelectorAll(".slider-scale").forEach(placeTicks);
+  $("txp-knob-note").textContent = ks.length ? (moved.length >= 2 ? "Two of this plan's numbers are changed; reset one to move another." :
+    "Move any one or two of the plan's numbers; the rest stay as the plan has them.") : "";
+}
+function txBars(id, rows, fmt) {
+  const mx = Math.max(...rows.map(r => Math.abs(r.v)), 1e-9);
+  $(id).innerHTML = rows.map(r => `<div class="bar-row"><span class="lab">${r.lab}</span><span class="track signed"><i class="${r.v < 0 ? "neg" : "pos"}" style="left:${r.v < 0 ? 50 - 50 * Math.abs(r.v) / mx : 50}%;width:${(50 * Math.abs(r.v) / mx).toFixed(1)}%"></i></span><span class="num">${fmt(r.v)}</span></div>`).join("");
+}
+function renderTXPolicy() {
+  if (!TXG) return;
+  document.querySelectorAll("#txp-plans button").forEach(b => b.setAttribute("aria-checked", TXP.kind === "plan" && b.dataset.p === TXP.plan));
+  document.querySelectorAll("#txp-years button").forEach(b => b.setAttribute("aria-checked", +b.dataset.y === TXP.year));
+  document.querySelectorAll("#txp-mode button").forEach(b => b.setAttribute("aria-checked", b.dataset.m === TXP.mode));
+  renderTXKnobs();
+  let title, desc;
+  if (TXP.kind === "plan") { const p = TXGP[TXP.plan]; title = p.label; desc = p.description; }
+  else { const sl = TXG.sliders.find(s => s.id === TXP.lever); title = `${sl.label}: ${txFmt(sl.unit, sl.settings[TXP.idx])}`; desc = `Current law: ${txFmt(sl.unit, sl.current)}. ${sl.note || ""}`; }
+  $("txp-chosen").innerHTML = `<div class="chosen-title">${title}</div><p class="muted-p">${desc}</p>`;
+  const m = txRun(), none = !txKey();
+  $("txp-none").hidden = !none;
+  document.querySelectorAll("#tx-policy .txp-sec").forEach(s => s.hidden = none || !m || m.error);
+  if (none) { $("txp-tiles").innerHTML = ""; return; }
+  if (!m || m.error) { $("txp-tiles").innerHTML = `<p class="muted-p">${m && m.error ? "This setting didn't run: " + m.error : "This combination wasn't computed."}</p>`; return; }
+  const Y = m.yearly, yi = txYi(TXP.year), y = TXP.year, CL = TXG.meta.current_law;
+  const hs = Y.tax_total[yi], all = Y.total_levy[yi], st = Y.state_cost[yi], loc = Y.local_revenue_lost[yi], pts = Y.sales_tax_points[yi];
+  const avg = Y.avg_tax[yi], avg0 = CL.avg_tax[yi];
+  $("txp-tiles").innerHTML = [
+    [bnS(hs), `Change in homestead property tax, ${y} (${pctS(hs / CL.tax_total[yi], 0)})`],
+    [usdS(avg), `Average homestead bill, ${y}: ${usd(avg0 + avg)} instead of ${usd(avg0)}`],
+    [st > 1e8 ? bnB(st) : "$0", `Cost to the state, ${y}${pts > 0.01 ? ` — about ${pts.toFixed(1)} points of state sales tax (now 6.25%)` : ""}`],
+    [loc > 1e8 ? bnB(loc) : loc < -1e8 ? "+" + bnB(-loc) : "$0", loc >= -1e8 ? `Revenue local governments lose, ${y}` : `Extra revenue local governments raise, ${y}`],
+  ].map(([v, l]) => `<div class="fig"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  const yrsP = TXG.meta.years.filter(v => v > 2026), idx = yrsP.map(txYi);
+  const ser = [["tax_total", "var(--accent)"], ["total_levy", "var(--county)"]].map(([k, c]) => ({ points: yrsP.map((v, i) => ({ year: v, v: Y[k][idx[i]] / 1e9 })), color: c, width: 2.6, endLabel: true }));
+  ser.push({ points: yrsP.map((v, i) => ({ year: v, v: -Y.state_cost[idx[i]] / 1e9 })), color: "var(--neutral)", width: 2.2, dash: "5 4" });
+  const vals = ser.flatMap(s => s.points.map(p => p.v)), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), span = Math.max(hi - lo, 0.5);
+  lineChart($("txp-c-rev"), { label: "Change in property tax and the state's cost by year", width: 520, height: 280,
+    ymin: lo - span * 0.05, ymax: hi + span * 0.05, yfmt: v => (v < 0 ? "−$" : "$") + Math.abs(v).toFixed(span > 20 ? 0 : 1) + "B", series: ser });
+  $("txp-rev-intro").textContent = `${TXMODE[TXP.mode]}: ${TXMODE_D[TXP.mode]}. Homestead tax changes by ${bnS(hs)} in ${y} and all property tax (homes, rentals, business and minerals) by ${bnS(all)}. ` +
+    (st > 1e8 ? `The state pays ${bnB(st)} that year to make school districts${Y.local_revenue_lost.some(v => Math.abs(v) > 1e8) ? "" : " (and, where the plan says so, other units)"} whole.` : "No state money is involved.");
+  $("txp-t-rev").innerHTML = "<thead><tr><th>Year</th><th>Homestead tax</th><th>All property tax</th><th>Cost to the state</th><th>Sales tax points</th><th>Local revenue lost</th></tr></thead><tbody>" +
+    yrsP.map((v, i) => { const j = idx[i]; return `<tr${v === y ? ' class="sel"' : ""}><td>${v}</td><td>${bnS(Y.tax_total[j])}</td><td>${bnS(Y.total_levy[j])}</td><td>${bnS(Y.state_cost[j])}</td><td>${(Y.sales_tax_points[j] || 0).toFixed(2)}</td><td>${bnS(Y.local_revenue_lost[j])}</td></tr>`; }).join("") + "</tbody>";
+  const G_ = m.groups[String(y)], dec = G_.filter(r => r.grouping === "income_decile").sort((a, b) => +a.group - +b.group), A = G_.find(r => r.grouping === "all");
+  txBars("txp-c-dec", dec.map(r => ({ lab: "Tenth " + r.group, v: r.avg_change })), usdS);
+  txBars("txp-c-share", dec.map(r => ({ lab: "Tenth " + r.group, v: r.change_share_of_income_bp / 1e4 })), v => pctS(v, 2));
+  const bandC = ["var(--gain2)", "var(--gain1)", "var(--same)", "var(--lose1)", "var(--lose2)"], bk = ["gain_more_5pct_pm", "gain_less_5pct_pm", "no_change_pm", "lose_less_5pct_pm", "lose_more_5pct_pm"];
+  $("txp-c-win").innerHTML = `<div class="wl" role="img" aria-label="Share of owners paying less or more by income tenth">` + dec.concat([A]).map((r, i) =>
+    `<div class="wl-row${i === dec.length ? " wl-all" : ""}"><span class="wl-lab">${i === dec.length ? "All owners" : "Tenth " + r.group}</span><span class="wl-bar">` +
+    bk.map((k, j) => { const v = (r[k] || 0) / 1000; return v > 0.005 ? `<i style="width:${(100 * v).toFixed(1)}%;background:${bandC[j]}">${v >= 0.08 ? Math.round(100 * v) + "%" : ""}</i>` : ""; }).join("") + "</span></div>").join("") + "</div>";
+  $("txp-who-intro").textContent = `In ${y}, ${pct((A.share_pay_less_pm || 0) / 1000, 0)} of owners pay less and ${pct((A.share_pay_more_pm || 0) / 1000, 0)} pay more than under current law; the average owner's bill changes by ${usdS(A.avg_change)} (${pctS(A.change_share_of_income_bp / 1e4, 2)} of income). Renters aren't in these figures.`;
+  const GT = [["age_group", "Age of householder"], ["over65", "65+ or disabled"], ["homestead", "Homestead"], ["region", "Region"]];
+  $("txp-gtabs").innerHTML = GT.map(([k, l]) => `<button role="tab" data-g="${k}" aria-selected="${k === TXP.group}">${l}</button>`).join("");
+  $("txp-t-groups").innerHTML = "<thead><tr><th>Group</th><th>Owners</th><th>Average change</th><th>Change in their tax</th><th>Share of income</th><th>Pay less</th><th>Pay more</th></tr></thead><tbody>" +
+    G_.filter(r => r.grouping === TXP.group).map(r => `<tr><td>${r.group}</td><td>${Math.round(r.owners).toLocaleString("en-US")}</td><td>${usdS(r.avg_change)}</td><td>${pctS(r.pct_change_bp / 1e4, 1)}</td><td>${pctS(r.change_share_of_income_bp / 1e4, 2)}</td><td>${pct(r.share_pay_less_pm / 1000, 0)}</td><td>${pct(r.share_pay_more_pm / 1000, 0)}</td></tr>`).join("") + "</tbody>";
+  // paying for it: points of sales tax x what each income tenth spends on taxable items (CE, grown with CPI)
+  const cpiK = TXO.cpi_index_from_2024[String(y)] || 1, sp = TXO.taxable_spending_2024_by_decile;
+  $("txp-off-intro").textContent = pts > 0.01 ? `Replacing the state's cost with the state sales tax would take about ${pts.toFixed(1)} more points in ${y} (the state rate is 6.25% now; Lt. Gov. Patrick has said replacing all school property taxes would take a total sales tax of 14 or 15 cents, up from 8.25, and all property taxes at least 25). Every household pays the sales tax, renters included; owners also get the property tax change. National spending patterns (Consumer Expenditure Survey); part of the tax falls on businesses and visitors, so households' share is overstated.` :
+    "This policy costs the state nothing, so there's nothing to pay for with the sales tax.";
+  $("txp-t-off").innerHTML = pts > 0.01 ? "<thead><tr><th>Income tenth</th><th>Property tax change per owner</th><th>Sales tax increase per household</th><th>Net for an average owner</th></tr></thead><tbody>" +
+    dec.map((r, i) => { const s = pts / 100 * sp[i] * cpiK; return `<tr><td>${r.group}</td><td>${usdS(r.avg_change)}</td><td>${usdS(s)}</td><td>${usdS(r.avg_change + s)}</td></tr>`; }).join("") + "</tbody>" : "";
+}
+function renderTXNotes() {
+  $("txp-notes").innerHTML = [
+    `<b>Same households, same economy.</b> Each policy is run on the same households, home values, sales and new homes as current law (central scenario), so the differences come from the policy. Changes start in 2027.`,
+    `<b>Three ways local governments can respond.</b> ${Object.entries(TXMODE).map(([k, l]) => `<i>${l}</i>: ${TXMODE_D[k]}`).join("; ")}. Where a plan has the state pay units back, their rates follow current law in every mode.`,
+    `<b>The state pays school districts back</b> for exemptions, eliminations and rate buy-downs, as it has for every Texas school tax cut since 2019; that is the cost to the state, with what it would take in state sales tax (one point raises about ${bn(TXO.point_value["2027"])} in 2027).`,
+    `<b>Plans are read as written where they give numbers</b>, and the rest is a stated assumption (in each plan's description; details in the model's decisions log). None is a filed bill. Rollback petitions, bond rules, renters' exemptions and data center rules aren't modelled.`,
+    `<b>Owners only.</b> Renters appear as $0; what landlords pass on in rent isn't modelled, so shifts onto rental property show up only in "all property tax".`,
+    `<b>Any one or two of a plan's numbers can be moved</b>; every combination shown was computed in advance.`,
+  ].map(t => `<li>${t}</li>`).join("");
+}
+async function openTXPolicy() {
+  $("txp-loading").hidden = false;
+  try { await loadTXG(); } catch (e) { $("txp-loading").textContent = "The policy results couldn't be loaded."; return; }
+  $("txp-loading").hidden = true;
+  if (!$("txp-plans").innerHTML) {
+    renderTXPolicyControls(); renderTXNotes();
+    TXP.knobs = txKnobDefaults(TXGP[TXP.plan]); setTXLever(TXG.sliders[0].id);
+    $("txp-plans").onclick = e => { const b = e.target.closest("button[data-p]"); if (!b) return;
+      TXP.kind = "plan"; TXP.plan = b.dataset.p; TXP.knobs = txKnobDefaults(TXGP[TXP.plan]); renderTXPolicy(); };
+    $("txp-lever").onchange = e => { TXP.kind = "slider"; setTXLever(e.target.value); renderTXPolicy(); };
+    $("txp-slider").oninput = e => { TXP.kind = "slider"; setTXLever(TXP.lever, +e.target.value); renderTXPolicy(); };
+    $("txp-knobs").oninput = e => { const t = e.target, k = t.dataset.k; if (!k) return;
+      const kn = TXGP[TXP.plan].knobs.find(x => x.id === k);
+      TXP.knobs[k] = t.tagName === "SELECT" ? kn.settings.find(v => String(v) === t.value) : kn.settings[+t.value]; renderTXPolicy(); };
+    $("txp-years").onclick = e => { const b = e.target.closest("button[data-y]"); if (b) { TXP.year = +b.dataset.y; renderTXPolicy(); } };
+    $("txp-mode").onclick = e => { const b = e.target.closest("button[data-m]"); if (b) { TXP.mode = b.dataset.m; renderTXPolicy(); } };
+    $("txp-gtabs").onclick = e => { const b = e.target.closest("button[data-g]"); if (b) { TXP.group = b.dataset.g; renderTXPolicy(); } };
+  }
+  renderTXPolicy();
+}
+function showTXSub(t) {
+  $("tx-today").hidden = t !== "today"; $("tx-policy").hidden = t !== "policy";
+  document.querySelectorAll("#tx-sub button").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
+  if (t === "policy") openTXPolicy();
+}
+$("tx-sub").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showTXSub(b.dataset.t); });
+
 function renderHome() {
   const tx = TX.headline;
   const share = k => `<div class="l">Property tax is <b>${pct(PT_SHARE_2024[k], 1)}</b> of state and local general revenue (2024; U.S. ${pct(PT_SHARE_2024.us, 1)})</div>`;
@@ -20402,5 +20778,6 @@ document.addEventListener("click", e => { const a = e.target.closest("[data-goto
 $("states").addEventListener("click", e => { const b = e.target.closest("button[data-s]"); if (b) showView(b.dataset.s === "fl" ? "today" : b.dataset.s); });
 document.addEventListener("click", e => { const c = e.target.closest(".state-card"); if (c) { showView(c.dataset.s === "fl" ? "today" : c.dataset.s); window.scrollTo(0, 0); } });
 showView(location.hash === "#policy" ? "policy" : location.hash === "#amendment3" ? "a3" : location.hash === "#about" ? "about" :
-  location.hash === "#florida" ? "today" : location.hash === "#texas" ? "tx" : "home");
+  location.hash === "#florida" ? "today" : location.hash.startsWith("#texas") ? "tx" : "home");
+if (location.hash === "#texas-policy") showTXSub("policy");
 </script>

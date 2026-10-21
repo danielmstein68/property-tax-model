@@ -147,6 +147,7 @@ exemptions:
     order: 11
     household_flag: over65_or_disabled
     amount: {2015: 10000, 2025: 60000}
+    min_age: {1979: 65}           # age for the school exemption and freeze (policy lever: Double Nickel 55)
     notes: >
       "Disabled" = eligible for Social Security disability benefits (s. 11.13(m)(1)); the model
       proxies it from ACS disability and SSDI/SSI receipt (docs/TX_DECISIONS.md).
@@ -350,3 +351,173 @@ rates:
     no_election_pennies: 0.05
     golden_yield_factor: 0.02084
     copper_yield_factor: 0.008
+
+# ---------------------------------------------------------------------------------------------------
+# Policy levers: numbers that are not in current law (or are current law's "off" setting), so policies
+# can change them. Under current law each is a no-op. Read by ptm.tx.project every year.
+policy:
+
+  nonhomestead_cap:
+    description: >
+      Policy lever: limit on yearly increases in the appraised value of non-homestead property (rentals,
+      second homes, commercial and industrial real property, business personal property; minerals not),
+      like the homestead cap; resets to market on a sale. "none" = no limit (current law after the
+      circuit breaker expires). residential_only: 1 = rentals and second homes only.
+    citation: "Policy lever (not current law); cf. Tax Code s. 23.23, s. 23.231"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.23.htm
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    cap: {2026: none}
+    residential_only: {2026: 0}
+
+  reappraisal:
+    description: >
+      Policy lever: appraise property only every `cycle_years` years (Abbott: five). Between reappraisals
+      market values used for appraisal stay at the last reappraisal's; sales and new property enter at
+      that value too. 1 = every year (current law).
+    citation: "Policy lever (not current law); cf. Tax Code s. 25.18"
+    source_text: "Not in current Texas law (appraisal at least once every three years, s. 25.18(b))."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.25.htm
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    cycle_years: {2026: 1}
+
+  value_rollback:
+    description: >
+      Policy lever (RPT 2026 plank 80(a)): cost-basis valuation from `from_year`: every property's
+      appraised value starts at its 2019 value (market now x the county's 2019/2026 home price ratio,
+      FHFA) grown at `cap` a year since 2019, never above market, then rises at most `cap` a year; a
+      sale resets it to the price paid (market). "none" = off.
+    citation: "Policy lever (not current law); RPT 2026 Platform plank 80(a)"
+    source_text: "Not in current Texas law."
+    source_url: https://texasgop.org/platform/
+    confidence: medium
+    applies_to: [school, county, city, college, hospital, special]
+    from_year: {2026: none}
+    cap: {2026: 0.03}
+
+  homestead_exempt_share:
+    description: >
+      Policy lever: share of a homestead's tax that is exempt - school M&O, school I&S (debt) and
+      non-school units separately (1 = no tax). Applied after freezes. 0 under current law.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    school_mo: {2026: 0.0}
+    school_is: {2026: 0.0}
+    nonschool: {2026: 0.0}
+
+  nonhomestead_exempt_share:
+    description: >
+      Policy lever: share of non-homestead taxable value exempt from all units - residential (rentals,
+      second homes, vacant lots), business (commercial, industrial, personal property, farm) and
+      minerals. 0 under current law.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    residential: {2026: 0.0}
+    business: {2026: 0.0}
+    mineral: {2026: 0.0}
+
+  state_exemptions_all_units:
+    description: >
+      Policy lever (RPT 2026 plank 80(a), homestead exemptions in full across all taxing entities): the
+      school homestead and over-65/disabled exemptions also apply to counties, cities, colleges,
+      hospital and special districts. 0 = off.
+    citation: "Policy lever (not current law); cf. Tax Code s. 11.13(b), (c)"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm
+    confidence: high
+    applies_to: [county, city, college, hospital, special]
+    enabled: {2026: 0}
+
+  local_flat_homestead:
+    description: >
+      Policy lever (TDP 2026-28 platform, a flat-dollar homestead exemption): every non-school unit
+      exempts this many dollars of each homestead's appraised value, on top of current exemptions.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Texas law (local homestead exemptions are percentages, s. 11.13(n))."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm
+    confidence: high
+    applies_to: [county, city, college, hospital, special]
+    amount: {2026: 0}
+
+  local_freeze_mandatory:
+    description: >
+      Policy lever: every county, city and junior college freezes over-65/disabled homesteads' taxes
+      (s. 11.261 made mandatory). 0 = local option (current law).
+    citation: "Policy lever (not current law); cf. Tax Code s. 11.261, Tex. Const. art. VIII s. 1-b(h)"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.11.htm#11.261
+    confidence: high
+    applies_to: [county, city, college]
+    enabled: {2026: 0}
+
+  spending_limit:
+    description: >
+      Policy lever (Abbott; RPT 80(g)): a unit's M&O levy on existing property may grow at most the
+      lesser of statewide population growth plus inflation and `max_growth` a year (enforced as a lower
+      voter-approval multiplier). schools: 1 = school enrichment held too. "none" = off.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Texas law."
+    source_url: https://gov.texas.gov/
+    confidence: medium
+    applies_to: [county, city, college, hospital, special]
+    max_growth: {2026: none}
+    pop_plus_inflation: {2026: 1}
+
+  increase_approval:
+    description: >
+      Policy lever (Abbott, two-thirds voter approval on all local property tax increases; RPT 80(b)):
+      share of each unit's planned M&O increase above the no-new-revenue rate that survives (1 =
+      current law; 0 = no increases pass).
+    citation: "Policy lever (not current law); cf. Tax Code s. 26.07"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/TX/htm/TX.26.htm
+    confidence: medium
+    applies_to: [county, city, college, hospital, special]
+    share: {2026: 1.0}
+
+  school_buydown:
+    description: >
+      Policy lever: extra school M&O compression beyond the formula - `cents` per $100 off every
+      district's MCR (at most its MCR), and/or `dollars_per_year` of state money spent each year on more
+      compression (RPT 80(i), 90% of surpluses), turned into cents on statewide school taxable value and
+      added up year by year. The state pays districts back through the formula.
+    citation: "Policy lever (not current law); cf. Education Code s. 48.255"
+    source_text: "Not in current Texas law."
+    source_url: https://statutes.capitol.texas.gov/Docs/ED/htm/ED.48.htm
+    confidence: high
+    applies_to: [school]
+    cents: {2026: 0.0}
+    dollars_per_year: {2026: 0.0}
+
+  income_credit:
+    description: >
+      Policy lever: a state-funded credit for homestead owners whose property tax is more than
+      `share_of_income` of household income (credit = the excess, at most `max_credit`, incomes up to
+      `income_limit`). "none" = off.
+    citation: "Policy lever (not current law)"
+    source_text: "Not in current Texas law."
+    source_url: https://comptroller.texas.gov/
+    confidence: high
+    applies_to: [school, county, city, college, hospital, special]
+    share_of_income: {2026: none}
+    max_credit: {2026: 1500}
+    income_limit: {2026: 100000}
+
+  state_replaces_local:
+    description: >
+      Policy setting: the state pays non-school units back for revenue a policy takes away (the plans
+      that eliminate taxes), so their rates follow current law. 0 = units absorb or replace it.
+    citation: "Policy setting (Daniel, 2026-10-21)"
+    source_text: "Not a law."
+    source_url: https://comptroller.texas.gov/
+    confidence: high
+    applies_to: [county, city, college, hospital, special]
+    enabled: {2026: 0}

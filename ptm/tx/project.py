@@ -1,9 +1,10 @@
-"""Texas projections, 2026 -> 2036: owners' and other property's taxes under current law.
+"""Texas projections, 2026 -> 2036: owners' and other property's taxes under current law or a policy.
 
     from ptm.tx.project import TxProjection
     p = TxProjection(o, rows, "central").run(2036)      # o, rows: the 2026 baseline (ptm.tx.baseline.build_full)
     p.summary            # one row per year: tax by class, owners, over-65 homesteads, sales, rates, school finance
     p.household_results  # per owner record: tax_<year>, income_<year>, weight_<year>, ...
+    p.paths              # per year: each unit's rates and M&O levy (for policy runs: replay / revenue-neutral)
 
 Each year (inputs/tx_projection_assumptions.yaml, through ptm.economy.Economy as for Florida):
   1. economy    market values x (1 + home value growth); income components grow (wages, other income,
@@ -14,30 +15,39 @@ Each year (inputs/tx_projection_assumptions.yaml, through ptm.economy.Economy as
                 Rates are set so sales plus deaths match the PUMS move-in rate. The home's appraised value
                 resets to market, and it gets a new owner drawn from the county's recent buyers (moved in
                 within two years): age, income, over-65 / disabled status. The freeze ends; a new owner who
-                is 65+ or disabled starts a new freeze at this year's tax (ceiling portability not modelled).
-  4. turning 65 owners whose older spouse reaches 65 claim the over-65 exemption and freeze at the 2026
-                claim rate of owners 65+ (s. 11.13(c), s. 11.26): the state $60,000 school exemption, the
-                units' local over-65 amounts, and a ceiling at this year's school tax (and at this year's
-                tax for counties, cities and colleges that have adopted a freeze, s. 11.261)
+                qualifies starts a new freeze at this year's tax (ceiling portability not modelled).
+  4. turning 65 owners whose older spouse reaches the age claim the over-65 exemptions at the 2026 claim
+                rate of owners 65+ (s. 11.13(c), (d), s. 11.42(c)): the school exemption and freeze from the
+                law spec's school age (65; a policy can lower it), the units' local over-65 amounts and local
+                freezes (s. 11.261) at 65
   5. weights    owners by householder age (18-64, 65+) grow with Texas's projected population in each band
                 (Texas Demographic Center), at 2026 ownership rates; the growth beyond existing homes is new
                 owners in new homes (pre-built records from recent buyers, placed by county with TDC's county
                 growth), appraised at market, entering the rolls as new construction
-  6. appraisal  homesteads: min(market, last year's appraised x 1.10) (s. 23.23)
+  6. appraisal  homesteads: min(market, last year's appraised x (1 + cap)), cap 10% (s. 23.23); policy
+                levers: a cap on other property, reappraisal every N years, cost-basis values from 2019
   7. rates      non-school units: the no-new-revenue M&O rate (last year's M&O rate / growth of existing
                 taxable value - model homesteads plus each unit's non-homestead base) x (1 + position x
                 (multiplier - 1)), position = where the unit set its 2025 rate between its no-new-revenue
-                and voter-approval rates; I&S held. Schools: state compression (MCR = last x 1.025 / (1 + g)
-                when value growth g > 2.5%), each district's MCR the lesser of its own compressed rate and the
-                state's, at least 90% of it; M&O = MCR + enrichment (held); I&S held
-  8. freezes    school ceilings fall by last year's taxable value x the MCR cut (s. 11.26(a-10)); other
-                ceilings stay in dollars
-  9. other property  each unit's non-homestead taxable value (2025 roll total less the model's owners)
-                grows with its county's mix of residential, business and mineral value plus new
-                construction; the 20% circuit breaker expires after 2026 (s. 23.231(k)), so 2027 adds back
-                its 2025 loss; tax = base x the unit's rate
- 10. finance    each district's value grows with g plus new construction; Tier One / Two state aid and
-                recapture from ptm.tx.school.finance
+                and voter-approval rates; multiplier 1.08 for special taxing units (hospital districts,
+                colleges, units at 2.5 cents or less), else 1.035; I&S held. Schools: compression from each
+                district's total taxable value growth (DPV, s. 48.2551), at most the state's compressed rate
+                (s. 48.255), at least 90% of it; M&O = MCR + enrichment (held); I&S held
+  8. freezes    school ceilings = last year's tax imposed less last year's taxable value x the MCR cut, less
+                any exemption increase x this year's rate (s. 11.26(a-10)); local ceilings stay in dollars
+  9. other property  each unit's non-homestead taxable value (2025 roll total less the model's owners) in
+                three parts (residential, business, mineral, by its county's PVS mix), each growing with its
+                value path plus new construction; the 20% circuit breaker expires after 2026 (s. 23.231(k)),
+                so 2027 adds back its 2025 loss; tax = base x the unit's rate
+ 10. finance    each district's value follows its modelled DPV; Tier One / Two state aid and recapture
+                (ptm.tx.school.finance)
+
+Policy runs (ptm.tx.compare) pass a policy law and one of three rate modes, as for Florida:
+  replay    rates follow the current-law run's path exactly (`rate_replay`)
+  respond   units set rates under their rules from their own (smaller or larger) bases; school compressed
+            rates follow the current-law path less any policy buy-down
+  neutral   each non-school unit raises the same M&O levy as under current law (`revenue_neutral`)
+With the law spec's state_replaces_local on, non-school rates follow the current-law path (the state pays).
 
 Exemption amounts are the law spec's nominal dollars (not indexed in Texas); local percentages held.
 Not modelled: ceiling portability on a move, owners becoming disabled, veterans' status changing on a sale
@@ -59,8 +69,10 @@ PATHS = ROOT / "inputs" / "tx_economy_paths.csv"
 PROC = ROOT / "data" / "processed"
 BASE_YEAR = 2026
 CLASSES = ["school", "county", "city", "college", "hospital", "special"]
+NH = ["residential", "business", "mineral"]        # parts of each unit's non-homestead base
 COHORT_SIZE = 2000                      # new-owner records per year
 INCOME = ["wagp_aged", "semp_aged", "intp_aged", "ssp_aged", "ssip_aged", "pap_aged", "retp_aged", "oip_aged"]
+LOCAL_FREEZE = ["county", "city", "college"]        # units that may freeze (s. 11.261)
 
 
 def apply_2026_school_rates(rows: pd.DataFrame) -> pd.DataFrame:
@@ -112,6 +124,20 @@ def county_mix() -> pd.DataFrame:
     return _cache("tx_county_mix_2025.parquet", make)
 
 
+def price_ratio_2019() -> pd.Series:
+    """County FIPS -> home prices in 2019 relative to the 2026 appraisal date (FHFA all-transactions county
+    index, 2019 annual / 2025 annual, over the 2025 Q4 / annual factor used for 2026 values). For the
+    cost-basis lever (RPT 80(a)); the same ratio stands in for other property."""
+    from ptm.tx.survey import RAW
+    c = pd.read_excel(RAW / "fhfa" / "hpi_at_county.xlsx", header=6)
+    c.columns = ["state", "county", "fips", "year", "chg", "hpi", "hpi_1990", "hpi_2000"]
+    c = c[c["state"] == "TX"].copy()
+    c["county_fips"] = c["fips"].astype(str).str.zfill(5).str[-3:]
+    w = c.pivot_table(index="county_fips", columns="year", values="hpi")
+    r = (w[2019] / w[2025]).dropna()
+    return r.clip(0.3, 1.0)
+
+
 def rate_positions(u: pd.DataFrame) -> pd.Series:
     """Where each unit set its 2025 total rate between its no-new-revenue and voter-approval rates."""
     ok = u["nnr_rate"].notna() & u["var_rate"].notna() & (u["var_rate"] > u["nnr_rate"] + 1e-6)
@@ -138,25 +164,41 @@ def county_growth(years: range) -> pd.DataFrame:
     return pd.DataFrame({y: np.exp([np.interp(y, dec, r) for r in lv]) for y in years}, index=c.index)
 
 
+def _off(v) -> bool:
+    return v is None or (isinstance(v, str) and v.strip().lower() == "none")
+
+
 # --- projection -------------------------------------------------------------------------------------
 class TxProjection:
     def __init__(self, o: pd.DataFrame, rows: pd.DataFrame, scenario: str = "central", overrides: dict | None = None,
-                 seed: int = 2026, end_year: int = 2036, rate_setting: dict | None = None, demography: dict | None = None):
+                 seed: int = 2026, end_year: int = 2036, rate_setting: dict | None = None, demography: dict | None = None,
+                 law=None, rate_replay: dict | None = None, revenue_neutral: dict | None = None, school_replay: dict | None = None):
         self.econ = Economy(scenario, overrides, assumptions_path=SPEC, paths_path=PATHS)
         spec = self.spec = self.econ.spec
         self.rs = {**spec["rate_setting"], **(rate_setting or {})}
         self.demo = {**spec["demography"], **(demography or {})}
-        self.law = load_law("tx")
+        self.law = law or load_law("tx")
+        # policy runs: `rate_replay` = a current-law run's paths (all rates follow them); `revenue_neutral` =
+        # its paths, each non-school unit keeps its M&O levy; `school_replay` = its paths for school MCRs only
+        self.rate_replay, self.revenue_neutral = rate_replay, revenue_neutral
+        self.school_replay = school_replay or rate_replay or revenue_neutral
         self.rng = np.random.default_rng(seed)
         self.end_year = end_year
         self.scenario = scenario
+        self.paths = {}
         self._records(o, rows, seed)
         self._units()
         self._weights_init()
         self.year = BASE_YEAR
         self.history, self.rows_out = {}, []
+        self._buydown = 0.0
         self._tax_year(BASE_YEAR, first=True)
         self._base_sale = self._calibrate(self._p_death(self.age + 1))   # next year's ages, base-year savings
+
+    def _lv(self, rule: str, key: str, y: int, default=None):
+        """A law spec value for year y; None when the lever is off ("none")."""
+        v = self.law.rule(rule).get(key, y, default)
+        return None if _off(v) else v
 
     # records: owners (homestead and not) + new-owner cohorts --------------------------------------------
     def _records(self, o: pd.DataFrame, rows: pd.DataFrame, seed: int) -> None:
@@ -191,7 +233,6 @@ class TxProjection:
             picks.append(pick)
             cyear.append(np.full(len(pick), y))
         pick = np.concatenate(picks)
-        self.cohort_share = {y: None for y in years}
         allrec = np.concatenate([np.arange(n0), pick])
         self.cohort_year = np.concatenate([np.zeros(n0, int)] + cyear)
         # new-owner weight within its year: the donor's county share of growth x its weight within the county
@@ -218,17 +259,22 @@ class TxProjection:
         X["rec"] = rec
         self.X = X
         self.rec = rec
+        self._row_start = np.searchsorted(rec, np.arange(self.n))
+        self._row_stop = np.searchsorted(rec, np.arange(self.n), side="right")
         f = lambda c, d=0.0: np.array(R[c].fillna(d).to_numpy(dtype=float))  # noqa: E731
         self.R = R
         self.w0 = np.where(self.orig, f("WGTP"), 0.0)
         self.hs = np.array(R["homestead"].fillna(False).to_numpy(dtype=bool))
         self.mkt = f("market")
+        self.mv = self.mkt.copy()                      # market value used for appraisal (reappraisal lever)
         self.ap = f("appraised", np.nan)
         self.ap = np.where(np.isnan(self.ap), self.mkt, self.ap)     # 2026: the circuit breaker still applies to non-homesteads
         self.age = f("couple_age")
         self.hage = f("HHLDRAGEP") + 2
         self.spouse = np.array(R["spouse"].to_numpy(dtype=bool))
         self.o65 = np.array(R["over65_or_disabled"].fillna(False).to_numpy(dtype=bool) & self.hs)
+        self.dis = np.array(R["disabled"].fillna(False).to_numpy(dtype=bool)) if "disabled" in R else np.zeros(self.n, bool)
+        self.o65s = self.o65.copy()                    # school over-65 / disabled status (the school age may differ)
         self.dvt = R["dv_total"].fillna(False).to_numpy(dtype=bool)
         self.county = R["county_fips_tax"].astype(str).to_numpy()
         self.inc = {c: f(c) for c in INCOME if c in R}
@@ -313,12 +359,14 @@ class TxProjection:
         self.ratio0 = X["ceiling_ratio"].to_numpy(dtype=float)
         self.ceiling = np.full(len(X), np.nan)
         self.new_freeze = np.zeros(len(X), bool)
+        self._mandatory_on = False
         # rows' static parts
         self.lpct = X["local_pct"].fillna(0).to_numpy(dtype=float)
         self.row_mo0 = X["mo_rate"].fillna(0).to_numpy(dtype=float)     # rows' own rates (a unit's can differ by row)
         self.row_is = X["is_rate"].fillna(0).to_numpy(dtype=float)
         self.hshare = X["hs_share"].fillna(1).to_numpy(dtype=float)
         self.is_school = (X["levy_class"] == "school").to_numpy()
+        self.row_cls = X["levy_class"].to_numpy()
         # non-homestead bases: 2025 roll taxable x 2026 growth, less the model's owners (avg units' owners
         # spread over the real units of their class in the county by taxable value)
         T = u0["taxable_value"].reindex(ids).fillna(0).to_numpy(dtype=float) * (1 + self.econ.rate("home_value", BASE_YEAR))
@@ -326,7 +374,7 @@ class TxProjection:
         mix = county_mix().set_index("county_fips")
         self.mix = mix
         self.nh = None                       # set in the base year once owners' taxable is known
-        self.sch_state_mcr = self.state_mcr
+        self.ratio2019 = price_ratio_2019()
 
     def _weights_init(self) -> None:
         years = range(BASE_YEAR, self.end_year + 2)
@@ -336,50 +384,123 @@ class TxProjection:
         self.w = self.w0.copy()
         self.weights = {BASE_YEAR: self.w.copy()}
 
+    # non-homestead bases in parts -----------------------------------------------------------------------
+    def _split_nh(self, nh: np.ndarray, H: np.ndarray) -> None:
+        """Each unit's non-homestead base into residential / business / mineral by its county's PVS mix,
+        residential net of the model's owner homes (their market value in the county)."""
+        mix = self.mix.reindex(self.ucty)
+        own = pd.Series(self.mkt * self.w0).groupby(self.county).sum()
+        res = np.maximum(mix["residential"].fillna(0).to_numpy() - own.reindex(self.ucty).fillna(0).to_numpy(), 0)
+        bus, mine = mix["business"].fillna(0).to_numpy(), mix["mineral"].fillna(0).to_numpy()
+        tot = res + bus + mine
+        sh = {"residential": np.where(tot > 0, res / np.maximum(tot, 1), 1 / 3), "business": np.where(tot > 0, bus / np.maximum(tot, 1), 1 / 3),
+              "mineral": np.where(tot > 0, mine / np.maximum(tot, 1), 1 / 3)}
+        self.nh_ap = {k: nh * sh[k] for k in NH}            # appraised (taxable before policy exemptions)
+        self.nh_mkt = {k: v.copy() for k, v in self.nh_ap.items()}
+        self.nh_mv = {k: v.copy() for k, v in self.nh_ap.items()}
+
+    def _nh_taxable(self, y: int) -> np.ndarray:
+        r = self.law.rule("nonhomestead_exempt_share")
+        return sum(self.nh_ap[k] * (1 - float(r.get(k, y, 0.0))) for k in NH)
+
     # one year's taxable values and tax ------------------------------------------------------------------
     def _taxable(self, y: int) -> np.ndarray:
         r = self.rec
         ap = self.ap[r]
-        o65 = self.o65[r]
         hs = self.hs[r]
+        o65s, o65 = self.o65s[r], self.o65[r]
         sch_hs = self.law.rule("school_homestead").get("amount", y)
         sch_65 = self.law.rule("school_over65_disabled").get("amount", y)
         local = np.where(self.lpct > 0, np.maximum(self.lpct * ap, 5000), 0.0)
-        state = np.where(self.is_school & hs, sch_hs + np.where(o65, sch_65, 0), 0.0)
+        state = np.where(self.is_school & hs, sch_hs + np.where(o65s, sch_65, 0), 0.0)
+        if self._lv("state_exemptions_all_units", "enabled", y, 0):
+            state = np.where(~self.is_school & hs, sch_hs + np.where(o65, sch_65, 0), state)
+        flat = float(self._lv("local_flat_homestead", "amount", y, 0) or 0)
+        if flat:
+            state = state + np.where(~self.is_school & hs, flat, 0.0)
         state = np.minimum(state, ap * self.hshare)
         tx = np.maximum(0, ap - state - local - self.of)
         return np.where(self.dvt[r] & hs, 0.0, tx)
 
-    def _compress(self, H: np.ndarray, entering: np.ndarray) -> np.ndarray:
+    def _exempt_rows(self, y: int) -> tuple[np.ndarray, np.ndarray]:
+        """Per row: the exempt share of the M&O and of the I&S tax (policy levers)."""
+        hr = self.law.rule("homestead_exempt_share")
+        hs = self.hs[self.rec]
+        nh_res = float(self.law.rule("nonhomestead_exempt_share").get("residential", y, 0.0))
+        s_mo = np.where(self.is_school, float(hr.get("school_mo", y, 0.0)), float(hr.get("nonschool", y, 0.0)))
+        s_is = np.where(self.is_school, float(hr.get("school_is", y, 0.0)), float(hr.get("nonschool", y, 0.0)))
+        # owner homes without a homestead exemption are residential non-homestead property
+        return np.where(hs, s_mo, nh_res), np.where(hs, s_is, nh_res)
+
+    def _compress(self, H: np.ndarray, y: int) -> np.ndarray:
         """School compression from this year's total taxable value (DPV, new property included): the state
         compression percentage = last x 1.025 / (1 + statewide growth) when growth is 2.5% or more (Education
         Code s. 48.255(b); TEA truncates to 4 decimals); each district's MCR = last x 1.025 x last DPV / DPV
         when its own growth is 2.5% or more, at most the state's and at least 90% of it (ss. 48.2551(b),
-        48.2552). Returns each unit's MCR cut (per $100) for the freezes; district values follow DPV growth."""
+        48.2552). In policy runs MCRs follow the current-law path, less any buy-down. Returns each unit's MCR
+        cut (per $100) for the freezes; district values follow DPV growth."""
         lim, fl = self.spec["school"]["growth_limit"], self.spec["school"]["floor_share"]
         sch = (self.ucls == "school") & ~self.avg
-        now, prev = H + self.nh, self.H_prev + self.nh_prev
+        now, prev = H + self.nh_now, self.H_prev + self.nh_prev
         G = now[sch].sum() / prev[sch].sum() - 1
         gu = np.where(prev > 0, now / np.maximum(prev, 1e-9) - 1, G)
-        new_state = self.state_mcr * (1 + lim) / (1 + G) if G >= lim else self.state_mcr
-        new_state = float(np.floor(new_state * 10_000) / 10_000)
-        own = np.where(gu >= lim, self.mcr * (1 + lim) / (1 + gu), self.mcr)
-        new_mcr = np.where(self.ucls == "school", np.maximum(np.minimum(own, new_state), fl * new_state), np.nan)
-        cut = np.nan_to_num(self.mcr - new_mcr)
-        self.mcr, self.state_mcr, self.dpv_growth = new_mcr, new_state, float(G)
+        old = self.mcr.copy()
+        if self.school_replay is not None:
+            p = self.school_replay[y]
+            new_mcr, new_state = p["mcr"].copy(), p["state_mcr"]
+        else:
+            new_state = self.state_mcr * (1 + lim) / (1 + G) if G >= lim else self.state_mcr
+            new_state = float(np.floor(new_state * 10_000) / 10_000)
+            own = np.where(gu >= lim, self.mcr_formula * (1 + lim) / (1 + gu), self.mcr_formula)
+            new_mcr = np.where(self.ucls == "school", np.maximum(np.minimum(own, new_state), fl * new_state), np.nan)
+        self.mcr_formula = new_mcr.copy()
+        # policy buy-down: cents off every MCR, plus state dollars a year turned into cents (cumulative)
+        bd = self.law.rule("school_buydown")
+        dollars = float(bd.get("dollars_per_year", y, 0.0) or 0.0)
+        if dollars:
+            self._buydown += dollars / max(now[sch].sum() / 100, 1.0)
+        cents = float(bd.get("cents", y, 0.0) or 0.0) + self._buydown
+        new_mcr = np.where(self.ucls == "school", np.maximum(new_mcr - cents, 0.0), np.nan)
+        cut = np.nan_to_num(old - new_mcr)
+        self.mcr, self.state_mcr, self.dpv_growth = new_mcr, float(new_state), float(G)
         # school finance values: each district's DPV growth (its units' total), else the state's
         d = pd.DataFrame({"cdn": self.cdn[sch], "now": now[sch], "prev": prev[sch]}).groupby("cdn")[["now", "prev"]].sum()
         gd = (d["now"] / d["prev"].replace(0, np.nan)).reindex(self.district_v.index).fillna(1 + G)
         self.district_v = self.district_v * gd.to_numpy()
         return cut
 
+    def _multipliers(self, y: int) -> np.ndarray:
+        """Voter-approval multipliers: 8% for special taxing units - hospital districts, junior colleges and
+        any unit whose M&O rate is 2.5 cents or less (Tax Code s. 26.012(19), s. 26.04(c)(2); low-rate water
+        districts, Water Code s. 49.23601); 3.5% otherwise (developed water districts, s. 49.23602); a policy
+        spending limit caps them."""
+        va = self.law.rule("voter_approval_rate")
+        special = (self.mo <= float(va.spec.get("special_unit_max_mo_rate", 0.025))) | np.isin(self.ucls, ["hospital", "college"])
+        mult = np.where(special, float(va.get("special_unit_multiplier", y)), float(va.get("multiplier", y)))
+        mg = self._lv("spending_limit", "max_growth", y)
+        if mg is not None:
+            lim = float(mg)
+            if self._lv("spending_limit", "pop_plus_inflation", y, 1):
+                lim = min(lim, self._pop_growth(y) + self.econ.rate("cpi", y))
+            mult = np.minimum(mult, 1 + max(lim, 0.0))
+        return mult
+
+    def _pop_growth(self, y: int) -> float:
+        if not hasattr(self, "_cg_state"):
+            cg = county_growth(range(BASE_YEAR, self.end_year + 2))
+            self._cg_state = cg.sum(axis=0)
+        return float(self._cg_state[y] / self._cg_state[y - 1] - 1)
+
     def _tax_year(self, y: int, first: bool = False, entering: np.ndarray | None = None) -> None:
         taxable = self._taxable(y)
+        s_mo, s_is = self._exempt_rows(y)
         live = self.orig | ((self.cohort_year > 0) & (self.cohort_year <= y))
         lr = live[self.rec]
         w_row = self.w[self.rec]
         nu = len(self.uid)
-        H = np.bincount(self.upos[lr], weights=(taxable * w_row)[lr], minlength=nu)
+        tx_mo = taxable * (1 - s_mo)              # the M&O base after policy exemptions
+        H = np.bincount(self.upos[lr], weights=(tx_mo * w_row)[lr], minlength=nu)
+        ns = self.ucls != "school"
         if first:
             # owners' taxable spread from avg units to the real units of their class and county
             Hr = H.copy()
@@ -389,16 +510,17 @@ class TxProjection:
             key = pd.MultiIndex.from_arrays([k.loc[~k["avg"], "c"], k.loc[~k["avg"], "k"]])
             share = (k.loc[~k["avg"], "T"] / tot.replace(0, np.nan)).fillna(0).to_numpy()
             Hr[~self.avg] += addh.reindex(key).fillna(0).to_numpy() * share
-            self.nh = np.where(self.avg, 0.0, np.maximum(self.T - Hr, 0))
-            self.H_prev, self.nh_prev = H, self.nh.copy()
-            rate = self.mo + self.is_
+            self._split_nh(np.where(self.avg, 0.0, np.maximum(self.T - Hr, 0)), H)
+            self.nh_now = self._nh_taxable(y)
+            self.H_prev, self.nh_prev = H, self.nh_now.copy()
+            self.mcr_formula = self.mcr.copy()
+            cut = np.zeros(nu)
         else:
-            # existing property: owners other than this year's new homes, non-homestead base before new
-            # construction; no-new-revenue M&O rate = last M&O rate / growth of the existing base
+            nh_exist = self._nh_taxable(y)             # existing non-homestead property (before new construction)
             ex = lr & ~entering[self.rec]
-            H_ex = np.bincount(self.upos[ex], weights=(taxable * w_row)[ex], minlength=nu)
+            H_ex = np.bincount(self.upos[ex], weights=(tx_mo * w_row)[ex], minlength=nu)
             prior = self.H_prev + self.nh_prev
-            gb = np.where(prior > 0, (H_ex + self.nh) / np.maximum(prior, 1e-9), 1.0)
+            gb = np.where(prior > 0, (H_ex + nh_exist) / np.maximum(prior, 1e-9), 1.0)
             gb = np.where(np.isfinite(gb) & (gb > 0), gb, 1.0)
             # avg units follow their county's class average
             k = pd.DataFrame({"c": self.ucty, "k": self.ucls, "gb": gb, "w": prior})
@@ -407,29 +529,39 @@ class TxProjection:
             cgb = (cgb["x"] / cgb["w"].replace(0, np.nan))
             key = pd.MultiIndex.from_arrays([k.loc[self.avg, "c"], k.loc[self.avg, "k"]])
             gb[self.avg] = cgb.reindex(key).fillna(1.0).to_numpy()
-            pos = self.pos
-            if self.rs.get("draws"):
-                pos = pos.copy()
-                for c, (vals, lw) in self.pos_spread.items():
-                    m = self.ucls == c
-                    pos[m] = self.rng.choice(vals, size=m.sum(), p=lw / lw.sum())
-            ns = self.ucls != "school"
-            # voter-approval multiplier: 8% for special taxing units - hospital districts, junior colleges and
-            # any unit whose M&O rate is 2.5 cents or less (Tax Code s. 26.012(19), s. 26.04(c)(2); low-rate
-            # water districts, Water Code s. 49.23601); 3.5% otherwise (developed water districts, s. 49.23602)
-            mult = np.where(self.mo <= self.spec["rate_setting"].get("special_unit_max_mo_rate", 0.025), 1.08, self.mult)
-            if self.rs.get("rule") != "hold":
+            # new non-homestead construction joins after the rate is set (it is in the DPV for compression)
+            for kk in NH:
+                for d in (self.nh_ap, self.nh_mkt, self.nh_mv):
+                    d[kk] = d[kk] * (1 + self.spec["new_construction"])
+            self.nh_now = self._nh_taxable(y)
+            replay_local = self.rate_replay is not None or (self.revenue_neutral is not None and self._lv("state_replaces_local", "enabled", y, 0))
+            if replay_local:
+                src = self.rate_replay or self.revenue_neutral
+                self.mo[ns] = src[y]["mo"][ns]
+            elif self.revenue_neutral is not None:
+                # each non-school unit raises its current-law M&O levy on its policy base
+                tgt = self.revenue_neutral[y]["levy_mo"]
+                base = H + self.nh_now
+                self.mo[ns] = np.where(base[ns] > 0, tgt[ns] / np.maximum(base[ns], 1e-9) * 100, self.mo[ns])
+            elif self.rs.get("rule") != "hold":
+                pos = self.pos
+                if self.rs.get("draws"):
+                    pos = pos.copy()
+                    for c, (vals, lw) in self.pos_spread.items():
+                        m = self.ucls == c
+                        pos[m] = self.rng.choice(vals, size=m.sum(), p=lw / lw.sum())
+                pos = pos * float(self._lv("increase_approval", "share", y, 1.0))
+                mult = self._multipliers(y)
                 self.mo[ns] = self.mo[ns] / gb[ns] * (1 + pos[ns] * (mult[ns] - 1))
-            # new non-homestead construction is in the school districts' total value (DPV) for compression
-            self.nh = self.nh * (1 + self.spec["new_construction"])
-            cut = self._compress(H, entering)
+            cut = self._compress(H, y)
             sch = ~ns
             self.mo[sch] = (self.mcr + self.enrich)[sch]
-            rate = self.mo + self.is_
             self.H_prev = H
+        rate = self.mo + self.is_
         up = self.upos
         idx = np.where(self.mo0[up] > 0, self.mo[up] / np.where(self.mo0[up] > 0, self.mo0[up], 1), 1.0)
-        row_rate = np.where(self.is_school, self.mo[up], self.row_mo0 * idx) + self.row_is
+        row_mo = np.where(self.is_school, self.mo[up], self.row_mo0 * idx)
+        row_rate = row_mo + self.row_is
         uncapped = taxable * row_rate / 100
         tax = uncapped.copy()
         if first:
@@ -440,17 +572,24 @@ class TxProjection:
             sc = self.frozen & self.is_school
             ex_up = (self.law.rule("school_homestead").get("amount", y) + self.law.rule("school_over65_disabled").get("amount", y)
                      - self.law.rule("school_homestead").get("amount", y - 1) - self.law.rule("school_over65_disabled").get("amount", y - 1))
-            self.ceiling[sc] = (self.prev_tax[sc] - self.prev_taxable[sc] * cut[self.upos[sc]] / 100
+            self.ceiling[sc] = (self.prev_tax_frozen[sc] - self.prev_taxable[sc] * cut[up[sc]] / 100
                                 - max(ex_up, 0) * row_rate[sc] / 100)
             # new freezes start at this year's tax
             self.ceiling[self.new_freeze] = uncapped[self.new_freeze]
             self.frozen = self.frozen | self.new_freeze
             self.new_freeze[:] = False
-        fz = self.frozen & self.o65[self.rec]
+        elig = np.where(self.is_school, self.o65s[self.rec], self.o65[self.rec])
+        fz = self.frozen & elig
         tax[fz] = np.minimum(uncapped[fz], np.maximum(self.ceiling[fz], 0))
         self.prev_taxable = taxable
-        self.prev_tax = tax
-        self.nh_prev = self.nh.copy()
+        self.prev_tax_frozen = tax.copy()             # the tax imposed under the ceiling (before policy exemptions)
+        # policy exemptions of the tax itself (after freezes), M&O and I&S parts separately
+        part_mo = np.where(row_rate > 0, row_mo / np.where(row_rate > 0, row_rate, 1), 1.0)
+        tax = tax * (part_mo * (1 - s_mo) + (1 - part_mo) * (1 - s_is))
+        self.nh_prev = self.nh_now.copy()
+        # each unit's M&O levy (owners at the M&O rate before freezes, plus non-homestead property)
+        self.paths[y] = {"mo": self.mo.copy(), "mcr": self.mcr.copy(), "state_mcr": self.state_mcr,
+                         "levy_mo": (H + self.nh_now) * self.mo / 100}
         self._record(y, tax, taxable, rate, live)
 
     # one year -------------------------------------------------------------------------------------------
@@ -468,6 +607,12 @@ class TxProjection:
         prev_age = self.age.copy()
         self.age = self.age + 1
         self.hage = self.hage + 1
+        # reappraisal cycle (policy lever): market values for appraisal move only in reappraisal years
+        cyc = int(self._lv("reappraisal", "cycle_years", y, 1) or 1)
+        reappraise = cyc <= 1 or (y - BASE_YEAR) % cyc == 0
+        if reappraise:
+            self.mv = self.mkt.copy()
+        self.mv[entering] = self.mkt[entering]             # new property is appraised when built
         # sales and deaths
         reset = np.zeros(self.n, bool)
         if self.demo.get("deaths", True) or self.spec["turnover"]["homestead_sale_rate"] > 0:
@@ -481,11 +626,9 @@ class TxProjection:
             reset = (sold | died) & live
             self._died = died & ~sold & live
         self._reset = reset
-        # appraisal: cap, resets and new homes at market
-        self.ap = np.where(self.hs, np.minimum(self.mkt, self.ap * 1.10), self.mkt)
-        self.ap[reset | entering] = self.mkt[reset | entering]
+        # appraisal: caps (homestead, policy caps on other property, cost basis), resets and new homes
+        self._appraise(y, reset, entering)
         # new owners on sold or inherited homes
-        rows_of = self._rows_of
         if self.demo.get("replace_owner_on_sale", True) and reset.any():
             idx = np.flatnonzero(reset)
             donor = np.empty(len(idx), int)
@@ -498,68 +641,132 @@ class TxProjection:
                     continue
                 pw = self.w0[pool] / self.w0[pool].sum()
                 donor[np.asarray(g_)] = self.rng.choice(pool, size=len(g_), p=pw)
-            old65 = self.o65[idx].copy()
+            old65, old65s = self.o65[idx].copy(), self.o65s[idx].copy()
             self.age[idx] = self.attr0["age"][donor]
             self.hage[idx] = self.attr0["hage"][donor]
             self.spouse[idx] = self.attr0["spouse"][donor]
-            # over-65 at the 2026 claim rate (as for owners turning 65); disabled under-65 owners as the donor
-            age65 = self.age[idx] >= 65
-            self.o65[idx] = self.hs[idx] & np.where(age65, self.u_take[idx] < self.takeup65, self.attr0["o65"][donor])
+            self.dis[idx] = self.attr0["o65"][donor] & (self.attr0["age"][donor] < 65)
             for c in self.inc:
                 self.inc[c][idx] = self.inc0[c][donor] * self.inc_idx[c]
-            r = rows_of(idx)
+            r = self._rows_of(idx)
             self.frozen[r] = False
             self.ceiling[r] = np.nan
-            self._o65_change(idx, old65)
-        # cohorts entering: their donor's age, income grown to this year
+            self._claim(idx, y, old65, old65s, fresh=True)
+        # cohorts entering: claims by age
         if entering.any():
             idx = np.flatnonzero(entering)
-            self.o65[idx] = self.hs[idx] & np.where(self.age[idx] >= 65, self.u_take[idx] < self.takeup65, self.o65[idx])
-            self._o65_change(idx, np.zeros(len(idx), bool))
-        # turning 65 (or the older spouse): claim at the 2026 rate
-        turn = live & self.hs & ~self.o65 & ~self.dvt & (prev_age < 65) & (self.age >= 65) & (self.u_take < self.takeup65)
-        if turn.any():
-            idx = np.flatnonzero(turn)
-            self.o65[idx] = True
-            self._o65_change(idx, np.zeros(len(idx), bool))
-        self._new65 = float(self.w[turn].sum())
+            self.dis[idx] = self.o65[idx] & (self.age[idx] < 65)
+            self._claim(idx, y, np.zeros(len(idx), bool), np.zeros(len(idx), bool), fresh=True)
+        # reaching the over-65 ages (school age from the law spec; local 65): claim at the 2026 rate
+        idx = np.flatnonzero(live & self.hs & ~self.dvt & (~self.o65 | ~self.o65s))
+        n_before = float(self.w[self.o65s].sum())
+        self._claim(idx, y, self.o65[idx].copy(), self.o65s[idx].copy(), fresh=False)
+        self._new65 = float(self.w[self.o65s].sum()) - n_before
+        # mandatory local freezes (policy lever): from the year it starts, at that year's tax
+        if self._lv("local_freeze_mandatory", "enabled", y, 0) and not self._mandatory_on:
+            self._mandatory_on = True
+            self.freeze_unit = self.freeze_unit | np.isin(self.ucls, LOCAL_FREEZE)
+            rows = np.isin(self.row_cls, LOCAL_FREEZE) & self.o65[self.rec] & ~self.frozen
+            self.new_freeze[rows] = True
         # weights: owners by householder age band grow with the population in the band
         self._reweight(y)
-        # non-homestead bases: county mix of residential / business / mineral growth; circuit breaker ends
-        mix = self.mix.reindex(self.ucty)
-        tot = mix[["residential", "business", "mineral"]].sum(axis=1).replace(0, np.nan)
-        gm = ((mix["residential"] * g + mix["business"] * e.rate("nonresidential_value", y)
-               + mix["mineral"] * e.rate("mineral_value", y)) / tot).fillna(g).to_numpy()
-        self.nh = self.nh * (1 + gm)
-        if y == BASE_YEAR + 1 and self.law.rule("circuit_breaker").spec.get("expires_after", 9999) < y:
-            cb = self.mix["circuit_breaker"]
-            sel = ~self.avg & (self.ucls == "school")     # the PVS loss is on the school base; spread to all units by base
-            for m_ in [self.ucls == c for c in CLASSES]:
-                m_ = m_ & ~self.avg
-                s = pd.Series(self.nh[m_]).groupby(self.ucty[m_]).transform("sum").to_numpy()
-                add = pd.Series(self.ucty[m_]).map(cb).fillna(0).to_numpy()
-                self.nh[m_] = self.nh[m_] + np.where(s > 0, add * self.nh[m_] / np.maximum(s, 1), 0)
-            del sel
+        # non-homestead bases: value paths by part; circuit breaker ends after 2026 unless a policy extends it
+        gp = {"residential": g, "business": e.rate("nonresidential_value", y), "mineral": e.rate("mineral_value", y)}
+        for k in NH:
+            self.nh_mkt[k] = self.nh_mkt[k] * (1 + gp[k])
+            if reappraise:
+                self.nh_mv[k] = self.nh_mkt[k].copy()
+        self._appraise_nh(y)
+        cb = self.law.rule("circuit_breaker").get("expires_after", y, 9999)     # a policy can extend it
+        if y == int(cb) + 1:
+            loss = self.mix["circuit_breaker"]
+            for c in CLASSES:
+                m_ = (self.ucls == c) & ~self.avg
+                base = self.nh_ap["residential"][m_] + self.nh_ap["business"][m_]
+                s = pd.Series(base).groupby(self.ucty[m_]).transform("sum").to_numpy()
+                add = pd.Series(self.ucty[m_]).map(loss).fillna(0).to_numpy()
+                for k in ["residential", "business"]:
+                    sh = np.where(base > 0, self.nh_ap[k][m_] / np.maximum(base, 1e-9), 0.5)
+                    inc = np.where(s > 0, add * base / np.maximum(s, 1), 0) * sh
+                    for d in (self.nh_ap, self.nh_mkt, self.nh_mv):
+                        d[k][m_] = d[k][m_] + inc
         self.year = y
         self._tax_year(y, entering=entering)
 
+    def _appraise(self, y: int, reset: np.ndarray, entering: np.ndarray) -> None:
+        hc = self._lv("homestead_cap", "cap", y)
+        cap = np.inf if hc is None else float(hc)            # "none": no homestead cap (a policy setting)
+        nhc = self._lv("nonhomestead_cap", "cap", y)
+        rb = self._lv("value_rollback", "from_year", y)
+        mv = self.mv
+        if rb is not None and int(rb) <= y:
+            c = float(self.law.rule("value_rollback").get("cap", y))
+            if int(rb) == y:          # start: 2019 value grown at the cap, never above market
+                r = pd.Series(self.county).map(self.ratio2019).fillna(float(self.ratio2019.median())).to_numpy()
+                start = mv * r * (1 + c) ** (y - 2019)
+                self.ap = np.minimum(np.minimum(mv, start), np.where(self.hs, self.ap * (1 + cap), np.inf))
+            else:
+                self.ap = np.minimum(mv, self.ap * (1 + c))
+        else:
+            hcap = np.minimum(mv, self.ap * (1 + cap))
+            other = mv if nhc is None else np.minimum(mv, self.ap * (1 + float(nhc)))
+            self.ap = np.where(self.hs, hcap, other)
+        self.ap[reset | entering] = mv[reset | entering]
+
+    def _appraise_nh(self, y: int) -> None:
+        """Non-homestead bases under the policy caps: appraised = min(market, last x (1 + cap)), the sold
+        share each year resetting to market (the non-homestead sale rate)."""
+        nhc = self._lv("nonhomestead_cap", "cap", y)
+        rb = self._lv("value_rollback", "from_year", y)
+        t = float(self.spec["turnover"]["nonhomestead_sale_rate"])
+        res_only = bool(self._lv("nonhomestead_cap", "residential_only", y, 0))
+        for k in NH:
+            mv = self.nh_mv[k]
+            if rb is not None and int(rb) <= y and k != "mineral":
+                c = float(self.law.rule("value_rollback").get("cap", y))
+                if int(rb) == y:
+                    r = pd.Series(self.ucty).map(self.ratio2019).fillna(float(self.ratio2019.median())).to_numpy()
+                    self.nh_ap[k] = np.minimum(mv, mv * r * (1 + c) ** (y - 2019))
+                else:
+                    self.nh_ap[k] = (1 - t) * np.minimum(mv, self.nh_ap[k] * (1 + c)) + t * mv
+            elif nhc is not None and k != "mineral" and (k == "residential" or not res_only):
+                self.nh_ap[k] = (1 - t) * np.minimum(mv, self.nh_ap[k] * (1 + float(nhc))) + t * mv
+            else:
+                self.nh_ap[k] = mv.copy()
+
     def _rows_of(self, idx: np.ndarray) -> np.ndarray:
-        if not hasattr(self, "_row_start"):
-            self._row_start = np.searchsorted(self.rec, np.arange(self.n))
-            self._row_stop = np.searchsorted(self.rec, np.arange(self.n), side="right")
         return np.concatenate([np.arange(self._row_start[i], self._row_stop[i]) for i in idx]) if len(idx) else np.array([], int)
 
-    def _o65_change(self, idx: np.ndarray, old65: np.ndarray) -> None:
-        """Local over-65 amounts in or out as status changes; new freezes for new over-65 owners."""
+    def _claim(self, idx: np.ndarray, y: int, old65: np.ndarray, old65s: np.ndarray, fresh: bool) -> None:
+        """Over-65 / disabled status for records idx this year: local (65) and school (law spec age), claimed
+        at the 2026 claim rate; disabled owners keep their status. `fresh`: a new owner (sale or new home);
+        else only owners crossing the age now (or newly eligible because a policy lowered the age) claim.
+        Then local over-65 amounts move in or out and new freezes start."""
+        if not len(idx):
+            return
+        age_s = float(self.law.rule("school_over65_disabled").get("min_age", y, 65))
+        hs, take = self.hs[idx] & ~self.dvt[idx], self.u_take[idx] < self.takeup65
+        a = self.age[idx]
+        dis = self.dis[idx]
+        if fresh:
+            self.o65[idx] = self.hs[idx] & ((a >= 65) & take | dis)
+            self.o65s[idx] = self.hs[idx] & ((a >= age_s) & take | dis)
+        else:
+            self.o65[idx] = old65 | (hs & (a >= 65) & (a - 1 < 65) & take)
+            self.o65s[idx] = old65s | (hs & (a >= age_s) & take & ((a - 1 < age_s) | (a >= 65) & self.o65[idx] | (age_s < 65)))
         r = self._rows_of(idx)
         if not len(r):
             return
-        now = self.o65[self.rec[r]]
-        before = np.repeat(old65, self._row_stop[idx] - self._row_start[idx])
-        a = self.amt65[self.upos[r]]
-        new = np.maximum(self.of[r] + np.where(now & ~before, a, 0) - np.where(before & ~now, a, 0), 0)
+        cnt = self._row_stop[idx] - self._row_start[idx]
+        now, before = self.o65[self.rec[r]], np.repeat(old65, cnt)
+        nows, befores = self.o65s[self.rec[r]], np.repeat(old65s, cnt)
+        a65 = self.amt65[self.upos[r]]
+        loc = ~self.is_school[r]
+        new = np.maximum(self.of[r] + np.where(loc & now & ~before, a65, 0) - np.where(loc & before & ~now, a65, 0)
+                         + np.where(~loc & nows & ~befores, a65, 0) - np.where(~loc & befores & ~nows, a65, 0), 0)
         self.of[r] = np.where(np.isfinite(self.of[r]), new, self.of[r])
-        nf = now & ~before & self.freeze_unit[self.upos[r]]
+        fu = self.freeze_unit[self.upos[r]]
+        nf = fu & ((self.is_school[r] & nows & ~befores) | (~self.is_school[r] & now & ~before))
         self.new_freeze[r[nf]] = True
 
     def _p_death(self, age: np.ndarray | None = None) -> np.ndarray:
@@ -585,7 +792,6 @@ class TxProjection:
         band = self.hage >= 65
         f = self.pf.loc[y]
         tgt = {"18_64": self.band_t0["18_64"] * f["18_64"], "65_plus": self.band_t0["65_plus"] * f["65_plus"]}
-        base = self.w0.copy()
         if self.demo.get("household_growth", True):
             # new owners: growth of the target total beyond last year's, spread over this year's cohort
             total_prev = sum(self.band_t0[b] * self.pf.loc[y - 1][b] for b in tgt)
@@ -598,8 +804,7 @@ class TxProjection:
             base = np.where(self.orig, self.w0, np.where(live, self.cohort_w, 0.0))
         else:
             base = np.where(self.orig, self.w0, 0.0)
-            tot0 = base.sum()
-            s = tot0 / sum(tgt.values())
+            s = base.sum() / sum(tgt.values())
             tgt = {k: v * s for k, v in tgt.items()}
         w = base.copy()
         if self.demo.get("reweight_by_age", True):
@@ -609,28 +814,39 @@ class TxProjection:
         self.w = np.where(live, w, 0.0)
         self.weights[y] = self.w.copy()
 
+    def _credit(self, y: int, t_rec: np.ndarray, inc: np.ndarray) -> np.ndarray:
+        """State income-targeted credit (policy lever): the tax above a share of income, capped."""
+        s = self._lv("income_credit", "share_of_income", y)
+        if s is None:
+            return np.zeros(self.n)
+        r = self.law.rule("income_credit")
+        cr = np.minimum(np.maximum(t_rec - float(s) * inc, 0), float(r.get("max_credit", y)))
+        return np.where(self.hs & (inc <= float(r.get("income_limit", y))), cr, 0.0)
+
     def _record(self, y: int, tax: np.ndarray, taxable: np.ndarray, rate: np.ndarray, live: np.ndarray) -> None:
         n, w = self.n, self.w
-        cls_rows = self.X["levy_class"].to_numpy()
         t_rec = np.bincount(self.rec, weights=tax, minlength=n)
-        by = {c: np.bincount(self.rec, weights=np.where(cls_rows == c, tax, 0), minlength=n) for c in CLASSES}
+        by = {c: np.bincount(self.rec, weights=np.where(self.row_cls == c, tax, 0), minlength=n) for c in CLASSES}
         inc = np.maximum(sum(np.nan_to_num(v) for v in self.inc.values()), 0)
-        self.history[f"tax_{y}"] = t_rec
+        credit = self._credit(y, t_rec, inc)
+        self.history[f"tax_{y}"] = t_rec - credit
         for c in CLASSES:
             self.history[f"tax_{c}_{y}"] = by[c]
+        self.history[f"credit_{y}"] = credit
         self.history[f"income_{y}"] = inc
         self.history[f"weight_{y}"] = w.copy()
-        self.history[f"o65_{y}"] = self.o65.copy()
+        self.history[f"o65_{y}"] = self.o65s.copy()
         self.history[f"age_{y}"] = self.hage.copy()
         hs = self.hs & live
-        fz_rec = np.bincount(self.rec, weights=(self.frozen & self.is_school & self.o65[self.rec]).astype(float), minlength=n) > 0
-        nh_tax = self.nh * rate / 100
+        fz_rec = np.bincount(self.rec, weights=(self.frozen & self.is_school & self.o65s[self.rec]).astype(float), minlength=n) > 0
+        nh_tax = self.nh_now * rate / 100
         row = {"year": y, "growth": self.econ.rate("home_value", y) if y > BASE_YEAR else 0.0,
                "school_dpv_growth": getattr(self, "dpv_growth", 0.0) if y > BASE_YEAR else 0.0,
                "state_mcr": round(self.state_mcr, 4),
                "owners": float(w[live].sum()), "homesteads": float(w[hs].sum()),
-               "tax_owners": float((t_rec * w).sum()), "tax_total": float((t_rec * w)[hs].sum()),
-               "homesteads_65_or_disabled": float(w[hs & self.o65].sum()),
+               "tax_owners": float(((t_rec - credit) * w).sum()), "tax_total": float(((t_rec - credit) * w)[hs].sum()),
+               "credit_total": float((credit * w).sum()),
+               "homesteads_65_or_disabled": float(w[hs & self.o65s].sum()),
                "owners_65_plus": float(w[live & (self.hage >= 65)].sum()),
                "new_owner_share": float(w[self.cohort_year > 0].sum() / w[live].sum()),
                "homestead_share_reset": float((w * getattr(self, "_reset", np.zeros(n, bool)))[hs].sum() / w[hs].sum()),
@@ -644,12 +860,15 @@ class TxProjection:
             row[f"tax_{c}"] = float((by[c] * w)[hs].sum())
             row[f"tax_owners_{c}"] = float((by[c] * w).sum())
             row[f"nonowner_tax_{c}"] = float(nh_tax[self.ucls == c].sum())
+            row[f"levy_{c}"] = row[f"tax_owners_{c}"] + row[f"nonowner_tax_{c}"]
         row["nonowner_tax"] = float(nh_tax.sum())
-        row["total_levy"] = row["tax_owners"] + row["nonowner_tax"]
+        row["nonowner_tax_residential"] = float((self.law.rule("nonhomestead_exempt_share") and
+                                                 sum(self.nh_ap["residential"] * (1 - float(self.law.rule("nonhomestead_exempt_share").get("residential", y, 0.0))) * rate / 100)))
+        row["total_levy"] = row["tax_owners"] + row["credit_total"] + row["nonowner_tax"]
         for c in CLASSES:
             if c != "school":
                 m = (self.ucls == c) & (self.mo0 > 0) & ~self.avg
-                row[f"rate_index_{c}"] = float(np.average(self.mo[m] / self.mo0[m], weights=np.maximum(self.nh[m] + self.H_prev[m], 1)))
+                row[f"rate_index_{c}"] = float(np.average(self.mo[m] / self.mo0[m], weights=np.maximum(self.nh_now[m] + self.H_prev[m], 1)))
         s2 = self.sof.copy()
         mcr_d = dict(zip(self.cdn[self.ucls == "school"], self.mcr[self.ucls == "school"]))
         s2["mcr"] = s2["cdn"].map(mcr_d).fillna(self.state_mcr) if y > BASE_YEAR else s2["mcr"]
