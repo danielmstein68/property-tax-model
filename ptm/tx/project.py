@@ -350,7 +350,30 @@ class TxProjection:
         tx = np.maximum(0, ap - state - local - self.of)
         return np.where(self.dvt[r] & hs, 0.0, tx)
 
-    def _tax_year(self, y: int, first: bool = False, entering: np.ndarray | None = None, cut: np.ndarray | None = None) -> None:
+    def _compress(self, H: np.ndarray, entering: np.ndarray) -> np.ndarray:
+        """School compression from this year's total taxable value (DPV, new property included): the state
+        compression percentage = last x 1.025 / (1 + statewide growth) when growth is 2.5% or more (Education
+        Code s. 48.255(b); TEA truncates to 4 decimals); each district's MCR = last x 1.025 x last DPV / DPV
+        when its own growth is 2.5% or more, at most the state's and at least 90% of it (ss. 48.2551(b),
+        48.2552). Returns each unit's MCR cut (per $100) for the freezes; district values follow DPV growth."""
+        lim, fl = self.spec["school"]["growth_limit"], self.spec["school"]["floor_share"]
+        sch = (self.ucls == "school") & ~self.avg
+        now, prev = H + self.nh, self.H_prev + self.nh_prev
+        G = now[sch].sum() / prev[sch].sum() - 1
+        gu = np.where(prev > 0, now / np.maximum(prev, 1e-9) - 1, G)
+        new_state = self.state_mcr * (1 + lim) / (1 + G) if G >= lim else self.state_mcr
+        new_state = float(np.floor(new_state * 10_000) / 10_000)
+        own = np.where(gu >= lim, self.mcr * (1 + lim) / (1 + gu), self.mcr)
+        new_mcr = np.where(self.ucls == "school", np.maximum(np.minimum(own, new_state), fl * new_state), np.nan)
+        cut = np.nan_to_num(self.mcr - new_mcr)
+        self.mcr, self.state_mcr, self.dpv_growth = new_mcr, new_state, float(G)
+        # school finance values: each district's DPV growth (its units' total), else the state's
+        d = pd.DataFrame({"cdn": self.cdn[sch], "now": now[sch], "prev": prev[sch]}).groupby("cdn")[["now", "prev"]].sum()
+        gd = (d["now"] / d["prev"].replace(0, np.nan)).reindex(self.district_v.index).fillna(1 + G)
+        self.district_v = self.district_v * gd.to_numpy()
+        return cut
+
+    def _tax_year(self, y: int, first: bool = False, entering: np.ndarray | None = None) -> None:
         taxable = self._taxable(y)
         live = self.orig | ((self.cohort_year > 0) & (self.cohort_year <= y))
         lr = live[self.rec]
@@ -391,15 +414,18 @@ class TxProjection:
                     m = self.ucls == c
                     pos[m] = self.rng.choice(vals, size=m.sum(), p=lw / lw.sum())
             ns = self.ucls != "school"
-            if self.rs.get("rule") == "hold":
-                pass
-            else:
-                self.mo[ns] = self.mo[ns] / gb[ns] * (1 + pos[ns] * (self.mult[ns] - 1))
+            # voter-approval multiplier: 8% for special taxing units - hospital districts, junior colleges and
+            # any unit whose M&O rate is 2.5 cents or less (Tax Code s. 26.012(19), s. 26.04(c)(2); low-rate
+            # water districts, Water Code s. 49.23601); 3.5% otherwise (developed water districts, s. 49.23602)
+            mult = np.where(self.mo <= self.spec["rate_setting"].get("special_unit_max_mo_rate", 0.025), 1.08, self.mult)
+            if self.rs.get("rule") != "hold":
+                self.mo[ns] = self.mo[ns] / gb[ns] * (1 + pos[ns] * (mult[ns] - 1))
+            # new non-homestead construction is in the school districts' total value (DPV) for compression
+            self.nh = self.nh * (1 + self.spec["new_construction"])
+            cut = self._compress(H, entering)
             sch = ~ns
             self.mo[sch] = (self.mcr + self.enrich)[sch]
             rate = self.mo + self.is_
-            # new non-homestead construction joins after the rate is set
-            self.nh = self.nh * (1 + self.spec["new_construction"])
             self.H_prev = H
         up = self.upos
         idx = np.where(self.mo0[up] > 0, self.mo[up] / np.where(self.mo0[up] > 0, self.mo0[up], 1), 1.0)
@@ -409,8 +435,13 @@ class TxProjection:
         if first:
             self.ceiling = np.where(self.frozen, uncapped * np.nan_to_num(self.ratio0, nan=1.0), np.nan)
         else:
+            # school ceilings (s. 11.26(a-10)): last year's tax imposed, less last year's taxable value x the
+            # MCR cut, less any increase in the state homestead and over-65 exemptions x this year's rate
             sc = self.frozen & self.is_school
-            self.ceiling[sc] = self.ceiling[sc] - self.prev_taxable[sc] * cut[self.upos[sc]] / 100
+            ex_up = (self.law.rule("school_homestead").get("amount", y) + self.law.rule("school_over65_disabled").get("amount", y)
+                     - self.law.rule("school_homestead").get("amount", y - 1) - self.law.rule("school_over65_disabled").get("amount", y - 1))
+            self.ceiling[sc] = (self.prev_tax[sc] - self.prev_taxable[sc] * cut[self.upos[sc]] / 100
+                                - max(ex_up, 0) * row_rate[sc] / 100)
             # new freezes start at this year's tax
             self.ceiling[self.new_freeze] = uncapped[self.new_freeze]
             self.frozen = self.frozen | self.new_freeze
@@ -418,6 +449,7 @@ class TxProjection:
         fz = self.frozen & self.o65[self.rec]
         tax[fz] = np.minimum(uncapped[fz], np.maximum(self.ceiling[fz], 0))
         self.prev_taxable = taxable
+        self.prev_tax = tax
         self.nh_prev = self.nh.copy()
         self._record(y, tax, taxable, rate, live)
 
@@ -493,14 +525,6 @@ class TxProjection:
         self._new65 = float(self.w[turn].sum())
         # weights: owners by householder age band grow with the population in the band
         self._reweight(y)
-        # schools: compression
-        lim = spec["school"]["growth_limit"]
-        new_state = self.state_mcr * (1 + lim) / (1 + g) if g > lim else self.state_mcr
-        new_state = float(np.floor(new_state * 10_000) / 10_000)          # TEA truncates to 4 decimals
-        own = self.mcr * (1 + lim) / (1 + g) if g > lim else self.mcr
-        new_mcr = np.maximum(np.minimum(own, new_state), spec["school"]["floor_share"] * new_state)
-        cut = np.nan_to_num(self.mcr - new_mcr)
-        self.mcr, self.state_mcr = new_mcr, new_state
         # non-homestead bases: county mix of residential / business / mineral growth; circuit breaker ends
         mix = self.mix.reindex(self.ucty)
         tot = mix[["residential", "business", "mineral"]].sum(axis=1).replace(0, np.nan)
@@ -516,9 +540,8 @@ class TxProjection:
                 add = pd.Series(self.ucty[m_]).map(cb).fillna(0).to_numpy()
                 self.nh[m_] = self.nh[m_] + np.where(s > 0, add * self.nh[m_] / np.maximum(s, 1), 0)
             del sel
-        self.district_v = self.district_v * (1 + g + spec["new_construction"])
         self.year = y
-        self._tax_year(y, entering=entering, cut=cut)
+        self._tax_year(y, entering=entering)
 
     def _rows_of(self, idx: np.ndarray) -> np.ndarray:
         if not hasattr(self, "_row_start"):
@@ -603,6 +626,7 @@ class TxProjection:
         fz_rec = np.bincount(self.rec, weights=(self.frozen & self.is_school & self.o65[self.rec]).astype(float), minlength=n) > 0
         nh_tax = self.nh * rate / 100
         row = {"year": y, "growth": self.econ.rate("home_value", y) if y > BASE_YEAR else 0.0,
+               "school_dpv_growth": getattr(self, "dpv_growth", 0.0) if y > BASE_YEAR else 0.0,
                "state_mcr": round(self.state_mcr, 4),
                "owners": float(w[live].sum()), "homesteads": float(w[hs].sum()),
                "tax_owners": float((t_rec * w).sum()), "tax_total": float((t_rec * w)[hs].sum()),

@@ -103,9 +103,14 @@ rate_setting:
   # The voter-approval rate is the no-new-revenue M&O rate x the multiplier; I&S rates held.
   # Options: position (default), voter_approval (every unit at its VAR), hold (last year's rate).
   rule: position
-  # 3.5% for counties, cities and developed districts (MUDs, ESDs); 8% for hospital districts and junior
-  # colleges (special taxing units); developing MUDs may also use 8% but they carry new construction
+  # Tax Code s. 26.04(c)(2): 8% for special taxing units - hospital districts, junior colleges, and any
+  # other unit whose M&O rate is 2.5 cents or less (s. 26.012(19); water districts likewise, Water Code
+  # s. 49.23601); 3.5% for the rest, including developed water districts (s. 49.23602). Developing water
+  # districts (s. 49.23603) may go to 8% with only a petition election; the rolls don't say which districts
+  # are developed, so they take 3.5% (provisional). Water districts' limits are on the average homestead's
+  # tax rather than the rate; modelled as the rate.
   multiplier: {default: 1.035, hospital: 1.08, college: 1.08}
+  special_unit_max_mo_rate: 0.025
   draws: false     # Monte Carlo: each unit's position redrawn each year from its class's 2025 spread
 
 school:
@@ -115,6 +120,8 @@ school:
   # cents and I&S rates held.
   growth_limit: 0.025
   floor_share: 0.90
+  # growth = each district's total taxable value (DPV), new property included (s. 48.2551(b)); statewide total for
+  # the state compression percentage (s. 48.255(b))
 
 # Monte Carlo noise around a scenario's path (ptm/tx/montecarlo.py): as for Florida
 uncertainty:

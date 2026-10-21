@@ -13,7 +13,12 @@
 
 meta:
   state: TX
-  as_of: "Texas statutes as in force for tax year 2026 (read 2026-10-20)"
+  as_of: "Texas statutes as in force for tax year 2026 (read 2026-10-20; checked 2026-10-21 against the full text)"
+  law_text: >
+    data/raw/tx_law_text/: the whole Property Tax Code (Tax Code Title 1, chapters 1-43), Constitution
+    art. VIII, Water Code ch. 49, Education Code chs. 45, 46, 48, 49 and 130, Health and Safety Code
+    chs. 281 and 286, Government Code ch. 403, the 2025 bills and TEA letters (Texas Legislature
+    statutes site, downloaded 2026-10-20 and 2026-10-21; .htm as downloaded, .txt extracted).
   scope: >
     Residence homesteads and other residential real property. Current law only. Not covered:
     business personal property (except as tax base), minerals, agricultural/open-space valuation
@@ -299,14 +304,18 @@ rates:
     de_minimis_amount: 500000
     de_minimis_city_population: 30000
     notes: >
-      SB 10 (89th 2nd C.S.; 2.5% or 1%) failed. MUDs follow Water Code s. 49.23601-49.23603
-      (1.035 or 1.08 times last year's tax on the average homestead). Unused increment rules and
-      the disaster rate (s. 26.042, HB 30) to be read before rates are simulated.
+      SB 10 (89th 2nd C.S.; 2.5% or 1%) failed. Water districts follow Water Code s. 49.23601-49.23603:
+      1.08 for districts with M&O of 2.5 cents or less (automatic election above it), 1.035 for developed
+      districts (95% of build-out financed; automatic election), 1.08 for the rest (developing; petition
+      election only) - each times last year's M&O tax on the average homestead. Projections (ptm.tx.project)
+      apply 1.08 to hospital districts, junior colleges and any unit with M&O of 2.5 cents or less, 1.035
+      otherwise (developing water districts can't be told apart on the rolls). Not modelled: the unused
+      increment rate, the de minimis rate for small units, the disaster rate (s. 26.042).
 
   school_mcr:
     description: >
       Each school district's maximum compressed M&O rate is the lesser of last year's MCR scaled
-      down when the district's value growth exceeds 2.5%, and the state compression percentage
+      down when the district's total taxable value (DPV, new property included) grows 2.5% or more, and the state compression percentage
       times $1.00; no district may fall below 90% of the highest. Statewide maximum $0.6254 for
       2026 (floor $0.5628, statewide value growth 3.60%).
     citation: "Education Code ss. 48.255, 48.2551, 48.2552; TEA final MCR letter, Aug 27, 2026"
