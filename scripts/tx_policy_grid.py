@@ -77,9 +77,11 @@ def expand(changes: list, setting=None, frm: int = 2027) -> list:
         if "values_fn" in c:
             c["values"] = schedule(c.pop("values_fn"), setting)
         elif "values" not in c:
-            v = c.get("value")
+            v = c.get("value", "@")              # a slider's change takes the slider's setting
             c["value"] = setting if v == "@" else v
             c.setdefault("from", frm)
+        if c.get("value", 0) is None:
+            raise ValueError(f"{c['rule']}.{c['key']}: no value")
         out.append(c)
     return out
 

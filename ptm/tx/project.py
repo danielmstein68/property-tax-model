@@ -534,9 +534,10 @@ class TxProjection:
                 for d in (self.nh_ap, self.nh_mkt, self.nh_mv):
                     d[kk] = d[kk] * (1 + self.spec["new_construction"])
             self.nh_now = self._nh_taxable(y)
-            replay_local = self.rate_replay is not None or (self.revenue_neutral is not None and self._lv("state_replaces_local", "enabled", y, 0))
+            # rates follow the current-law path: "none" mode, or the state pays local units back (every mode)
+            replay_local = self.rate_replay is not None or (self.school_replay is not None and self._lv("state_replaces_local", "enabled", y, 0))
             if replay_local:
-                src = self.rate_replay or self.revenue_neutral
+                src = self.rate_replay or self.school_replay
                 self.mo[ns] = src[y]["mo"][ns]
             elif self.revenue_neutral is not None:
                 # each non-school unit raises its current-law M&O levy on its policy base
