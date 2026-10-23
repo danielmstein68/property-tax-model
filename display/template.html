@@ -586,12 +586,6 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <h2 id="pol-off-title">Paying for it with other taxes</h2>
       <p id="pol-off-intro"></p>
       <div class="figures" id="pol-off-tiles"></div>
-      <div class="chart">
-        <h3>Property tax cut and sales tax increase together, by household income</h3>
-        <p>Change in what a household pays a year if the state sales tax rises enough to replace the lost property tax (rates unchanged); below zero = pays less.</p>
-        <div id="pol-off-chart"></div>
-        <div class="legend"><span><i style="background:var(--gain2)"></i>Average homeowner: property tax cut minus sales tax increase</span><span><i style="background:var(--lose2)"></i>Average renter: sales tax increase only</span></div>
-      </div>
       <p class="muted-p" id="pol-off-note"></p>
     </section>
 
@@ -679,12 +673,6 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <h2 id="a3-off-title">Paying for it with other taxes</h2>
       <p id="a3-off-intro"></p>
       <div class="figures" id="a3-off-tiles"></div>
-      <div class="chart">
-        <h3 id="a3-off-h">Property tax cut and sales tax increase together, by household income</h3>
-        <p>Change in what the average homeowner and renter in each income tenth pays a year if the state sales tax rises enough to replace the lost property tax; below zero = pays less.</p>
-        <div id="a3-off-chart"></div>
-        <div class="legend"><span><i style="background:var(--gain2)"></i>Average homeowner: property tax cut minus sales tax increase</span><span><i style="background:var(--lose2)"></i>Average renter: sales tax increase only</span></div>
-      </div>
       <p class="muted-p" id="a3-off-note"></p>
     </section>
 
@@ -1533,7 +1521,7 @@ function renderOffset(p, run, y, a3) {
   $(`${p}-off-title`).textContent = `Paying for it with other taxes, ${y}`;
   if (!O || loss < 5e6) {
     $(`${p}-off-intro`).textContent = loss <= -5e6 ? "This policy raises property tax revenue, so there is nothing to replace." : "This policy hardly changes property tax revenue, so there is nothing to replace.";
-    $(`${p}-off-tiles`).innerHTML = ""; $(`${p}-off-chart`).innerHTML = ""; $(`${p}-off-note`).textContent = ""; return;
+    $(`${p}-off-tiles`).innerHTML = ""; $(`${p}-off-note`).textContent = ""; return;
   }
   const sp = loss / O.sales_point, cp = loss / O.cit_point, su = loss / O.surtax_point;
   const short = a3 && OFF.a3_counties_short_of_surtax_room[ys];
@@ -1542,36 +1530,10 @@ function renderOffset(p, run, y, a3) {
     [`+${cp.toFixed(1)} points`, `Corporate income tax, from ${OFF.cit_rate}% to ${(OFF.cit_rate + cp).toFixed(1)}%`],
     [`+${su.toFixed(2)} points`, `County sales surtaxes, on average` + (short ? `; ${short.counties_short} of ${short.counties} counties couldn't replace their own loss even at their maximum surtax rates` : "")],
   ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  // who pays: the same taxable spending per household for owners and renters in a tenth (CE 2024, grown with prices)
-  const D = run.none.groups.filter(r => r.year === y && r.grouping === "income_decile").sort((a, b) => +a.group.replace(/\D/g, "") - +b.group.replace(/\D/g, ""));
-  const sales = OFF.taxable_spending_2024.map(v => v * O.cpi_from_2024 * sp / 100);
-  const owner = D.map((r, i) => r.avg_change + sales[i]), renter = sales.map(v => v);
-  const direct = HH.deciles.reduce((t, d, i) => t + d.households * sales[i], 0) / loss;
-  const r1 = HH.deciles[0], inc1 = r1.income / r1.households;
   $(`${p}-off-intro`).textContent = `To replace the ${bnB(loss)} local governments lose in ${y} with rates unchanged, the state would have to raise its 6% sales tax to about ${(OFF.state_rate + sp).toFixed(1)}%, ` +
-    `or its corporate income tax from 5.5% to ${(OFF.cit_rate + cp).toFixed(1)}%, and share the money with counties and cities. ` +
-    `At the register, a renter household in the bottom income tenth would pay about ${usd(sales[0])} more a year (${pct(sales[0] / inc1, 1)} of its income) and get no property tax cut; in the top tenth, ${usd(sales[9])}. ` +
-    `The average homeowner ${owner[0] < 0 ? `in the bottom tenth still comes out ${usd(-owner[0])} ahead` : `in the bottom tenth ends up ${usd(owner[0])} behind`}, and in the top tenth ${owner[9] < 0 ? `${usd(-owner[9])} ahead` : `${usd(owner[9])} behind`}.`;
-  // chart: two bars per tenth
-  const vals = owner.concat(renter, [0]);
-  const raw = (Math.max(...vals) - Math.min(...vals)) / 4 || 1, pw = Math.pow(10, Math.floor(Math.log10(raw)));
-  const step = [1, 2, 2.5, 5, 10].find(k => k * pw >= raw) * pw;
-  const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step;
-  const W = 1040, H = 260, L = 64, R_ = 10, T = 14, B = 26, bw = (W - L - R_) / 10, s2 = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
-  s2.setAttribute("aria-label", "Change in what homeowners and renters pay by income tenth, property tax cut plus sales tax increase");
-  for (let v = lo; v <= hi + step / 2; v += step) { el(s2, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s2, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, usdS(v)); }
-  el(s2, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
-  D.forEach((r, i) => {
-    [[owner[i], "var(--gain2)", 0], [renter[i], "var(--lose2)", 1]].forEach(([v, c, j]) => {
-      el(s2, "rect", { x: L + i * bw + bw * 0.14 + j * bw * 0.37, y: Math.min(yy(v), yy(0)), width: bw * 0.33, height: Math.abs(yy(v) - yy(0)), fill: c, rx: 2 });
-      el(s2, "text", { x: L + i * bw + bw * 0.14 + j * bw * 0.37 + bw * 0.165, y: v < 0 ? yy(v) + 13 : yy(v) - 5, "text-anchor": "middle", class: "val" }, usdS(v)); });
-    el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, "Tenth " + (i + 1)); });
-  if ($(`${p}-off-h`)) $(`${p}-off-h`).textContent = `A sales tax large enough to replace it costs the average renter in the lowest income tenth ${usd(sales[0])} a year; ` +
-    `the average homeowner there ${owner[0] < 0 ? `still comes out ${usd(-owner[0])} ahead` : `ends up ${usd(owner[0])} behind`}`;
-  $(`${p}-off-chart`).innerHTML = ""; $(`${p}-off-chart`).appendChild(s2);
+    `or its corporate income tax from 5.5% to ${(OFF.cit_rate + cp).toFixed(1)}%, and share the money with counties and cities.`;
   $(`${p}-off-note`).textContent = `What one point raises in ${y}: state sales tax ${bnB(O.sales_point)}, corporate income tax ${bnB(O.cit_point)}, county surtaxes ${bnB(O.surtax_point)} (General Revenue Estimating Conference, August 2026; DOR surtax estimates; surtaxes apply only to the first $5,000 of an item). ` +
-    `Florida households pay about ${pct(direct, 0)} of a sales tax increase directly at the register (taxable spending by income tenth from the federal Consumer Expenditure Survey, 2024); businesses and tourists pay the rest, and businesses pass part of it on in prices, so the amounts above are a lower bound. ` +
-    `Owners and renters in a tenth are assumed to spend alike. County surtaxes need voter approval and can only pay for the uses the law lists (infrastructure, schools, transportation, hospitals), so they can't simply replace a county's general operating money. Florida's Constitution bars a personal income tax.`;
+    `County surtaxes need voter approval and can only pay for the uses the law lists (infrastructure, schools, transportation, hospitals), so they can't simply replace a county's general operating money. Florida's Constitution bars a personal income tax.`;
 }
 // each tenth's share of the total change, against an equal share (10%: each tenth is a tenth of households)
 function shareSvg(D) {

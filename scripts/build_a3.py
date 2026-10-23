@@ -62,9 +62,6 @@ def main() -> None:
             '    <span class="badge" id="badge">Owners only. Renters are counted in the income groups, but the tax they pay through rent is not modelled yet.</span>\n'
             '  </div>\n</div>\n\n<div class="wrap">\n')
     a3_html = between(t, '  <div id="view-a3"', '  <div id="view-about"')
-    # "Paying for it with other taxes" (the sales-tax replacement idea) is not part of this artifact
-    i = a3_html.index('    <section>\n      <div class="eyebrow">Other taxes</div>')
-    a3_html = a3_html[:i] + a3_html[a3_html.index("</section>", i) + len("</section>\n\n"):]
     about_html = between(t, '  <div id="view-about"', '  <footer id="foot">') .rstrip() + "\n"
     body = hero + a3_html + WHY_HTML + about_html + '  <footer id="foot"></footer>\n</div>\n\n<script>\n'
     body = body.replace("About the model →", "Model info →")
@@ -95,8 +92,6 @@ def main() -> None:
     pieces.append(between(js, "const GROUP_TABS =", "\n") + "\n")
     pieces.append(between(js, "// ---------------- Amendment 3 page", "// views: 2026 today"))
     body_js = "\n".join(pieces)
-    body_js = drop_block(body_js, '// "Paying for it with other taxes"', "// each tenth's share of the total change")
-    body_js = "\n".join(l for l in body_js.split("\n") if not l.startswith("const OFF = ") and 'renderOffset("a3"' not in l)
     body_js = body_js.replace('data-goto="about">why</a>', 'data-goto="why">why</a>')   # "(why)" after the model's own score points to the evidence page
 
     # Model info: lists the 2026 page filled from survey margins and projections; the Amendment 3 page keeps two static notes
@@ -159,6 +154,7 @@ showView(location.hash === "#about" ? "about" : location.hash === "#why" ? "why"
         "__A3RENT__": (RES / "fl_a3_rentals.json").read_text(encoding="utf-8"),
         "__A3RANGE__": (RES / "fl_a3_takeup_range.json").read_text(encoding="utf-8"),
         "__HHDEC__": (RES / "fl_household_deciles.json").read_text(encoding="utf-8"),
+        "__OFFSET__": (RES / "fl_offset_taxes.json").read_text(encoding="utf-8"),
         "__VAL__": json.dumps(json.loads((RES / "fl_2026_validation.json").read_text(encoding="utf-8"))["statewide_homestead"]),
     }
     page = head + body + body_js + "</script>\n"

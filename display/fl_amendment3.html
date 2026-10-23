@@ -289,6 +289,14 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     </section>
 
     <section>
+      <div class="eyebrow">Other taxes</div>
+      <h2 id="a3-off-title">Paying for it with other taxes</h2>
+      <p id="a3-off-intro"></p>
+      <div class="figures" id="a3-off-tiles"></div>
+      <p class="muted-p" id="a3-off-note"></p>
+    </section>
+
+    <section>
       <div class="eyebrow">Homeowners</div>
       <h2 id="a3-who-title">Who pays less and who pays more</h2>
       <p id="a3-who-intro"></p>
@@ -2886,6 +2894,143 @@ const HH = {
   }
  ]
 };  // all households by 2026 income tenth (scripts/household_deciles.py)
+const OFF = {
+ "generated": "2026-10-19",
+ "gr_share_of_sales_tax": 0.874827,
+ "state_rate": 6.0,
+ "cit_rate": 5.5,
+ "years": {
+  "2027": {
+   "sales_point": 7391918631,
+   "cit_point": 1068690909,
+   "surtax_point": 6047280279,
+   "cpi_from_2024": 1.0804
+  },
+  "2028": {
+   "sales_point": 7604741661,
+   "cit_point": 1083345455,
+   "surtax_point": 6221389408,
+   "cpi_from_2024": 1.1052
+  },
+  "2029": {
+   "sales_point": 7805981449,
+   "cit_point": 1093818182,
+   "surtax_point": 6386022362,
+   "cpi_from_2024": 1.1306
+  },
+  "2030": {
+   "sales_point": 8029549461,
+   "cit_point": 1107727273,
+   "surtax_point": 6568921890,
+   "cpi_from_2024": 1.1566
+  },
+  "2031": {
+   "sales_point": 8259271071,
+   "cit_point": 1122218182,
+   "surtax_point": 6756855636,
+   "cpi_from_2024": 1.1832
+  },
+  "2032": {
+   "sales_point": 8495564907,
+   "cit_point": 1136898656,
+   "surtax_point": 6950166078,
+   "cpi_from_2024": 1.2105
+  },
+  "2033": {
+   "sales_point": 8738618998,
+   "cit_point": 1151771175,
+   "surtax_point": 7149007040,
+   "cpi_from_2024": 1.2383
+  },
+  "2034": {
+   "sales_point": 8988626752,
+   "cit_point": 1166838252,
+   "surtax_point": 7353536748,
+   "cpi_from_2024": 1.2668
+  },
+  "2035": {
+   "sales_point": 9245787109,
+   "cit_point": 1182102430,
+   "surtax_point": 7563917954,
+   "cpi_from_2024": 1.2959
+  },
+  "2036": {
+   "sales_point": 9510304702,
+   "cit_point": 1197566290,
+   "surtax_point": 7780318067,
+   "cpi_from_2024": 1.3257
+  }
+ },
+ "surtax_statewide": {
+  "one_point": 5834907976,
+  "realized_county": 3768283463,
+  "unrealized_county": 11167004742,
+  "realized_school": 1682739829,
+  "unrealized_school": 1234714160
+ },
+ "surtax_counties_parsed": 67,
+ "a3_counties_short_of_surtax_room": {
+  "2027": {
+   "counties_short": 15,
+   "counties": 67
+  },
+  "2028": {
+   "counties_short": 24,
+   "counties": 67
+  },
+  "2029": {
+   "counties_short": 27,
+   "counties": 67
+  },
+  "2030": {
+   "counties_short": 32,
+   "counties": 67
+  }
+ },
+ "taxable_spending_2024": [
+  9317,
+  11098,
+  13798,
+  16213,
+  19481,
+  20626,
+  25120,
+  31956,
+  39426,
+  60731
+ ],
+ "ce_income_2024": [
+  9612,
+  23805,
+  36188,
+  49681,
+  65170,
+  83760,
+  106439,
+  136502,
+  182587,
+  346942
+ ],
+ "items": [
+  "Food away from home",
+  "Alcoholic beverages",
+  "Other lodging",
+  "Other household expenses",
+  "Housekeeping supplies",
+  "Household furnishings and equipment",
+  "Apparel and services",
+  "Vehicle purchases (net outlay)",
+  "Maintenance and repairs",
+  "Vehicle rental, leases, licenses, and other charges",
+  "Fees and admissions",
+  "Audio and visual equipment and services",
+  "Pets, toys, hobbies, and playground equipment",
+  "Other entertainment supplies, equipment, and services",
+  "Personal care products and services",
+  "Reading",
+  "Tobacco products and smoking supplies"
+ ]
+};  // what a point of other taxes raises; taxable spending by income tenth (scripts/offset_taxes.py)
 // change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
 const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
 // change as a share of income by tenth: owners (the model's own figure) and all households in the tenth (renters at $0)
@@ -2963,6 +3108,27 @@ function whoText(mt, A, D) {
     (ph[0] * ph[9] > 0 && Math.abs(ph[0]) >= 1 ? `, ${(ph[9] / ph[0]).toFixed(1)} times as much.` : ".") +
     ` The top tenth ${v} ${pct(D[9].total_change / f.tot, 0)} of the ${w}, with ${pct(inc[9], 0)} of household income; the bottom tenth ${v} ${pct(D[0].total_change / f.tot, 0)}.`;
   return t;
+}
+// "Paying for it with other taxes": the property tax lost with rates unchanged, divided by what one point of
+// each tax raises that year; who pays a sales tax increase, by income tenth (owners vs renters)
+function renderOffset(p, run, y, a3) {
+  const ys = String(y), O = OFF.years[ys], N = run.none.yearly.find(r => r.year === y) || {}, loss = -(N.all || 0);
+  $(`${p}-off-title`).textContent = `Paying for it with other taxes, ${y}`;
+  if (!O || loss < 5e6) {
+    $(`${p}-off-intro`).textContent = loss <= -5e6 ? "This policy raises property tax revenue, so there is nothing to replace." : "This policy hardly changes property tax revenue, so there is nothing to replace.";
+    $(`${p}-off-tiles`).innerHTML = ""; $(`${p}-off-note`).textContent = ""; return;
+  }
+  const sp = loss / O.sales_point, cp = loss / O.cit_point, su = loss / O.surtax_point;
+  const short = a3 && OFF.a3_counties_short_of_surtax_room[ys];
+  $(`${p}-off-tiles`).innerHTML = [
+    [`+${sp.toFixed(2)} points`, `State sales tax, from ${OFF.state_rate}% to ${(OFF.state_rate + sp).toFixed(2)}%`, "lead"],
+    [`+${cp.toFixed(1)} points`, `Corporate income tax, from ${OFF.cit_rate}% to ${(OFF.cit_rate + cp).toFixed(1)}%`],
+    [`+${su.toFixed(2)} points`, `County sales surtaxes, on average` + (short ? `; ${short.counties_short} of ${short.counties} counties couldn't replace their own loss even at their maximum surtax rates` : "")],
+  ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  $(`${p}-off-intro`).textContent = `To replace the ${bnB(loss)} local governments lose in ${y} with rates unchanged, the state would have to raise its 6% sales tax to about ${(OFF.state_rate + sp).toFixed(1)}%, ` +
+    `or its corporate income tax from 5.5% to ${(OFF.cit_rate + cp).toFixed(1)}%, and share the money with counties and cities.`;
+  $(`${p}-off-note`).textContent = `What one point raises in ${y}: state sales tax ${bnB(O.sales_point)}, corporate income tax ${bnB(O.cit_point)}, county surtaxes ${bnB(O.surtax_point)} (General Revenue Estimating Conference, August 2026; DOR surtax estimates; surtaxes apply only to the first $5,000 of an item). ` +
+    `County surtaxes need voter approval and can only pay for the uses the law lists (infrastructure, schools, transportation, hospitals), so they can't simply replace a county's general operating money. Florida's Constitution bars a personal income tax.`;
 }
 // each tenth's share of the total change, against an equal share (10%: each tenth is a tenth of households)
 function shareSvg(D) {
@@ -3086,6 +3252,7 @@ function renderA3() {
       rows.map(r => `<tr class="${r.year === y ? "sel" : ""}"><td>${r.year}</td><td>${b(-r.all)}</td><td>${rgOf(r.year)}</td><td>${recOf(r.year) !== undefined ? b(-recOf(r.year) * 1e6) : ""}</td><td>${b(-a3yr(run, "neutral", r.year).all)}</td></tr>`).join("") + "</tbody>";
   })();
 
+  renderOffset("a3", run, y, true);
 
   // who pays less and who pays more
   const A = a3all(run, m, y), D = a3dec(run, m, y);
