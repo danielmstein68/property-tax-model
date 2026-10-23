@@ -13,9 +13,14 @@ import json
 import re
 from pathlib import Path
 
+import sys
+
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from a3_why import WHY_HTML, WHY_JS  # noqa: E402
+
+ROOT =Path(__file__).resolve().parents[1]
 RES = ROOT / "data" / "processed" / "results"
 BRAND = ROOT / "brand" / "cle"      # CLE brand logos (SVG), from the CLE Brand & Style Guide package
 LOGOS = ""
@@ -51,14 +56,14 @@ def main() -> None:
     head = t[:head_end].replace("<title>Property Tax Model</title>", "<title>Florida Amendment 3</title>")
     hero = ('<div class="hero">\n  <div class="hero-in">\n' + LOGOS + '\n'
             '    <nav class="views" aria-label="Pages" id="views">\n'
-            '      <button data-v="a3" id="view-btn-a3">Amendment 3 results</button><button data-v="about" id="view-btn-about">Model info</button>\n'
+            '      <button data-v="a3" id="view-btn-a3">Amendment 3 results</button><button data-v="why" id="view-btn-why">Why it works</button><button data-v="about" id="view-btn-about">Model info</button>\n'
             '    </nav>\n'
             '    <div class="eyebrow" id="eyebrow"></div>\n    <h1 id="h1"></h1>\n    <p class="lede" id="lede"></p>\n'
             '    <span class="badge" id="badge">Owners only. Renters are counted in the income groups, but the tax they pay through rent is not modelled yet.</span>\n'
             '  </div>\n</div>\n\n<div class="wrap">\n')
     a3_html = between(t, '  <div id="view-a3"', '  <div id="view-about"')
     about_html = between(t, '  <div id="view-about"', '  <footer id="foot">') .rstrip() + "\n"
-    body = hero + a3_html + about_html + '  <footer id="foot"></footer>\n</div>\n\n<script>\n'
+    body = hero + a3_html + WHY_HTML + about_html + '  <footer id="foot"></footer>\n</div>\n\n<script>\n'
     body = body.replace("About the model →", "Model info →")
     # this page offers two rate settings and no reimbursement option: say so in the assumptions
     for old, new in [
@@ -87,6 +92,7 @@ def main() -> None:
     pieces.append(between(js, "const GROUP_TABS =", "\n") + "\n")
     pieces.append(between(js, "// ---------------- Amendment 3 page", "// views: 2026 today"))
     body_js = "\n".join(pieces)
+    body_js = body_js.replace('data-goto="about">why</a>', 'data-goto="why">why</a>')   # "(why)" after the model's own score points to the evidence page
 
     # Model info: lists the 2026 page filled from survey margins and projections; the Amendment 3 page keeps two static notes
     body_js += '''
@@ -102,6 +108,8 @@ $("foot").textContent = `Center for Land Economics · landeconomics.org · Flori
 const VIEWS = {
   a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom",
         lede: "Who gains and who pays under the proposed constitutional amendment, compared with current law on the same households and economy." },
+  why: { eyebrow: "Florida · Amendment 3 · Evidence", h1: "Why we know the model works",
+        lede: "Every number on the results page was checked against something the model was not built from: the property rolls, the state's own estimate, an independent study and twenty years of Florida rate decisions. Here is what each check shows, and what we cannot check." },
   about: { eyebrow: "Florida Amendment 3", h1: "Model info",
         lede: "How the results are built, how well they match official figures, the assumptions behind them and what they leave out." },
 };
@@ -109,15 +117,16 @@ function showView(v) {
   VIEW = v;
   $("view-a3").hidden = v !== "a3";
   $("view-about").hidden = v !== "about";
+  $("view-why").hidden = v !== "why";
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   $("eyebrow").textContent = VIEWS[v].eyebrow; $("h1").textContent = VIEWS[v].h1; $("lede").textContent = VIEWS[v].lede;
   if (v === "a3") renderA3();
 }
 $("views").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) { showView(b.dataset.v); window.scrollTo(0, 0); } });
 document.addEventListener("click", e => { const a = e.target.closest("[data-goto]"); if (!a) return;
-  e.preventDefault(); showView(a.dataset.goto === "about" ? "about" : "a3"); window.scrollTo(0, 0); });
-showView(location.hash === "#about" ? "about" : "a3");
-'''
+  e.preventDefault(); showView(["about", "why"].includes(a.dataset.goto) ? a.dataset.goto : "a3"); window.scrollTo(0, 0); });
+showView(location.hash === "#about" ? "about" : location.hash === "#why" ? "why" : "a3");
+''' + WHY_JS
 
     # ---------------- data ----------------
     grid = json.loads((RES / "fl_policy_grid.json").read_text(encoding="utf-8"))
@@ -127,7 +136,16 @@ showView(location.hash === "#about" ? "about" : "a3");
     slim["presets"], slim["sliders"] = [{"id": "a3_full", "label": "Whole amendment", "description": ""}], [{"id": "none"}]
     for run in slim["runs"].values():
         run.pop("neutral_nocap", None)
+    static = lambda k: [round(-r["all"] / 1e9, 3) for r in grid["runs"][k]["none_static"]["yearly"] if 2027 <= r["year"] <= 2031]
+    ev = yaml.safe_load((ROOT / "inputs" / "fl_validation_evidence.yaml").read_text(encoding="utf-8"))
+    rec = yaml.safe_load((ROOT / "inputs" / "fl_rec_amendment3.yaml").read_text(encoding="utf-8"))
+    state = [-rec["by_roll_year"][y] / 1e3 for y in (2027, 2028, 2029, 2030)] + [-rec["recurring"] / 1e3]
+    evid = {"years": [2027, 2028, 2029, 2030, 2031], "rolls_exempt": ev["roll_rebuild"]["exemption"], "rolls_cap": ev["roll_rebuild"]["cap"],
+            "model_total": static("a3_full"), "model_exempt": static("a3_exempt"), "model_cap": static("a3_cap"), "state": state,
+            "scale": ev["state_scale"]["homestead"], "inside_80": ev["rate_backtest"]["inside_80"], "by_period": ev["rate_backtest"]["by_period"],
+            "n": ev["rate_backtest"]["n"], "walczak": ev["independent"]["walczak"], "ratio_by_decile": ev["reported_tax"]["ratio_by_decile"]}
     sub = {
+        "__EVID__": json.dumps(evid),
         "__GRID__": json.dumps(slim, separators=(",", ":")),
         "__FIN__": json.dumps(yaml.safe_load((ROOT / "inputs" / "fl_local_finance_fy2024.yaml").read_text(encoding="utf-8"))),
         "__REC__": json.dumps(yaml.safe_load((ROOT / "inputs" / "fl_rec_amendment3.yaml").read_text(encoding="utf-8"))),

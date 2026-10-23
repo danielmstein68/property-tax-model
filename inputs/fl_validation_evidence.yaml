@@ -1,0 +1,35 @@
+# Evidence for "Why it works" (the third page of the Amendment 3 artifact; scripts/build_a3.py).
+# These are results of check scripts that print rather than write files; re-run the script and update the numbers here.
+# Model figures (static Amendment 3 score) and the state's estimate are read from the results files at build time, not stored here.
+# Dollars: billions, by tax roll year 2027-2031.
+
+roll_rebuild:
+  source: scripts/check_a3_roll_static.py and scripts/check_a3_cap_static.py (2026-10-23); docs/checks/a3_vs_rec_gap.md
+  how: >
+    Every homestead parcel on the 2026 rolls (5.2 million) with the non-school exemption replaced by $150,000 (2027), $250,000 (2028)
+    and $255,600 to $267,231 after, assessed values growing at the lower of just-value growth and the Save Our Homes cap; every
+    other non-agricultural parcel with its assessed value growing at the lower of just-value growth (less new construction) and
+    5% against 10%; each parcel's district non-school rate for 2025; no survey, no households.
+  exemption: [4.31, 7.33, 7.55, 7.78, 8.02]
+  cap: [0.25, 0.42, 0.56, 0.68, 0.80]
+state_scale:                       # the state's own scaling of its homestead result to its taxable value forecast (check_a3_roll_static.py)
+  homestead: [1.044, 1.074, 1.110, 1.143, 1.178]
+
+rate_backtest:
+  source: scripts/check_rate_history_backtest.py (2026-10-23); docs/checks/rate_history_backtest.md
+  how: >
+    For each year from 2006 the rule is fitted on earlier years only and asked to predict every county, city and school district's
+    rate change that year (8,405 predictions). Share of actual changes inside the rule's central 80% band; a calibrated rule scores 80%.
+  inside_80: {all: 0.819, county: 0.826, city: 0.806, school: 0.869}
+  by_period: {"2006-07": 0.679, "2008-12": 0.808, "2013-19": 0.830, "2020-25": 0.823}
+  n: 8405
+
+independent:
+  walczak:
+    source: Jared Walczak, "Amendment 3 Could Shift Tax Burdens to Renters", Walczak Policy, September 2026 (parcel-level, 2025 final rolls)
+    per_unit_2028: 707
+    per_apartment_2028: 406
+
+reported_tax:
+  source: scripts/validate_2026.py; modelled tax against the survey's reported tax, by income tenth (median ratio 0.91, middle half 0.71-1.19)
+  ratio_by_decile: [0.95, 0.94, 0.90, 0.92, 0.92, 0.94, 0.95, 0.95, 0.93, 1.02]

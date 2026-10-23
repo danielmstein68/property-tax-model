@@ -41,6 +41,6 @@ state's growth with new construction left in overstated the cap piece ($2.0B in 
 | Model total | 4.56 | 7.80 | 8.18 | 8.54 | 9.02 |
 | State | 4.93 | 8.71 | 9.65 | 10.71 | 11.83 |
 
-Both pieces reproduce from the rolls within about 2% (model total vs rolls-only). The whole gap to the state is therefore
+Both pieces reproduce from the rolls (model total vs rolls-only: 0.6% to 2.3% apart by year). The whole gap to the state is therefore
 in what the state adds: its scaling to its taxable value forecast (homestead factor 1.04 to 1.18) plus a remainder of
 ~5-10% not explained by anything published. The state's workpapers (adjustable offset, scale factors, cap piece) would settle it.
