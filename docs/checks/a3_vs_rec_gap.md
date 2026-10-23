@@ -25,3 +25,22 @@ forecast less 1.15% new construction) and a 2.8% Save Our Homes cap, no sales.
 - Applying the state's scale to the model closes 24% to 10% in 2031. What's left (3-10%) is not explained: the state's
   5% cap piece is unpublished; the state's newcomer offset (~$0.1B 2028, ~$0.5B 2031) would widen it slightly.
 - Not the cause: rate path (model rates fall ~1% by 2031), homestead universe (all use codes: same), exemption amounts.
+
+## Second pass: the 5% cap piece from the rolls (2026-10-23, `scripts/check_a3_cap_static.py`, `scripts/fl_nonres_2026.py`)
+Non-homestead, non-agricultural parcels (residential from the processed rolls, commercial/industrial/other from the raw
+zips), assessed value growing at the lower of just-value growth and the cap (10% vs 5%), no sales, 2025 rates. Just-value
+growth is the state's forecast less new construction (new construction enters at just value, outside the cap). Using the
+state's growth with new construction left in overstated the cap piece ($2.0B in 2031); that was a mistake in my first run.
+
+| Roll year | 2027 | 2028 | 2029 | 2030 | 2031 |
+|---|---|---|---|---|---|
+| Cap piece, rolls only | 0.25 | 0.42 | 0.56 | 0.68 | 0.80 |
+| Cap piece, model (`a3_cap`) | 0.25 | 0.41 | 0.52 | 0.62 | 0.71 |
+| Homestead piece, rolls only (above) | 4.31 | 7.33 | 7.55 | 7.78 | 8.02 |
+| Rolls-only total | 4.56 | 7.75 | 8.11 | 8.46 | 8.82 |
+| Model total | 4.56 | 7.80 | 8.18 | 8.54 | 9.02 |
+| State | 4.93 | 8.71 | 9.65 | 10.71 | 11.83 |
+
+Both pieces reproduce from the rolls within about 2% (model total vs rolls-only). The whole gap to the state is therefore
+in what the state adds: its scaling to its taxable value forecast (homestead factor 1.04 to 1.18) plus a remainder of
+~5-10% not explained by anything published. The state's workpapers (adjustable offset, scale factors, cap piece) would settle it.
