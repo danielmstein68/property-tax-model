@@ -770,6 +770,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <h2>How well it matches official figures</h2>
       <div class="tablebox"><table id="about-checks"></table></div>
       <p class="muted-p" id="about-gov-note"></p>
+      <p class="muted-p" id="about-cal-note"></p>
       <ul class="about-list" id="reliability"></ul>
     </section>
 
@@ -1578,6 +1579,27 @@ onTab("a3-court", d => A3.court = d.k);
 onTab("a3-gov-tabs", d => A3.gov = d.g);
 onTab("a3-group-tabs", d => A3.group = d.g);
 
+// Calibration: the model's dollar totals for Amendment 3 are scaled, year by year, to the state's estimate
+// (2027-2030 by roll year, 2031 = the recurring amount; later years keep 2031's factor). Household and per-unit
+// results stay as modelled: the state's estimate raises totals (more homesteads), not what a household gets.
+const CAL_KEYS = ["tax", "school", "county", "city", "nonowner", "nonowner_school", "all"];
+const CAL = (function () {
+  const st = G.runs.a3_full.none_static || G.runs.a3_full.none, f = {};
+  const model = y => st.yearly.find(r => r.year === y).all;
+  [2027, 2028, 2029, 2030].forEach(y => { f[y] = REC.by_roll_year[y] * 1e6 / model(y); });
+  f[2031] = REC.recurring * 1e6 / model(2031);
+  return { f, at: y => y <= 2026 ? 1 : f[Math.min(y, 2031)] };
+})();
+const calRows = rows => rows.map(r => r.year > 2026 && r.all != null ? Object.fromEntries(Object.entries(r).map(([k, v]) => [k, CAL_KEYS.includes(k) && typeof v === "number" ? v * CAL.at(r.year) : v])) : r);
+function calRun(run) {
+  if (!run._cal) {
+    run._cal = { ...run };
+    ["none", "neutral", "respond", "none_static"].forEach(k => { if (run[k]) run._cal[k] = { ...run[k], yearly: calRows(run[k].yearly) }; });
+  }
+  return run._cal;
+}
+const CAL_NOTE = "Revenue totals are scaled to the state's estimate (about " + (CAL.at(2027)).toFixed(2) + " times the model's own figure in 2027 and " + (CAL.at(2031)).toFixed(2) + " times by 2031); household and per-unit amounts are the model's own.";
+
 // the model's static Amendment 3 score vs the state's estimate, 2027-2030 (e.g. "7%–20% lower")
 function recGap() {
   const run = G.runs.a3_full, st = y => (run.none_static || run.none).yearly.find(r => r.year === y).all, d = y => st(y) / (REC.by_roll_year[y] * 1e6) - 1;
@@ -1587,21 +1609,21 @@ function recGap() {
 
 // key numbers: the amendment as written
 (function () {
-  const run = G.runs.a3_full; if (!run) return;
-  const N = y => a3yr(run, "none", y), f = fifths(a3dec(run, "none", 2027));
+  const raw = G.runs.a3_full; if (!raw) return;
+  const run = calRun(raw), N = y => a3yr(run, "none", y), f = fifths(a3dec(run, "none", 2027));
   const pair = EX.examples.find(e => e.kind === "pair"), hh = w => pair.households.find(h => h.who === w).written.none["2028"].total;
-  const oth = a3yr(run, "neutral", 2027).nonowner - N(2027).nonowner;
+  const oth = a3yr(raw, "neutral", 2027).nonowner - a3yr(raw, "none", 2027).nonowner;   // unscaled, next to the per-unit figure
   $("a3-tiles").innerHTML = [
     [bnB(N(2027).all), `Lost by Florida's local governments in 2027, and ${bnB(N(2031).all)} a year by 2031, with tax rates unchanged`, "lead"],
     [pct(f.top, 0), "Of homeowners' tax cut that goes to the highest-income fifth of households (2027)"],
     [usd(hh("newcomer") - hh("floridian")), "More a year paid for four years by a buyer moving from another state than by a Florida buyer of the same Cape Coral house"],
     [bnB(oth), `More paid by rentals, second homes and businesses in 2027 if local governments replace the lost revenue; about ${usd(RENT.years["2027"].a3_full_neutral / RENT.units)} a year per rental or second-home unit`],
   ].map(([v, l, c]) => `<div class="fig ${c || ""}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect; scored the same way, this model is ${recGap()} for 2027–2030.`;
+  $("a3-tiles-note").innerHTML = `Amendment 3 as written. The state's Revenue Estimating Conference (<a href="${REC.source_url}">July 10, 2026</a>) estimates ${bnB(REC.by_roll_year[2027] * 1e6)} for 2027 and ${bnB(REC.recurring * 1e6)} a year when fully in effect, and the revenue figures on this page are scaled to match it. The model's own score was ${recGap()} for 2027–2030 (<a href="#about" data-goto="about">why</a>). ${CAL_NOTE}`;
 })();
 
 function renderA3() {
-  const run = G.runs[a3id()], y = A3.year, m = A3.mode;
+  const raw = G.runs[a3id()], run = calRun(raw), y = A3.year, m = A3.mode;
   radios("a3-years", "y", y); radios("a3-mode", "k", m); radios("a3-court", "k", A3.court);
   document.querySelectorAll("#a3-gov-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === A3.gov));
   document.querySelectorAll("#a3-group-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === A3.group));
@@ -1611,12 +1633,13 @@ function renderA3() {
   // revenue
   const N = a3yr(run, "none", y), X = a3yr(run, "neutral", y), S = run.none_static ? run.none_static.yearly.find(r => r.year === y) : null;
   $("a3-rev-title").textContent = `Revenue lost to local governments, ${y}`;
-  const RG = (A3R.runs || {})[a3id()];
+  const RG0 = (A3R.runs || {})[a3id()];
+  const RG = RG0 ? { low: { none: calRows(RG0.low.none) }, high: { none: calRows(RG0.high.none) } } : null;
   revFigs("a3-rev-figs", run.none.yearly, run.neutral.yearly, "after localities replace what they can", y,
     RG ? { none: { low: RG.low.none, high: RG.high.none } } : null);
   const rr = RENT.years[String(y)], rent = rr ? { current: rr.current, none: rr[`${a3id()}_none`], neutral: rr[`${a3id()}_neutral`], apt: rr[`${a3id()}_neutral_apartments`] } : null;
   const own = X.tax - N.tax, oth = X.nonowner - N.nonowner;
-  $("a3-rev-intro").textContent = m === "none" ?
+  $("a3-rev-intro").textContent = (m === "none" ?
     `With tax rates unchanged, local governments collect ${bnAbs(N.all)} less in ${y}, ${pct(-N.all / allTax(y), 1)} of all property tax; ${bnAbs(N.tax)} of it is homeowners' tax.` +
       (S && Math.abs(S.all - N.all) >= 5e6 ? ` ${bnM(S.all - N.all)} comes from more owners claiming the bigger exemption and second homes becoming Florida residences, which the state's estimate leaves out.` : "") +
       (RG ? (() => { const v = [RG.low.none, RG.high.none].map(rs => Math.abs(rs.find(r => r.year === y).all)).sort((p, q) => p - q);
@@ -1624,7 +1647,7 @@ function renderA3() {
       (rent && rent.none < -1e6 ? ` Rentals and second homes save about ${usd(-rent.none / RENT.units)} a unit from the 5% assessment cap.` : "") :
     `If localities replace what they can, higher rates raise ${bnAbs(own + oth)} in ${y}: ${bnAbs(own)} from homeowners and ${bnAbs(oth)} from rentals, second homes and businesses. ` +
       (held.length ? `${held.length} counties and cities hit the 10-mill cap, so ${bnM(X.all)} stays lost.` : "No county or city hits the 10-mill cap.") +
-      (rent ? ` Homes and apartments without a homestead exemption (rentals and second homes) pay ${bnM(rent.neutral)} more, about ${usd(rent.neutral / RENT.units)} a year per unit (${pctS(rent.neutral / rent.current, 0)}): about ${usd(rent.apt / RENT.apartment_units)} per apartment and ${usd((rent.neutral - rent.apt) / (RENT.units - RENT.apartment_units))} per other home (single-family rentals, condos and second homes). The model doesn't estimate how much of that reaches renters.` : "");
+      (rent ? ` Homes and apartments without a homestead exemption (rentals and second homes) pay ${bnM(rent.neutral)} more, about ${usd(rent.neutral / RENT.units)} a year per unit (${pctS(rent.neutral / rent.current, 0)}): about ${usd(rent.apt / RENT.apartment_units)} per apartment and ${usd((rent.neutral - rent.apt) / (RENT.units - RENT.apartment_units))} per other home (single-family rentals, condos and second homes). The model doesn't estimate how much of that reaches renters.` : "") + " " + CAL_NOTE);
   (function () {
     const rows = run.none.yearly.filter(r => r.all != null);
     const lines = [["none", "var(--accent)", ""], ["neutral", "var(--neutral)", "2 3"]].map(([k, c, d]) => ({ c, d, pts: run[k].yearly.filter(r => r.all != null).map(r => ({ year: r.year, v: -r.all / 1e9 })) }));
@@ -1713,6 +1736,7 @@ const VAL = __VAL__;   // homestead check against the parcel rolls (scripts/vali
     ["Statewide taxable value, 2026", "$3,965 billion school, $3,673 billion county", "$3,966 billion, $3,673 billion (Revenue Estimating Conference)"],
     ["Projected taxable value, 2031", "School 0.6% and county 1.9% above", "Revenue Estimating Conference, August 2026"],
     ["Amendment 3 revenue lost, 2027–2030, scored statically", recGap(), "Revenue Estimating Conference, July 10, 2026"],
+    ["Amendment 3 revenue lost, parts rebuilt from the 2026 rolls alone (larger exemption plus the 5% cap), 2027–2031", "Within 2% of the model", "Computed from the parcel rolls (scripts/check_a3_roll_static.py, check_a3_cap_static.py)"],
     ...(() => { const r = RENT.years["2028"]; if (!r) return [];
       return [["Amendment 3, 2028, if localities replace the revenue: extra tax per home or unit without a homestead exemption", usd(r.a3_full_neutral / RENT.units), "$707 (Walczak Policy, September 2026, parcel-level)"],
               ["Same, per apartment unit", usd(r.a3_full_neutral_apartments / RENT.apartment_units), "$406 (Walczak Policy)"]]; })(),
@@ -1725,6 +1749,7 @@ const VAL = __VAL__;   // homestead check against the parcel rolls (scripts/vali
   $("about-checks").innerHTML = "<thead><tr><th>What's compared</th><th>Model</th><th>Official figure</th></tr></thead><tbody>" +
     rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") + "</tbody>";
   $("about-checks").classList.add("wrap-cells");
+  $("about-cal-note").innerHTML = `<b>Amendment 3 revenue is scaled to the state's estimate.</b> Both pieces the state counts, the larger exemption and the 5% cap, can be rebuilt from the 2026 property rolls and match the model within 2%, yet the model's total came out ${recGap()} than the state's for 2027–2030 and ${pct(1 - 1 / CAL.at(2031), 0)} lower by 2031. The state scales its parcel-level result each year up to its own taxable value forecast (about 1.04 times in 2027, 1.18 times by 2031 for homesteads), counting all growth above the Save Our Homes cap as extra homesteads; the model follows new homes and sales explicitly and doesn't. Which is closer to the truth for the later years can't be tested with published data. So every revenue total on the Amendment 3 page is multiplied by ${CAL.at(2027).toFixed(2)} (2027), ${CAL.at(2028).toFixed(2)}, ${CAL.at(2029).toFixed(2)}, ${CAL.at(2030).toFixed(2)} and ${CAL.at(2031).toFixed(2)} (2031; later years keep 2031's factor). What households and units pay or save, each government's needed rate and the per-unit rental figures are the model's own, unscaled; the unscaled totals are the "model's own score" figures in the table above. Notes: docs/checks/a3_vs_rec_gap.md.`;
   const r27 = A3GOV.rows.find(r => r.year === 2027);
   const gap = k => r27[`model_${k}`] / r27[`rec_${k}`] - 1;
   $("about-gov-note").textContent = `Split by type of government, the model's Amendment 3 losses in 2027 are ${pct(Math.abs(gap("county")), 0)} ${gap("county") < 0 ? "below" : "above"} the state's for counties and special districts ($${(r27.model_county / 1e9).toFixed(2)} billion vs $${(r27.rec_county / 1e9).toFixed(2)} billion) and ${pct(Math.abs(gap("city")), 0)} ${gap("city") < 0 ? "below" : "above"} for cities ($${(r27.model_city / 1e9).toFixed(2)} billion vs $${(r27.rec_city / 1e9).toFixed(2)} billion), so the split matches the statewide total, which runs below the state's estimate and drifts further below in later years. ` +
