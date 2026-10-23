@@ -2,17 +2,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Property Tax Model</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: follows the Center for Land Economics site: DM Sans throughout, deep indigo headings, a pale blue-grey hero band,
    lavender surfaces, section headings over a dark hairline, uppercase indigo eyebrows, pill buttons. One column, max 1120px. */
 :root {
-  --bg: #ffffff; --band: #d4d9e2; --surface: #f4f3fa; --surface-2: #eeedf6; --ink: #1b1540; --text: #2c3442; --muted: #5d6576;
-  --rule: #dcdbe8; --rule-strong: #1b1540;
-  --accent: #342877; --accent-2: #3d358a; --accent-soft: #e6e4f3; --teal: #b7e3e0;
-  --school: #342877; --county: #3f9c95; --city: #9f95d6; --income: #c6c2e0; --neutral: #c0782a;
-  --warn: #342877; --warn-soft: #e6e4f3; --band-fill: rgba(52, 40, 119, 0.14);
-  --gain2: #2f7f78; --gain1: #9dd3cd; --same: #d9d8e4; --lose1: #f0b9a8; --lose2: #c4573a; --bar-ink: #1b1540;
+  /* CLE Brand & Style Guide: purple #352977 is the accent, black text, light gray #EAE7E8 for depth, hero #D4DDE5, teal for gains;
+     no orange anywhere (reserved for the donate button), so "pays more" is blue and "still lost" is a blue dashed line */
+  --bg: #ffffff; --band: #d4dde5; --surface: #eae7e8; --surface-2: #edecf5; --ink: #000000; --text: #000000; --muted: #5a5557;
+  --rule: #d5d1d3; --rule-strong: #000000;
+  --accent: #352977; --accent-2: #3d358a; --accent-soft: #edecf5; --teal: #b7e3e0;
+  --school: #352977; --county: #2f6f6c; --city: #9f95d6; --income: #c6c2e0; --neutral: #5865f0;
+  --warn: #352977; --warn-soft: #edecf5; --band-fill: rgba(53, 41, 119, 0.14);
+  --gain2: #2f6f6c; --gain1: #7fc9c6; --same: #d9d6d8; --lose1: #b3b8f8; --lose2: #3f4bd0; --bar-ink: #000000;
   --display: "DM Sans", "dmSans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --body: "DM Sans", "dmSans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --mono: "DM Mono", ui-monospace, Consolas, monospace;
@@ -21,30 +23,34 @@
   --bg: #120f2a; --band: #1e1a42; --surface: #1a1638; --surface-2: #231e4a; --ink: #eeedf6; --text: #d7d5e8; --muted: #a29fc0;
   --rule: #2f2a58; --rule-strong: #d6d3ea;
   --accent: #b9b0f2; --accent-2: #cfc8ff; --accent-soft: #29235a; --teal: #7fd0c9;
-  --school: #9d92ea; --county: #62c2b9; --city: #d6d3ea; --income: #4a4478; --neutral: #e2a35c;
+  --school: #9d92ea; --county: #62c2b9; --city: #d6d3ea; --income: #4a4478; --neutral: #8f98ff;
   --warn: #d6d3ea; --warn-soft: #29235a; --band-fill: rgba(185, 176, 242, 0.22);
-  --gain2: #4fb3a9; --gain1: #2b6e68; --same: #3a3566; --lose1: #8e4a38; --lose2: #e07a5c; --bar-ink: #eeedf6; color-scheme: dark } }
+  --gain2: #4fb3a9; --gain1: #2b6e68; --same: #3a3566; --lose1: #3b4296; --lose2: #8f98ff; --bar-ink: #eeedf6; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #120f2a; --band: #1e1a42; --surface: #1a1638; --surface-2: #231e4a; --ink: #eeedf6; --text: #d7d5e8; --muted: #a29fc0;
   --rule: #2f2a58; --rule-strong: #d6d3ea;
   --accent: #b9b0f2; --accent-2: #cfc8ff; --accent-soft: #29235a; --teal: #7fd0c9;
-  --school: #9d92ea; --county: #62c2b9; --city: #d6d3ea; --income: #4a4478; --neutral: #e2a35c;
+  --school: #9d92ea; --county: #62c2b9; --city: #d6d3ea; --income: #4a4478; --neutral: #8f98ff;
   --warn: #d6d3ea; --warn-soft: #29235a; --band-fill: rgba(185, 176, 242, 0.22);
-  --gain2: #4fb3a9; --gain1: #2b6e68; --same: #3a3566; --lose1: #8e4a38; --lose2: #e07a5c; --bar-ink: #eeedf6; color-scheme: dark }
+  --gain2: #4fb3a9; --gain1: #2b6e68; --same: #3a3566; --lose1: #3b4296; --lose2: #8f98ff; --bar-ink: #eeedf6; color-scheme: dark }
 
 body { background: var(--bg); color: var(--text); font: 500 16px/1.6 var(--body); }
 .hero { background: var(--band); padding-inline: 20px; padding-block: 28px 44px; }
 .hero-in { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px; }
 .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 56px; }
 h1, h2, h3 { font-family: var(--display); font-weight: 700; text-wrap: balance; margin: 0; color: var(--ink); }
-h1 { font-size: clamp(32px, 4.6vw, 52px); line-height: 1.1; letter-spacing: -0.02em; color: var(--accent); max-width: 20ch; }
+h1 { font-size: clamp(32px, 4.6vw, 52px); line-height: 1.15; letter-spacing: -0.02em; color: var(--accent); max-width: 20ch; }
 h2 { font-size: clamp(26px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.02em; padding-bottom: 14px; border-bottom: 1.5px solid var(--rule-strong); }
-h3 { font-size: 18px; line-height: 1.2; letter-spacing: -0.02em; }
+h3 { font-size: 18px; line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
 p { margin: 0; max-width: 70ch; }
-.eyebrow { font: 700 12.5px/1 var(--body); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
+.eyebrow { font: 700 12.5px/1 var(--body); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-2); }
 section { display: grid; gap: 18px; min-width: 0; }
 .lede { font-size: 18px; color: var(--text); max-width: 62ch; }
 
+.logo { display: block; height: 30px; width: auto; max-width: 100%; }
+.logo-w { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-p { display: none; } :root:not([data-theme="light"]) .logo-w { display: block; } }
+:root[data-theme="dark"] .logo-p { display: none; } :root[data-theme="dark"] .logo-w { display: block; }
 .views { display: flex; flex-wrap: wrap; gap: 8px; }
 .views button { font: 700 14px var(--body); padding: 7px 16px; border-radius: 999px; border: 1.5px solid var(--accent);
   background: transparent; color: var(--accent); cursor: pointer; }
@@ -804,7 +810,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <h2>Key assumptions</h2>
       <ul class="about-list">
         <li><b>Three ways local governments can respond.</b> <i>Rates unchanged</i> (or "no response"): every rate follows its current-law path; this is how the state's economists score tax changes. <i>Governments respond</i>: rates change the way Florida counties, cities and school districts changed them in comparable years since the 1990s, within the limit of 110% of the rolled-back rate. <i>Localities replace lost revenue</i>: each government resets its rate to raise what it would under current law, a check rather than a forecast. It respects the Constitution's 10-mill cap on county general and city levies (what a capped government can't raise stays lost); county taxing units and special districts rise in full. Options add state reimbursement or the state's usual offset for 29 small, rural counties (s. 218.125).</li>
-        <li><b>People respond to bigger exemptions, and how much is a judgement.</b> Some owners who could claim the homestead exemption but don't start claiming (30% of them at a $2,500-a-year gain, phased in over two years), and some out-of-state owners of second homes make Florida their legal residence (5% at that gain). Neither number is measured. For claiming, the best evidence is Texas's 2023 increase of its school exemption to $100,000: claims in 2024 ran about 2 points above trend, which is 9% to 12% of Texas's non-claiming owners if that excess is a response, about 30% to 37% at a $2,500 gain; measured against 2023's own growth there is no excess at all, so the data allows anything from near zero to a third. Florida's 2008 increase is no clearer: homestead counts rose faster in counties where the new exemption was worth more, but those counties were also hit later by the housing crash. The page therefore shows a range, from 10% to 40% of non-claimers and from 2% to 10% of second-home owners, with 30% as the central case for claiming. The state's own estimates leave these responses out. Details: docs/checks/takeup_checks.md.</li>
+        <li><b>People respond to bigger exemptions, and how much is a judgement.</b> Owners who could claim the homestead exemption but don't start claiming (30% of them at a $2,500-a-year gain, phased in over two years), and out-of-state owners of second homes make Florida their legal residence (5% at that gain). Neither number is measured. For claiming, the best evidence is Texas's 2023 increase of its school exemption to $100,000: claims in 2024 ran about 2 points above trend, which is 9% to 12% of Texas's non-claiming owners if that excess is a response, about 30% to 37% at a $2,500 gain; measured against 2023's own growth there is no excess at all, so the data allows anything from near zero to a third. Florida's 2008 increase is no clearer: homestead counts rose faster in counties where the new exemption was worth more, but those counties were also hit later by the housing crash. The page therefore shows a range, from 10% to 40% of non-claimers and from 2% to 10% of second-home owners, with 30% as the central case for claiming. The state's own estimates leave these responses out. Details: docs/checks/takeup_checks.md.</li>
         <li><b>New residents</b> (Amendment 3): the Census share of recent buyers who came from another state or abroad (23%, more at older ages), plus newcomers who rent first (20% of arriving renters buy within five years).</li>
         <li><b>Values and incomes:</b> the Revenue Estimating Conference's August 2026 forecasts through 2032, then easing to about 2% a year by 2036; incomes and households from the state's July 2026 forecasts; inflation from the Congressional Budget Office.</li>
         <li><b>Sales and new homes:</b> homesteads change hands about 5.5% a year, less often the bigger their Save Our Homes savings, and 14% of sellers carry savings to their next home. New owners live in new homes taxed at full value, placed where construction happens. Owners shift older with the state's population projections.</li>
@@ -824,7 +830,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <li><b>Other responses:</b> home prices adjusting to tax changes, people moving because of taxes, builders responding, and governments cutting spending.</li>
         <li><b>Household details are estimates.</b> Homestead status, Save Our Homes discount and tax district are right for groups, not for any single household. Small rural counties share survey areas, so county results are reliable only for larger counties.</li>
         <li><b>Income is one year's income</b>, not wealth: retirees with paid-off homes and little income look poorer than they are.</li>
-        <li><b>Some 2026 rates are 2025 rates:</b> cities without a collected 2026 rate, and special districts.</li>
+        <li><b>Several 2026 rates are 2025 rates:</b> cities without a collected 2026 rate, and special districts.</li>
         <li><b>Amendment 3:</b> the limits on how counties and cities spend property tax, and local options (raising the exemption further, shortening the wait for new residents from 2030), are not modelled.</li>
       </ul>
     </section>
@@ -4852,7 +4858,7 @@ function renderA3() {
     $("a3-h-win").textContent = A.share_pay_more < 0.005 ? `${pct(A.share_pay_less, 0)} of homeowners pay less; almost none pay more` :
       `${pct(A.share_pay_less, 0)} of homeowners pay less and ${pct(A.share_pay_more, 0)} pay more`;
   })();
-  $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
+  $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and part of that would likely reach renters. Shares of income are for 2026.";
   $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(decSvg(D));
   $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(shareSvg(D));
   $("a3-c-inc").innerHTML = ""; $("a3-c-inc").appendChild(incSvg(D));

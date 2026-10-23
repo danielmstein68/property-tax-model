@@ -17,6 +17,16 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "data" / "processed" / "results"
+BRAND = ROOT / "brand" / "cle"      # CLE brand logos (SVG), from the CLE Brand & Style Guide package
+LOGOS = ""
+
+
+def _logo(name: str, cls: str, key: str) -> str:
+    """The supplied CLE logo SVG, inlined as delivered (class renamed so the two logos' styles don't collide)."""
+    svg = (BRAND / name).read_text(encoding="utf-8")
+    svg = svg[svg.index("<svg"):].replace(".cls-1", f".{key}").replace('class="cls-1"', f'class="{key}"')
+    svg = svg.replace('id="Layer_1"', "", 1).replace("<svg ", f'<svg class="logo {cls}" role="img" aria-label="Center for Land Economics" ', 1)
+    return svg
 
 
 def between(s: str, start: str, end: str, keep_end: bool = False) -> str:
@@ -32,12 +42,14 @@ def drop_block(s: str, start: str, end: str) -> str:
 
 
 def main() -> None:
+    global LOGOS
+    LOGOS = _logo("CLE_Logo_Purple.svg", "logo-p", "cle-p") + _logo("CLE_Logo_White.svg", "logo-w", "cle-w")
     t = (ROOT / "display" / "template.html").read_text(encoding="utf-8")
 
     # ---------------- HTML ----------------
     head_end = t.index('<div class="hero">')
     head = t[:head_end].replace("<title>Property Tax Model</title>", "<title>Florida Amendment 3</title>")
-    hero = ('<div class="hero">\n  <div class="hero-in">\n'
+    hero = ('<div class="hero">\n  <div class="hero-in">\n' + LOGOS + '\n'
             '    <nav class="views" aria-label="Pages" id="views">\n'
             '      <button data-v="a3" id="view-btn-a3">Amendment 3 results</button><button data-v="about" id="view-btn-about">Model info</button>\n'
             '    </nav>\n'
@@ -85,7 +97,7 @@ $("reliability").innerHTML = [
 $("p-reliability").innerHTML = [
   `Projections are one central economic scenario (the state's own forecasts through 2032, then easing). They are what-ifs, not predictions, and do not include survey sampling error, future law changes, or moving because of taxes.`,
 ].map(t => `<li>${t}</li>`).join("");
-$("foot").textContent = `Florida Amendment 3 · generated ${G.generated} · tax roll years 2027-2036 · 2026 property rolls, 2024 Census survey, state forecasts.`;
+$("foot").textContent = `Center for Land Economics · landeconomics.org · Florida Amendment 3 · generated ${G.generated} · tax roll years 2027-2036 · 2026 property rolls, 2024 Census survey, state forecasts.`;
 
 const VIEWS = {
   a3: { eyebrow: "Florida · Amendment 3 · November 3, 2026 ballot", h1: "What Amendment 3 would change, and for whom",
