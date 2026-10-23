@@ -27,7 +27,7 @@ Steps we're working through one at a time. Each gets discussed before it's built
 
 **Amendment 3 and policy**
 - [ ] Local options: counties/cities raising the exemption; shortening the newcomer wait from 2030.
-- [x] Compare county/city/special district impacts with REC's per-government tables (2026-10-19, `scripts/check_rec_by_government.py`, `docs/checks/a3_rec_by_government.md`): county + special districts within 2% in 2027-28; cities a third lower.
+- [x] Compare county/city/special district impacts with REC's per-government tables (2026-10-19, `scripts/check_rec_by_government.py`, `docs/checks/a3_rec_by_government.md`): county + special districts 7-9% below in 2027-28; cities 10-14% below (gap widens to 22-28% by 2031; see docs/checks/a3_vs_rec_gap.md).
 - [x] (2026-10-19) Fixed the county/city split: `district_classes` missed 60 city districts (all of Polk and Volusia, Port St. Lucie, St. Cloud, parts of Lake; note formats and Table 1 'Operating' names); other property's city levies now use each city's own base and rate (`Projection._nonowner`); Jacksonville is a municipality in REC, county in the model (moved in the check). City-dependent districts and city debt stay in county (Table 1 doesn't separate them). Was: model city losses are ~33-45% below REC (homestead value in cities 42% vs roll 45%; non-owner property taxed at county-average city rates though 52% of non-homestead residential value is in cities; check which levies `district_classes` counts as municipal: city-dependent districts, debt service).
 - [x] Tests for 2026-10-15/16 features: `tests/test_policy_features.py` (10 tests; suite 78).
 
