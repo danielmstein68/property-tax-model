@@ -314,6 +314,12 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         </div>
       </div>
       <div class="chart">
+        <h3 id="a3-h-inc">The change as a share of income</h3>
+        <p>Change in property tax as a percent of income, by tenth of all Florida households (1 = lowest income), 2026 incomes; below zero = pays less.</p>
+        <div id="a3-c-inc"></div>
+        <div class="legend"><span><i style="background:var(--gain1)"></i>Owners in the tenth</span><span><i style="background:var(--gain2)"></i>All households in the tenth, renters included</span></div>
+      </div>
+      <div class="chart">
         <h3 id="a3-h-win">Share of owners paying less or more</h3>
         <p>Share of homeowners in each income tenth whose property tax falls or rises, by how much (percent of their current bill).</p>
         <div id="a3-c-win"></div>
@@ -2954,6 +2960,9 @@ const OFF = {
 };  // what a point of other taxes raises; taxable spending by income tenth (scripts/offset_taxes.py)
 // change per household by income tenth, renters at $0 (households grow with each tenth's owners, 2026 ownership rate)
 const perHousehold = D => D.map((r, i) => r.total_change / (HH.deciles[i].households * r.owners / HH.deciles[i].owners));
+// change as a share of income by tenth: owners (the model's own figure) and all households in the tenth (renters at $0)
+const incomeShares = D => D.map((r, i) => ({ own: r.change_share_of_income,
+  hh: (r.total_change * HH.deciles[i].owners / r.owners) / HH.deciles[i].income }));
 const hhIncomeShare = () => { const t = HH.deciles.reduce((a, d) => a + d.income, 0); return HH.deciles.map(d => d.income / t); };
 // revenue lost by year: lines [{c, d, pts: [{year, v (billions)}]}], optional state-estimate dots, marker at year y
 function revSvg(lines, rec, y, bands) {
@@ -2986,6 +2995,23 @@ function decSvg(D) {
   D.forEach((r, i) => {
     [[r.avg_change, "var(--gain1)", "var(--lose1)", 0], [perHH[i], "var(--gain2)", "var(--lose2)", 1]].forEach(([v, cg, cl, j]) =>
       el(s, "rect", { x: L + i * bw + bw * 0.12 + j * bw * 0.39, y: Math.min(yy(v), yy(0)), width: bw * 0.36, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? cg : cl, rx: 2 }));
+    el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
+  return s;
+}
+function incSvg(D) {
+  const S = incomeShares(D), vals = S.flatMap(r => [r.own, r.hh]).concat([0]), hi0 = Math.max(...vals), lo0 = Math.min(...vals);
+  const raw = (hi0 - lo0) / 4 || 0.01, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].find(k => k * p >= raw) * p, lo = Math.floor(lo0 / step) * step, hi = Math.ceil(hi0 / step) * step;
+  const W = 1040, H = 260, L = 56, R_ = 10, T = 18, B = 26, bw = (W - L - R_) / 10, s = svg(W, H), yy = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+  s.setAttribute("aria-label", "Change in property tax as a share of income by income tenth, owners and all households");
+  const f = v => pctS(v, Math.abs(v) < 0.01 ? 2 : 1);
+  for (let v = lo; v <= hi + step / 2; v += step) { el(s, "line", { x1: L, x2: W - R_, y1: yy(v), y2: yy(v), stroke: "var(--rule)" }); el(s, "text", { x: L - 6, y: yy(v) + 4, "text-anchor": "end" }, pctS(v, step < 0.01 ? 1 : 0)); }
+  el(s, "line", { x1: L, x2: W - R_, y1: yy(0), y2: yy(0), stroke: "var(--rule-strong)", "stroke-width": 1.2 });
+  S.forEach((r, i) => {
+    [[r.own, "var(--gain1)", "var(--lose1)", 0], [r.hh, "var(--gain2)", "var(--lose2)", 1]].forEach(([v, cg, cl, j]) => {
+      const x = L + i * bw + bw * 0.12 + j * bw * 0.39;
+      el(s, "rect", { x, y: Math.min(yy(v), yy(0)), width: bw * 0.36, height: Math.abs(yy(v) - yy(0)), fill: v < 0 ? cg : cl, rx: 2 });
+      if (j === 1 || i === 0) el(s, "text", { x: x + bw * 0.18, y: v < 0 ? yy(v) + 12 : yy(v) - 4, "text-anchor": "middle", class: "val" }, f(v)); });   // labels: the all-household bars, plus the owners' bar in the first tenth
     el(s, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, String(i + 1)); });
   return s;
 }
@@ -3192,12 +3218,17 @@ function renderA3() {
     $("a3-h-dec").textContent = `Per household, the top income tenth ${phr(ph[9])} a year and the bottom tenth ${phr(ph[0])}`;
     $("a3-h-share").textContent = Math.abs(f.tot) < 1e7 ? "The change is small and spread across income groups" :
       `The top fifth of households ${v} ${pct(f.top, 0)} of the ${cut ? "tax cut" : "increase"}; the bottom half ${v} ${pct(f.bottom, 0)}`;
+    const sh = incomeShares(D), a0 = sh[0].hh, a9 = sh[9].hh;
+    $("a3-h-inc").textContent = Math.abs(f.tot) < 1e7 ? "The change is small relative to income in every group" :
+      a0 * a9 > 0 && Math.abs(a0) > Math.abs(a9) ? `As a share of income, the ${cut ? "cut" : "increase"} is ${(a0 / a9).toFixed(0)} times larger in the lowest income tenth (${pct(Math.abs(a0), 1)}) than in the highest (${pct(Math.abs(a9), 2)})` :
+      `As a share of income, the change is ${pctS(a0, 1)} in the lowest income tenth and ${pctS(a9, 2)} in the highest`;
     $("a3-h-win").textContent = A.share_pay_more < 0.005 ? `${pct(A.share_pay_less, 0)} of homeowners pay less; almost none pay more` :
       `${pct(A.share_pay_less, 0)} of homeowners pay less and ${pct(A.share_pay_more, 0)} pay more`;
   })();
   $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
   $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(decSvg(D));
   $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(shareSvg(D));
+  $("a3-c-inc").innerHTML = ""; $("a3-c-inc").appendChild(incSvg(D));
   $("a3-win-legend").innerHTML = winLegend();
   $("a3-c-win").innerHTML = winnersHtml(D, A);
 
