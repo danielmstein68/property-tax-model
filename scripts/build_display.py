@@ -48,6 +48,10 @@ def main() -> None:
     offset = (res / "fl_offset_taxes.json").read_text(encoding="utf-8")   # scripts/offset_taxes.py
     hhdec = (res / "fl_household_deciles.json").read_text(encoding="utf-8")   # scripts/household_deciles.py
     val = json.dumps(json.loads((res / "fl_2026_validation.json").read_text(encoding="utf-8"))["statewide_homestead"])
+    import sys
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from build_a3 import _logo      # the supplied CLE logo SVGs, inlined (brand/cle)
+    page = page.replace("__LOGOS__", _logo("CLE_Logo_Purple.svg", "logo-p", "cle-p") + _logo("CLE_Logo_White.svg", "logo-w", "cle-w"))
     page = (page.replace("__DATA__", data).replace("__PROJ__", proj).replace("__GRID__", grid).replace("__FIN__", fin)
             .replace("__REC__", rec).replace("__A3EX__", a3ex).replace("__VAL__", val).replace("__HHDEC__", hhdec).replace("__OFFSET__", offset).replace("__A3RENT__", a3rent).replace("__A3RANGE__", a3range).replace("__TX__", tx).replace("__TXO__", txo).replace("__A3GOV__", a3gov))
     dest = ROOT / "display" / "fl_2026_status_quo.html"
