@@ -658,8 +658,8 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <p id="a3-rev-intro"></p>
       <div class="charts">
         <div class="chart">
-          <h3>Revenue lost by year, all property</h3>
-          <p>Billions of dollars a year.</p>
+          <h3 id="a3-h-rev">Revenue lost by year, all property</h3>
+          <p>Revenue lost to all local governments each year, all property in Florida, billions of dollars; the state's own estimate is marked.</p>
           <div id="a3-c-rev"></div>
           <div class="legend"><span><i style="background:var(--accent)"></i>Rates unchanged</span><span><i style="background:var(--band-fill)"></i>Range: fewer or more owners start claiming</span><span><i style="background:var(--neutral)"></i>Still lost after localities replace what they can</span><span><i style="background:var(--surface);border:2.5px solid var(--ink);border-radius:50%;box-sizing:border-box"></i>State estimate</span></div>
         </div>
@@ -673,8 +673,8 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <p id="a3-off-intro"></p>
       <div class="figures" id="a3-off-tiles"></div>
       <div class="chart">
-        <h3>Property tax cut and sales tax increase together, by household income</h3>
-        <p>Change in what a household pays a year if the state sales tax rises enough to replace the lost property tax (rates unchanged); below zero = pays less.</p>
+        <h3 id="a3-off-h">Property tax cut and sales tax increase together, by household income</h3>
+        <p>Change in what the average homeowner and renter in each income tenth pays a year if the state sales tax rises enough to replace the lost property tax; below zero = pays less.</p>
         <div id="a3-off-chart"></div>
         <div class="legend"><span><i style="background:var(--gain2)"></i>Average homeowner: property tax cut minus sales tax increase</span><span><i style="background:var(--lose2)"></i>Average renter: sales tax increase only</span></div>
       </div>
@@ -687,21 +687,21 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <p id="a3-who-intro"></p>
       <div class="charts">
         <div class="chart">
-          <h3>Average change per household, by income</h3>
-          <p>Dollars a year; tenths of all Florida households (1 = lowest income).</p>
+          <h3 id="a3-h-dec">Average change per household, by income</h3>
+          <p>Average change in property tax in dollars a year, per owner and per household (renters count as $0), by tenth of all Florida households (1 = lowest income).</p>
           <div id="a3-c-dec"></div>
           <div class="legend"><span><i style="background:var(--gain1)"></i>Per owner</span><span><i style="background:var(--gain2)"></i>Per household, renters included</span></div>
         </div>
         <div class="chart">
-          <h3>Who gets the tax cut</h3>
+          <h3 id="a3-h-share">Who gets the tax cut</h3>
           <p>Each income tenth's share of the homeowner tax cut. Each tenth is a tenth of all households, so an equal share would be 10%.</p>
           <div id="a3-c-share"></div>
           <div class="legend"><span><i style="background:var(--accent)"></i>More than an equal share</span><span><i style="background:var(--income)"></i>Less than an equal share</span></div>
         </div>
       </div>
       <div class="chart">
-        <h3>Share of owners paying less or more</h3>
-        <p>By household income tenth.</p>
+        <h3 id="a3-h-win">Share of owners paying less or more</h3>
+        <p>Share of homeowners in each income tenth whose property tax falls or rises, by how much (percent of their current bill).</p>
         <div id="a3-c-win"></div>
         <div class="legend" id="a3-win-legend"></div>
       </div>
@@ -4677,6 +4677,8 @@ function renderOffset(p, run, y, a3) {
       el(s2, "rect", { x: L + i * bw + bw * 0.14 + j * bw * 0.37, y: Math.min(yy(v), yy(0)), width: bw * 0.33, height: Math.abs(yy(v) - yy(0)), fill: c, rx: 2 });
       el(s2, "text", { x: L + i * bw + bw * 0.14 + j * bw * 0.37 + bw * 0.165, y: v < 0 ? yy(v) + 13 : yy(v) - 5, "text-anchor": "middle", class: "val" }, usdS(v)); });
     el(s2, "text", { x: L + i * bw + bw / 2, y: H - 8, "text-anchor": "middle" }, "Tenth " + (i + 1)); });
+  if ($(`${p}-off-h`)) $(`${p}-off-h`).textContent = `A sales tax large enough to replace it costs the average renter in the lowest income tenth ${usd(sales[0])} a year; ` +
+    `the average homeowner there ${owner[0] < 0 ? `still comes out ${usd(-owner[0])} ahead` : `ends up ${usd(owner[0])} behind`}`;
   $(`${p}-off-chart`).innerHTML = ""; $(`${p}-off-chart`).appendChild(s2);
   $(`${p}-off-note`).textContent = `What one point raises in ${y}: state sales tax ${bnB(O.sales_point)}, corporate income tax ${bnB(O.cit_point)}, county surtaxes ${bnB(O.surtax_point)} (General Revenue Estimating Conference, August 2026; DOR surtax estimates; surtaxes apply only to the first $5,000 of an item). ` +
     `Florida households pay about ${pct(direct, 0)} of a sales tax increase directly at the register (taxable spending by income tenth from the federal Consumer Expenditure Survey, 2024); businesses and tourists pay the rest, and businesses pass part of it on in prices, so the amounts above are a lower bound. ` +
@@ -4810,6 +4812,16 @@ function renderA3() {
   const A = a3all(run, m, y), D = a3dec(run, m, y);
   $("a3-who-title").textContent = `Who pays less and who pays more, ${y}`;
   $("a3-who-intro").textContent = whoText(mt, A, D);
+  (function () {   // each chart's headline is its point, computed from what is on screen; the line under it says what is plotted
+    const f = fifths(D), ph = perHousehold(D), cut = f.tot < 0, v = cut ? "gets" : "pays";
+    const phr = x => x < 0 ? `saves ${usd(-x)}` : `pays ${usd(x)} more`;
+    $("a3-h-rev").textContent = `Local governments lose ${bnB(N.all)} in ${y} with rates unchanged` + (y < 2031 ? `, and ${bnB(a3yr(run, "none", 2031).all)} a year by 2031` : "");
+    $("a3-h-dec").textContent = `Per household, the top income tenth ${phr(ph[9])} a year and the bottom tenth ${phr(ph[0])}`;
+    $("a3-h-share").textContent = Math.abs(f.tot) < 1e7 ? "The change is small and spread across income groups" :
+      `The top fifth of households ${v} ${pct(f.top, 0)} of the ${cut ? "tax cut" : "increase"}; the bottom half ${v} ${pct(f.bottom, 0)}`;
+    $("a3-h-win").textContent = A.share_pay_more < 0.005 ? `${pct(A.share_pay_less, 0)} of homeowners pay less; almost none pay more` :
+      `${pct(A.share_pay_less, 0)} of homeowners pay less and ${pct(A.share_pay_more, 0)} pay more`;
+  })();
   $("a3-who-note").textContent = "Renters count as $0: the model doesn't track rent. If local governments raise rates to replace the money, landlords pay more, and some of that would likely reach renters. Shares of income are for 2026.";
   $("a3-c-dec").innerHTML = ""; $("a3-c-dec").appendChild(decSvg(D));
   $("a3-c-share").innerHTML = ""; $("a3-c-share").appendChild(shareSvg(D));
